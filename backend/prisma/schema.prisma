@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(uuid()) @db.VarChar(36)
+  name                String               @db.VarChar(120)
+  email               String               @unique
+  phone               String?              @db.VarChar(30)
+  address             String?              @db.VarChar(255)
+  language            String?              @db.VarChar(30)
+  gardeningExperience  String?              @db.VarChar(50)
+  gardenSpaceType     String?              @db.VarChar(50)
+  passwordHash        String               @db.VarChar(255)
+  isActive            Boolean              @default(true)
+  isEmailVerified     Boolean              @default(false)
+  lastLoginAt         DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  passwordResetTokens PasswordResetToken[]
+  refreshTokens       RefreshToken[]
+  userRoles           UserRole[]
+  products            Product[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.VarChar(36)
+  name        String           @unique @db.VarChar(80)
+  description String?          @db.VarChar(255)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.VarChar(36)
+  name        String           @unique @db.VarChar(120)
+  description String?          @db.VarChar(255)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roleLinks   RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  userId     String   @db.VarChar(36)
+  roleId     String   @db.VarChar(36)
+  assignedAt DateTime @default(now())
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id           String     @id @default(uuid()) @db.VarChar(36)
+  roleId       String     @db.VarChar(36)
+  permissionId String     @db.VarChar(36)
+  assignedAt   DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.VarChar(36)
+  userId       String    @db.VarChar(36)
+  tokenHash    String    @unique @db.VarChar(255)
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+  createdByIp  String?   @db.VarChar(64)
+  replacedById String?   @db.VarChar(36)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model ProductCategory {
+  id          String     @id @default(uuid()) @db.VarChar(36)
+  name        String     @db.VarChar(120)
+  slug        String     @unique @db.VarChar(150)
+  description String?    @db.Text
+  imageUrl    String?    @db.VarChar(500)
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+  products    Product[]
+
+  @@index([slug])
+  @@index([active])
+  @@index([deletedAt])
+  @@map("product_categories")
+}
+
+model Product {
+  id               String             @id @default(uuid()) @db.VarChar(36)
+  name             String             @db.VarChar(255)
+  slug             String             @unique @db.VarChar(255)
+  sku              String             @unique @db.VarChar(80)
+  description      String?            @db.Text
+  shortDescription String?            @db.VarChar(500)
+  price            Decimal            @db.Decimal(10, 2)
+  discountPrice    Decimal?           @db.Decimal(10, 2)
+  currency         String             @default("USD") @db.VarChar(3)
+  categoryId       String             @db.VarChar(36)
+  productType      String             @db.VarChar(50)
+  imageUrl         String?            @db.VarChar(500)
+  active           Boolean            @default(true)
+  featured         Boolean            @default(false)
+  stockStatus      String             @default("in_stock") @db.VarChar(30)
+  careLevel        String?            @db.VarChar(50)
+  lightRequirement String?            @db.VarChar(100)
+  waterRequirement String?            @db.VarChar(100)
+  soilType         String?            @db.VarChar(100)
+  temperatureRange String?            @db.VarChar(100)
+  growthSize       String?            @db.VarChar(100)
+  color            String?            @db.VarChar(100)
+  occasion         String?            @db.VarChar(100)
+  tags             String?            @db.Text
+  createdById      String             @db.VarChar(36)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+  category         ProductCategory    @relation(fields: [categoryId], references: [id])
+  createdBy        User               @relation(fields: [createdById], references: [id])
+  images           ProductImage[]
+  attributes       ProductAttribute[]
+
+  @@index([slug])
+  @@index([sku])
+  @@index([categoryId])
+  @@index([productType])
+  @@index([active])
+  @@index([featured])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  productId String   @db.VarChar(36)
+  url       String   @db.VarChar(500)
+  alt       String?  @db.VarChar(255)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+model ProductAttribute {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  productId String   @db.VarChar(36)
+  name      String   @db.VarChar(100)
+  value     String   @db.VarChar(255)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_attributes")
+}
+
+model PasswordResetToken {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  userId      String    @db.VarChar(36)
+  tokenHash   String    @unique @db.VarChar(255)
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  createdByIp String?   @db.VarChar(64)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}

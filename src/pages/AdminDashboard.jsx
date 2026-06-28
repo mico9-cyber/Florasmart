@@ -1,0 +1,181 @@
+﻿import React, { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AppContext } from '../context/AppData';
+
+import DashboardCard from '../components/DashboardCard';
+import ChartCard from '../components/ChartCard';
+import { ShieldAlert, Users, DollarSign, Activity, FileDown } from 'lucide-react';
+import Button from '../components/Button';
+import { downloadCsv, downloadReport } from '../utils/exportUtils';
+
+export default function AdminDashboard() {
+  const { auditLogs, orders, registeredUsers } = useContext(AppContext);
+  const navigate = useNavigate();
+
+  const totalRevenue = orders.reduce((acc, order) => acc + order.total, 0) + 1200.50;
+  const pendingCount = orders.filter((order) => order.status !== 'Delivered').length;
+  const roleCounts = registeredUsers.reduce((acc, account) => {
+    acc[account.role] = (acc[account.role] || 0) + 1;
+    return acc;
+  }, {});
+
+  const handleExportPDF = () => {
+    downloadReport('florasmart-admin-report.txt', 'FloraSmart Admin System Report', [
+      { heading: 'System Summary', lines: ['Gross Sales: $' + totalRevenue.toFixed(2), 'Open Orders: ' + pendingCount, 'System API Health: 99.98%'] },
+      { heading: 'Recent Audit Events', lines: auditLogs.slice(0, 10).map((log) => log.timestamp + ' | ' + log.user + ' | ' + log.action + ' | ' + log.status) },
+    ]);
+  };
+
+  const handleExportExcel = () => {
+    downloadCsv('florasmart-admin-audit.csv', [
+      ['Timestamp', 'User', 'Action', 'IP Address', 'Status'],
+      ...auditLogs.map((log) => [log.timestamp, log.user, log.action, log.ipAddress, log.status]),
+    ]);
+  };
+
+  return (
+    <div className="dashboard-content">
+        <div style={styles.headerRow}>
+          <div>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Admin Console</h2>
+            <p style={{ color: 'var(--text-muted)' }}>Manage global operations, security credentials, sales volumes, and system-wide assets.</p>
+          </div>
+          <div style={styles.actionButtons}>
+            <Button variant="secondary" onClick={handleExportPDF} icon={<FileDown size={16} />}>
+              Export System PDF
+            </Button>
+            <Button variant="secondary" onClick={handleExportExcel} icon={<FileDown size={16} />}>
+              Export Sheets
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid-cols-4" style={{ margin: '32px 0' }}>
+          <DashboardCard title="Global Gross Sales" value={`$${totalRevenue.toFixed(2)}`} icon={<DollarSign size={20} color="var(--accent-lime)" />} description="Combined store earnings" trend="+18.4%" trendType="positive" />
+          <DashboardCard title="Registered Users" value={`${registeredUsers.length} Users`} icon={<Users size={20} color="var(--accent-lime)" />} description="Demo and registered local accounts" trend="Local storage" trendType="neutral" />
+          <DashboardCard title="Open Orders" value={pendingCount} icon={<ShieldAlert size={20} color="var(--warning)" />} description="Awaiting logistics release" trend="Needs dispatch" trendType="warning" />
+          <DashboardCard title="System API Health" value="99.98%" icon={<Activity size={20} color="var(--accent-lime)" />} description="Prototype monitor placeholder" trend="Nominal" trendType="positive" />
+        </div>
+
+        <div style={styles.sectionsGrid}>
+          <div className="card" style={{ flex: 1.5, minWidth: '350px' }}>
+            <div style={styles.sectionHeader}>
+              <h3 style={styles.sectionTitle}>Global System Audit Log</h3>
+              <Button variant="secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => navigate('/security')}>
+                View Full Audits
+              </Button>
+            </div>
+            <div className="table-container" style={{ marginTop: '16px' }}>
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>IP Address</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.slice(0, 4).map((log) => (
+                    <tr key={log.id}>
+                      <td>{log.timestamp}</td>
+                      <td>{log.user}</td>
+                      <td>{log.action}</td>
+                      <td>{log.ipAddress}</td>
+                      <td>
+                        <span className={`badge ${log.status === 'Success' ? 'badge-success' : 'badge-error'}`}>
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="card" style={{ flex: 1, minWidth: '300px' }}>
+            <h3 style={styles.sectionTitle}>User Role Breakdown</h3>
+            <div style={styles.roleBreakdown}>
+              {['customer', 'florist', 'gardener', 'admin'].map((role) => {
+                const count = roleCounts[role] || 0;
+                const width = registeredUsers.length ? Math.max(4, Math.round((count / registeredUsers.length) * 100)) : 4;
+                return (
+                  <React.Fragment key={role}>
+                    <div style={styles.roleRow}>
+                      <span>{role.charAt(0).toUpperCase() + role.slice(1)} Accounts</span>
+                      <span style={styles.roleValue}>{count} Accounts</span>
+                    </div>
+                    <div style={styles.progressBarBg}>
+                      <div style={{ ...styles.progressBarFill, width: `${width}%`, backgroundColor: role === 'admin' ? '#F87171' : role === 'florist' ? '#60A5FA' : role === 'gardener' ? 'var(--btn-yellow)' : 'var(--accent-lime)' }}></div>
+                    </div>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '32px' }}>
+          <ChartCard title="Global Sales Volumes & Traffic Hits (Weekly Aggregates)" type="line" data={[1200, 1500, 1800, 1400, 2200, 2600, 2400]} labels={['Wk 21', 'Wk 22', 'Wk 23', 'Wk 24', 'Wk 25', 'Wk 26', 'Wk 27']} valueCallout="$2400.00 Peak" />
+        </div>
+      </div>
+  );
+}
+
+const styles = {
+  headerRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '20px',
+  },
+  actionButtons: {
+    display: 'flex',
+    gap: '12px',
+  },
+  sectionsGrid: {
+    display: 'flex',
+    gap: '24px',
+    flexWrap: 'wrap',
+    marginTop: '32px',
+  },
+  sectionHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: 'var(--text-white)',
+  },
+  roleBreakdown: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px',
+    marginTop: '16px',
+  },
+  roleRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    fontSize: '13px',
+    color: 'var(--text-light)',
+  },
+  roleValue: {
+    fontWeight: '700',
+  },
+  progressBarBg: {
+    height: '6px',
+    backgroundColor: 'var(--bg-darker)',
+    borderRadius: '3px',
+    overflow: 'hidden',
+    marginBottom: '8px',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: '3px',
+  }
+};
