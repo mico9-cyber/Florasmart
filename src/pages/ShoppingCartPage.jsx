@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
 import { Trash2, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
 import Button from '../components/Button';
+import { formatCurrency } from '../utils/formatCurrency';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function ShoppingCartPage() {
   const { cart, updateCartQuantity, removeFromCart } = useContext(AppContext);
@@ -10,7 +12,7 @@ export default function ShoppingCartPage() {
 
   // Price Calculations
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = subtotal > 40 || subtotal === 0 ? 0 : 5.99;
+  const shipping = subtotal > 40000 || subtotal === 0 ? 0 : 5000;
   const tax = subtotal * 0.08;
   const grandTotal = subtotal + shipping + tax;
 
@@ -25,11 +27,11 @@ export default function ShoppingCartPage() {
           <div style={styles.itemsCol}>
             {cart.map((item) => (
               <div key={item.id} className="card" style={styles.itemCard}>
-                <span style={styles.itemEmoji}>{item.image}</span>
+                <ImageWithFallback src={item.image} alt={item.name} category={item.category} style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-sm)' }} />
                 <div style={styles.itemMeta}>
                   <span style={styles.itemCategory}>{item.category.toUpperCase()}</span>
                   <h4 style={styles.itemName}>{item.name}</h4>
-                  <span style={styles.itemPrice}>${item.price.toFixed(2)} each</span>
+                  <span style={styles.itemPrice}>{formatCurrency(item.price)} each</span>
                 </div>
 
                 {/* Qty Adjustment */}
@@ -42,7 +44,7 @@ export default function ShoppingCartPage() {
                 {/* Total Price */}
                 <div style={styles.totalBlock}>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Total</span>
-                  <span style={styles.totalPrice}>${(item.price * item.quantity).toFixed(2)}</span>
+                  <span style={styles.totalPrice}>{formatCurrency(item.price * item.quantity)}</span>
                 </div>
 
                 {/* Remove Btn */}
@@ -65,27 +67,27 @@ export default function ShoppingCartPage() {
 
             <div style={styles.summaryRow}>
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div style={styles.summaryRow}>
               <span>Green Delivery</span>
-              <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+              <span>{shipping === 0 ? 'FREE' : formatCurrency(shipping)}</span>
             </div>
             <div style={styles.summaryRow}>
               <span>Estimated Tax (8%)</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>{formatCurrency(tax)}</span>
             </div>
 
             <div style={styles.divider}></div>
 
             <div style={{ ...styles.summaryRow, fontSize: '18px', fontWeight: '800', color: 'var(--text-white)' }}>
               <span>Grand Total</span>
-              <span style={{ color: 'var(--accent-lime)' }}>${grandTotal.toFixed(2)}</span>
+              <span style={{ color: 'var(--accent-lime)' }}>{formatCurrency(grandTotal)}</span>
             </div>
 
             {shipping > 0 && (
               <p style={styles.freeShippingAlert}>
-                Add <strong>${(40 - subtotal).toFixed(2)}</strong> more to unlock FREE green delivery!
+                Add <strong>{formatCurrency(40000 - subtotal)}</strong> more to unlock FREE green delivery!
               </p>
             )}
 
@@ -153,9 +155,6 @@ const styles = {
     gap: '20px',
     padding: '16px 24px',
     flexWrap: 'wrap',
-  },
-  itemEmoji: {
-    fontSize: '44px',
   },
   itemMeta: {
     flex: 1,

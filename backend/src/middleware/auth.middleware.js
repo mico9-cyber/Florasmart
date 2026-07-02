@@ -47,7 +47,7 @@ export async function authenticate(req, _res, next) {
     };
     req.user = user;
     return next();
-  } catch (_error) {
+  } catch {
     return next(new AppError('Invalid or expired token', 401, 'INVALID_TOKEN'));
   }
 }

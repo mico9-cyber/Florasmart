@@ -8,6 +8,7 @@ import Button from '../components/Button';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function FloristDashboard() {
   const { orders, products, updateOrderStatus, updateProductStock } = useContext(AppContext);
@@ -145,7 +146,7 @@ export default function FloristDashboard() {
             <div style={styles.inventoryList}>
               {floralInventory.map((item) => (
                 <div key={item.id} style={styles.inventoryItem}>
-                  <span style={{ fontSize: '24px' }}>{item.image}</span>
+                  <ImageWithFallback src={item.image} alt={item.name} category={item.category} style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-sm)' }} />
                   <div style={{ flex: 1 }}>
                     <h5 style={{ margin: 0, fontSize: '14px', color: 'var(--text-white)' }}>{item.name}</h5>
                     <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.style || 'Foliage'}</span>

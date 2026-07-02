@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import OtpVerificationPage from './pages/OtpVerificationPage';
 import CustomerDashboard from './pages/CustomerDashboard';
 import FloristDashboard from './pages/FloristDashboard';
 import GardenerDashboard from './pages/GardenerDashboard';
@@ -54,7 +55,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-const noSidebarRoutes = ['/', '/login', '/register'];
+const noSidebarRoutes = ['/', '/login', '/register', '/verify-otp'];
 
 function AppLayout() {
   const { user, theme } = useContext(AppContext);
@@ -80,6 +81,7 @@ function AppLayout() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/verify-otp" element={<OtpVerificationPage />} />
 
             <Route path="/customer-dashboard" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerDashboard /></ProtectedRoute>} />
             <Route path="/florist-dashboard" element={<ProtectedRoute allowedRoles={["florist"]}><FloristDashboard /></ProtectedRoute>} />

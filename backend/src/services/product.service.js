@@ -125,7 +125,7 @@ export class ProductService extends BaseService {
       shortDescription: data.shortDescription || null,
       price: data.price,
       discountPrice: data.discountPrice || null,
-      currency: data.currency || 'USD',
+      currency: data.currency || 'RWF',
       categoryId: data.categoryId,
       productType: data.productType,
       imageUrl: data.imageUrl || null,

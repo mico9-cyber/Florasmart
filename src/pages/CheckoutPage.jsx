@@ -4,6 +4,8 @@ import { AppContext } from '../context/AppData';
 import { ShieldCheck, Truck, CreditCard } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
+import { formatCurrency } from '../utils/formatCurrency';
+import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function CheckoutPage() {
   const { cart, products, createOrder } = useContext(AppContext);
@@ -29,7 +31,7 @@ export default function CheckoutPage() {
 
   // Pricing calculations
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = deliveryMethod === 'Express Eco-Courier' ? 9.99 : (subtotal > 40 ? 0 : 5.99);
+  const shipping = deliveryMethod === 'Express Eco-Courier' ? 10000 : (subtotal > 40000 ? 0 : 5000);
   const tax = subtotal * 0.08;
   const grandTotal = subtotal + shipping + tax;
 
@@ -211,12 +213,12 @@ export default function CheckoutPage() {
             <div style={styles.itemsSummary}>
               {cart.map((item) => (
                 <div key={item.id} style={styles.summaryItem}>
-                  <span style={styles.summaryItemEmoji}>{item.image}</span>
+                  <ImageWithFallback src={item.image} alt={item.name} category={item.category} style={{ width: '40px', height: '40px', borderRadius: '6px' }} />
                   <div style={{ flex: 1 }}>
                     <h5 style={styles.summaryItemName}>{item.name}</h5>
                     <span style={styles.summaryItemQty}>Qty: {item.quantity}</span>
                   </div>
-                  <span style={styles.summaryItemPrice}>${(item.price * item.quantity).toFixed(2)}</span>
+                  <span style={styles.summaryItemPrice}>{formatCurrency(item.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
@@ -225,26 +227,26 @@ export default function CheckoutPage() {
 
             <div style={styles.summaryRow}>
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             <div style={styles.summaryRow}>
               <span>Eco-Shipping</span>
-              <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+              <span>{shipping === 0 ? 'FREE' : formatCurrency(shipping)}</span>
             </div>
             <div style={styles.summaryRow}>
               <span>Tax (8%)</span>
-              <span>${tax.toFixed(2)}</span>
+              <span>{formatCurrency(tax)}</span>
             </div>
 
             <div style={styles.divider}></div>
 
             <div style={{ ...styles.summaryRow, fontSize: '18px', fontWeight: '800', color: 'var(--text-white)' }}>
               <span>Grand Total</span>
-              <span style={{ color: 'var(--accent-lime)' }}>${grandTotal.toFixed(2)}</span>
+              <span style={{ color: 'var(--accent-lime)' }}>{formatCurrency(grandTotal)}</span>
             </div>
 
             <Button type="submit" variant="primary" style={styles.placeOrderBtn} disabled={cart.length === 0 || Boolean(unavailableItem)}>
-              Place Secure Order (${grandTotal.toFixed(2)})
+              Place Secure Order ({formatCurrency(grandTotal)})
             </Button>
 
             <div style={styles.securitySeal}>
@@ -316,9 +318,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-  },
-  summaryItemEmoji: {
-    fontSize: '24px',
   },
   summaryItemName: {
     margin: 0,

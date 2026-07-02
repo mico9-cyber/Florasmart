@@ -2,6 +2,8 @@
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
 import { Star, ShoppingCart, Info, Sparkles } from 'lucide-react';
+import { formatCurrency } from '../utils/formatCurrency';
+import ImageWithFallback from './ImageWithFallback';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useContext(AppContext);
@@ -22,9 +24,9 @@ export default function ProductCard({ product }) {
         </div>
       )}
 
-      {/* Product Image placeholder */}
+      {/* Product Image */}
       <div style={styles.imageContainer}>
-        <span style={styles.emoji}>{product.image || '🌿'}</span>
+        <ImageWithFallback src={product.image || product.imageUrl} alt={product.name} category={product.category} fallbackSrc={product.imageUrl} style={{ width: '100%', height: '100%', borderRadius: 'var(--radius-md)' }} />
       </div>
 
       {/* Info */}
@@ -43,7 +45,7 @@ export default function ProductCard({ product }) {
 
         {/* Price and Stock */}
         <div style={styles.priceRow}>
-          <span style={styles.price}>${product.price.toFixed(2)}</span>
+          <span style={styles.price}>{formatCurrency(product.price)}</span>
           <span style={{
             ...styles.stock,
             color: product.stock > 5 ? 'var(--text-muted)' : product.stock > 0 ? 'var(--warning)' : 'var(--error)'
@@ -108,16 +110,10 @@ const styles = {
     backgroundColor: 'var(--bg-darker)',
     borderRadius: 'var(--radius-md)',
     height: '160px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     marginBottom: '16px',
     border: '1px solid var(--border-green)',
     position: 'relative',
-    fontSize: '64px',
-  },
-  emoji: {
-    lineHeight: 1,
   },
   info: {
     display: 'flex',

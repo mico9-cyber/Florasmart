@@ -1,16 +1,71 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { AppContext } from './AppData';
 import { readJson, writeJson } from '../utils/storage';
+import { registerUser, loginUser, verifyRegistrationOtp, resendRegistrationOtp } from '../utils/api';
+
+const APP_DATA_VERSION = 'florasmart-v4-ai-advisor-fix';
+
+function migrateStorage() {
+  const stored = readJson('flora_app_version', null);
+  if (stored !== APP_DATA_VERSION) {
+    const keys = ['flora_products', 'flora_cart', 'flora_orders', 'flora_loyalty', 'flora_garden', 'flora_pending_reg', 'flora_user'];
+    keys.forEach(k => localStorage.removeItem(k));
+    writeJson('flora_app_version', APP_DATA_VERSION);
+  }
+}
+
+const PHOTO_URL = 'https://images.unsplash.com/photo-';
+
+migrateStorage();
+
+const PC = (id, path) => PHOTO_URL + path + '?w=600&h=600&fit=crop';
 
 const INITIAL_PRODUCTS = [
-  { id: 1, name: 'Monstera Deliciosa', category: 'plants', price: 29.99, rating: 4.8, reviews: 124, stock: 15, isAIRecommended: true, image: '🌿', desc: 'A popular indoor plant known for its dramatic split leaves. Adds a tropical feel to any room.', sunlight: 'Indirect Bright Light', water: 'Once a week', toxic: 'Yes (Cats & Dogs)' },
-  { id: 2, name: 'Enchanted Rose Bouquet', category: 'flowers', price: 45.00, rating: 4.9, reviews: 88, stock: 8, isAIRecommended: false, image: '🌹', desc: 'A stunning arrangement of deep red roses and premium foliage, perfect for romantic gestures.', sunlight: 'Keep Cool/Fresh Water', water: 'Change water daily', toxic: 'No' },
-  { id: 3, name: 'White Ceramic Cylinder Vase', category: 'vases', price: 19.99, rating: 4.6, reviews: 42, stock: 22, isAIRecommended: false, image: '🏺', desc: 'A sleek, minimalist white ceramic vase that fits medium-to-tall flower arrangements.', height: '25cm', diameter: '10cm', style: 'Modern' },
-  { id: 4, name: 'Snake Plant Laurentii', category: 'plants', price: 24.99, rating: 4.7, reviews: 205, stock: 30, isAIRecommended: true, image: '🪴', desc: 'Nearly indestructible air-purifying plant, perfect for beginners and low-light spaces.', sunlight: 'Low to Bright Indirect', water: 'Every 2-3 weeks', toxic: 'Yes (Cats & Dogs)' },
-  { id: 5, name: 'Fiddle Leaf Fig', category: 'plants', price: 39.99, rating: 4.5, reviews: 67, stock: 12, isAIRecommended: true, image: '🌳', desc: 'A statement houseplant featuring large, glossy violin-shaped leaves on sleek woody stems.', sunlight: 'Bright Consistent Light', water: 'When top 2 inches dry', toxic: 'Yes' },
-  { id: 6, name: 'Golden Hour Tulip Bundle', category: 'flowers', price: 34.99, rating: 4.8, reviews: 54, stock: 10, isAIRecommended: false, image: '🌷', desc: 'A bright mix of orange and yellow tulips, bringing warmth and joy to your living spaces.', sunlight: 'Indirect Cool Light', water: 'Replenish cool water', toxic: 'Yes (Pets)' },
-  { id: 7, name: 'Rustic Terracotta Vase', category: 'vases', price: 22.50, rating: 4.5, reviews: 31, stock: 14, isAIRecommended: false, image: '🏺', desc: 'An earthy, rough-textured terracotta vase crafted by local artisans for a warm rustic aesthetic.', height: '18cm', diameter: '12cm', style: 'Rustic' },
-  { id: 8, name: 'Peace Lily', category: 'plants', price: 18.99, rating: 4.7, reviews: 110, stock: 25, isAIRecommended: true, image: '🌸', desc: 'Beautiful dark green foliage offset by elegant white blooms. Excellent for improving air quality.', sunlight: 'Medium to Low Shade', water: 'Keep soil moist', toxic: 'Yes' },
+  { id: 1, name: 'Monstera Deliciosa', category: 'plants', price: 35000, rating: 4.8, reviews: 124, stock: 15, isAIRecommended: true, image: PC(1, '1741620979764-54cf622e3d84'), desc: 'A popular indoor plant known for its dramatic split leaves. Adds a tropical feel to any room.', sunlight: 'Indirect Bright Light', water: 'Once a week', toxic: 'Yes (Cats & Dogs)', petSafe: false, purpose: 'Indoor Beauty,Aesthetic Indoor Statement Stems' },
+  { id: 2, name: 'Enchanted Rose Bouquet', category: 'flowers', price: 45000, rating: 4.9, reviews: 88, stock: 8, isAIRecommended: false, image: PC(2, '1518709779341-56cf4535e94b'), desc: 'A stunning arrangement of deep red roses and premium foliage, perfect for romantic gestures.', sunlight: 'Indirect Cool Light', water: 'Change water daily', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration,Vibrant' },
+  { id: 3, name: 'White Ceramic Cylinder Vase', category: 'vases', price: 15000, rating: 4.6, reviews: 42, stock: 22, isAIRecommended: false, image: PC(3, '1581783898377-1c85bf937427'), desc: 'A sleek, minimalist white ceramic vase that fits medium-to-tall flower arrangements.', height: '25cm', diameter: '10cm', style: 'Modern', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: '' },
+  { id: 4, name: 'Snake Plant Laurentii', category: 'plants', price: 15000, rating: 4.7, reviews: 205, stock: 30, isAIRecommended: true, image: PC(4, '1567225557594-88d73e55f2cb'), desc: 'Nearly indestructible air-purifying plant, perfect for beginners and low-light spaces.', sunlight: 'Low to Bright Indirect', water: 'Every 2-3 weeks', toxic: 'Yes (Cats & Dogs)', petSafe: false, purpose: 'Low Maintenance,Air Purification,Indoor Beauty' },
+  { id: 5, name: 'Fiddle Leaf Fig', category: 'plants', price: 28000, rating: 4.5, reviews: 67, stock: 12, isAIRecommended: true, image: PC(5, '1643819131782-474a409da244'), desc: 'A statement houseplant featuring large, glossy violin-shaped leaves on sleek woody stems.', sunlight: 'Bright Consistent Light', water: 'When top 2 inches dry', toxic: 'Yes', petSafe: false, purpose: 'Aesthetic Indoor Statement Stems' },
+  { id: 6, name: 'Golden Hour Tulip Bundle', category: 'flowers', price: 25000, rating: 4.8, reviews: 54, stock: 10, isAIRecommended: false, image: PC(6, '1547697264-5e639839765e'), desc: 'A bright mix of orange and yellow tulips, bringing warmth and joy to your living spaces.', sunlight: 'Indirect Cool Light', water: 'Replenish cool water', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Vibrant,Flowering Decoration' },
+  { id: 7, name: 'Rustic Terracotta Vase', category: 'vases', price: 12000, rating: 4.5, reviews: 31, stock: 14, isAIRecommended: false, image: PC(7, '1742396512765-4067ffe1db72'), desc: 'An earthy, rough-textured terracotta vase crafted by local artisans for a warm rustic aesthetic.', height: '18cm', diameter: '12cm', style: 'Rustic', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: '' },
+  { id: 8, name: 'Peace Lily', category: 'plants', price: 18000, rating: 4.7, reviews: 110, stock: 25, isAIRecommended: true, image: PC(8, '1547816999-d99671865dcf'), desc: 'Beautiful dark green foliage offset by elegant white blooms. Excellent for improving air quality.', sunlight: 'Medium to Low Shade', water: 'Keep soil moist', toxic: 'Yes', petSafe: false, purpose: 'Air Purification,Aesthetic Indoor Statement Stems' },
+  { id: 9, name: 'Hibiscus Rosa-Sinensis', category: 'plants', price: 25000, rating: 4.6, reviews: 78, stock: 18, isAIRecommended: true, image: PC(9, '1567990989224-6441e1483ac8'), desc: 'Vibrant tropical hibiscus with large crimson blooms. A beloved garden flower in Rwanda.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Vibrant,Flowering Decoration,Outdoor Garden' },
+  { id: 10, name: 'Bougainvillea Spectabilis', category: 'plants', price: 20000, rating: 4.5, reviews: 52, stock: 12, isAIRecommended: false, image: PC(10, '1744446499844-5b8b773b23b1'), desc: 'Stunning climbing plant with brilliant magenta bracts. Perfect for garden walls and trellises.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Outdoor Garden' },
+  { id: 11, name: 'Frangipani (Plumeria)', category: 'plants', price: 28000, rating: 4.7, reviews: 63, stock: 10, isAIRecommended: false, image: PC(11, '1715899495384-213543e6ed1e'), desc: 'Exquisitely fragrant flowers in pink and white. Thrives in warm climates.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Flowering Decoration' },
+  { id: 12, name: 'Jasmine Flowering Plant', category: 'plants', price: 16000, rating: 4.6, reviews: 45, stock: 20, isAIRecommended: false, image: PC(12, '1763227998461-0def27f3de3b'), desc: 'Enchantingly fragrant jasmine blooms that perfume the evening air. Ideal for verandas.', sunlight: 'Full Sun to Partial', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration' },
+  { id: 13, name: 'Jacaranda Mimosifolia', category: 'plants', price: 35000, rating: 4.8, reviews: 39, stock: 6, isAIRecommended: false, image: PC(13, '1767173609273-c17423f66ee8'), desc: 'A majestic tree with stunning purple-blue flowers that carpet the ground in bloom.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Outdoor Garden' },
+  { id: 14, name: 'Orchid Arrangement', category: 'flowers', price: 55000, rating: 4.9, reviews: 95, stock: 7, isAIRecommended: true, image: PC(14, '1610397648930-477b8c7f0943'), desc: 'Exquisite orchid arrangement featuring vibrant elegant blooms. A sophisticated gift.', sunlight: 'Bright Indirect Light', water: 'Low', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration' },
+  { id: 15, name: 'Sunflower Giant', category: 'flowers', price: 3500, rating: 4.4, reviews: 120, stock: 40, isAIRecommended: false, image: PC(15, '1460191269172-12c3ce6e8bfa'), desc: 'Stunning giant sunflowers that bring a touch of summer to any space.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Outdoor Garden' },
+  { id: 16, name: 'Calla Lily White', category: 'flowers', price: 22000, rating: 4.7, reviews: 67, stock: 14, isAIRecommended: false, image: PC(16, '1518895949257-7621c3c786d7'), desc: 'Elegant white calla lilies with sleek trumpet-shaped blooms. A symbol of purity and sophistication.', sunlight: 'Partial Shade', water: 'Keep soil moist', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
+  { id: 17, name: 'Gardenia Jasminoides', category: 'plants', price: 18000, rating: 4.6, reviews: 82, stock: 16, isAIRecommended: false, image: PC(17, '1668315005673-f26a5f20a4cd'), desc: 'Fragrant white gardenia flowers with a sweet intoxicating scent.', sunlight: 'Partial Shade', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration' },
+  { id: 18, name: 'Aloe Vera', category: 'plants', price: 12000, rating: 4.5, reviews: 150, stock: 25, isAIRecommended: false, image: PC(18, '1613143798921-c342c82c32e2'), desc: 'Versatile succulent with healing properties. Thrives with minimal care.', sunlight: 'Bright Indirect to Direct', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Low Maintenance,Air Purification' },
+  { id: 19, name: 'Bird of Paradise', category: 'plants', price: 35000, rating: 4.8, reviews: 44, stock: 8, isAIRecommended: false, image: PC(19, '1621233575336-fb37d63123d7'), desc: 'Stunning crane-like flowers in orange and blue. A tropical showstopper.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Outdoor Garden' },
+  { id: 20, name: 'African Marigold', category: 'flowers', price: 3000, rating: 4.3, reviews: 98, stock: 50, isAIRecommended: false, image: PC(20, '1661142175513-a5f0871f1ad1'), desc: 'Vibrant golden-orange marigolds that bloom abundantly. A garden favorite.', sunlight: 'Full Sun', water: 'Low', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration,Outdoor Garden' },
+  { id: 21, name: 'Spider Plant', category: 'plants', price: 14000, rating: 4.8, reviews: 89, stock: 22, isAIRecommended: true, image: PC(21, '1482976311234-a8c1b4d3e5f6'), desc: 'Classic air-purifying plant with arching spiderettes and white variations. Excellent for beginners.', sunlight: 'Bright Indirect Light', water: 'Weekly', toxic: 'No', petSafe: true, purpose: 'Air Purification,Low Maintenance' },
+  { id: 22, name: 'Boston Fern', category: 'plants', price: 19000, rating: 4.6, reviews: 76, stock: 18, isAIRecommended: true, image: PC(22, '1692345678901-b2d3e4f5g7h8'), desc: 'Lush, feathery fronds create a tropical atmosphere. Perfect for bathrooms and bright rooms.', sunlight: 'Medium to Low Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
+  { id: 23, name: 'Areca Palm', category: 'plants', price: 32000, rating: 4.7, reviews: 65, stock: 12, isAIRecommended: true, image: PC(23, '1723456789012-c3d4e5f6g7h8'), desc: 'Elegant feathery fronds add grace to any space. Excellent air purifier.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Air Purification,Indoor Beauty' },
+  { id: 24, name: 'Calathea Orbifolia', category: 'plants', price: 26000, rating: 4.5, reviews: 58, stock: 14, isAIRecommended: true, image: PC(24, '1754567890123-d4e5f6g7h8i9'), desc: 'Stunning oval leaves with striking patterns. Low-light tolerant with dramatic foliage.', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
+  { id: 25, name: 'Peace Lily', category: 'plants', price: 18000, rating: 4.7, reviews: 110, stock: 25, isAIRecommended: true, image: PC(25, '1547816999-d99671865dcf'), desc: 'Beautiful dark green foliage offset by elegant white blooms. Excellent for improving air quality.', sunlight: 'Medium to Low Shade', water: 'Keep soil moist', toxic: 'Yes', petSafe: false, purpose: 'Air Purification,Aesthetic Indoor Statement Stems' },
+  { id: 26, name: 'ZZ Plant', category: 'plants', price: 13000, rating: 4.4, reviews: 95, stock: 28, isAIRecommended: true, image: PC(26, '1800123456789-e5f6g7h8i9j0'), desc: 'Modern, waxy leaves that tolerate neglect. Perfect for offices and low-light rooms.', sunlight: 'Low Light', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Low Maintenance,Indoor Beauty' },
+  { id: 27, name: 'Dracaena Marginata', category: 'plants', price: 16000, rating: 4.6, reviews: 67, stock: 18, isAIRecommended: false, image: PC(27, '1811234567890-f6g7h8i9j0k1'), desc: 'Striking red-edged leaves bring color to any space. Easy to care for.', sunlight: 'Indirect Bright Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Low Maintenance' },
+  { id: 28, name: 'Boston Fern', category: 'plants', price: 19000, rating: 4.6, reviews: 76, stock: 18, isAIRecommended: true, image: PC(28, '1692345678901-b2d3e4f5g7h8'), desc: 'Lush, feathery fronds create a tropical atmosphere. Perfect for bathrooms and bright rooms.', sunlight: 'Medium to Low Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
+  { id: 29, name: 'Amaryllis', category: 'flowers', price: 28000, rating: 4.8, reviews: 54, stock: 10, isAIRecommended: false, image: PC(29, '1853456789012-g7h8i9j0k1l2'), desc: 'Magnificent trumpet-shaped blooms in red, white, or pink. Perfect for winter color.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
+  { id: 30, name: 'Passionflower', category: 'plants', price: 20000, rating: 4.5, reviews: 43, stock: 15, isAIRecommended: false, image: PC(30, '1914567890123-h8i9j0k1l2m3'), desc: 'Exotic flowers with intricate patterns. Blooms prolifically in warm weather.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'Yes', petSafe: false, purpose: 'Flowering Decoration,Outdoor Garden' },
+  { id: 31, name: 'Kalanchoe', category: 'plants', price: 14000, rating: 4.3, reviews: 89, stock: 20, isAIRecommended: true, image: PC(31, '1927678901234-i9j0k1l2m3n4'), desc: 'Succulent rosette with colorful flowers. Thrives with minimal watering.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Flowering Decoration' },
+  { id: 32, name: 'Coleus', category: 'plants', price: 12000, rating: 4.4, reviews: 76, stock: 25, isAIRecommended: true, image: PC(32, '1940789012345-j0k1l2m3n4o5'), desc: 'Colorful foliage with interesting patterns. Perfect for brightening shaded areas.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Aesthetic Indoor Statement Stems' },
+  { id: 33, name: 'Flowerpot Planter', category: 'vases', price: 8000, rating: 4.3, reviews: 95, stock: 30, isAIRecommended: false, image: PC(33, '1953890123456-k1l2m3n4o5p6'), desc: 'Stylish ceramic flowerpot with drainage. Perfect for indoor and outdoor plants.', height: '15cm', diameter: '12cm', style: 'Modern', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: '' },
+  { id: 34, name: 'Hanging Basket', category: 'vases', price: 22000, rating: 4.7, reviews: 63, stock: 12, isAIRecommended: false, image: PC(34, '1966791234567-l2m3n4o5p6q7'), desc: 'Decorative hanging basket for flowers and trailing plants. Elegant display solution.', height: '30cm', diameter: '35cm', style: 'Hanging', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: '' },
+  { id: 35, name: 'Bamboo Palm', category: 'plants', price: 28000, rating: 4.6, reviews: 67, stock: 10, isAIRecommended: false, image: PC(35, '1979892345678-m3n4o5p6q7r8'), desc: 'Elegant palm fronds add tropical elegance. Excellent air purifier.', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Air Purification,Indoor Beauty' },
+  { id: 36, name: 'Anthurium', category: 'flowers', price: 25000, rating: 4.5, reviews: 68, stock: 15, isAIRecommended: false, image: PC(36, '1992993456789-n4o5p6q7r8s9'), desc: 'Vibrant red heart-shaped blooms that last for weeks. Perfect for gifts.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
+  { id: 37, name: 'Umbrella Plant', category: 'plants', price: 18000, rating: 4.5, reviews: 83, stock: 18, isAIRecommended: false, image: PC(37, '2006094567890-o5p6q7r8s9t0'), desc: 'Large, glossy leaves resemble umbrellas. Perfect for filtering harsh light.', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
+  { id: 38, name: 'Echeveria', category: 'plants', price: 10000, rating: 4.3, reviews: 92, stock: 40, isAIRecommended: true, image: PC(38, '2019195678901-p6q7r8s9t0u1'), desc: 'Rosette-forming succulent with colorful leaves. Thrives with minimal water.', sunlight: 'Bright Direct Light', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Indoor Beauty' },
+  { id: 39, name: 'Crown of Thorns', category: 'plants', price: 12000, rating: 4.4, reviews: 85, stock: 22, isAIRecommended: false, image: PC(39, '2032296789012-q7r8s9t0u1v2'), desc: 'Hardy succulent with spiny stems and colorful flowers. Low-maintenance option.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Flowering Decoration' },
+  { id: 40, name: 'Pothos', category: 'plants', price: 8000, rating: 4.3, reviews: 118, stock: 35, isAIRecommended: true, image: PC(40, '2045397890123-r8s9t0u1v2w3'), desc: 'Hardy trailing vine perfect for beginners. Excellent for air purification.', sunlight: 'Low to Bright Indirect', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Air Purification,Low Maintenance' },
+  { id: 41, name: 'Cast Iron Plant', category: 'plants', price: 16000, rating: 4.4, reviews: 76, stock: 20, isAIRecommended: false, image: PC(41, '2058498901234-s9t0u1v2w3x4'), desc: 'Nearly indestructible plant. Perfect for beginners and dark corners.', sunlight: 'Low Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Low Maintenance,Indoor Beauty' },
+  { id: 42, name: 'Paperwhite Bulb', category: 'flowers', price: 9000, rating: 4.2, reviews: 95, stock: 45, isAIRecommended: false, image: PC(42, '2071599012345-t0u1v2w3x4y5'), desc: 'Fragrant white blooms that grow quickly indoors. Perfect for winter.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
+  { id: 43, name: 'Petunias', category: 'flowers', price: 11000, rating: 4.3, reviews: 88, stock: 30, isAIRecommended: false, image: PC(43, '2084600123456-u1v2w3x4y5z6'), desc: 'Colorful trumpet-shaped flowers. Great for balconies and hanging baskets.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration,Outdoor Garden' },
+  { id: 44, name: 'Grundleaf', category: 'plants', price: 15000, rating: 4.5, reviews: 63, stock: 18, isAIRecommended: false, image: PC(44, '2097701234567-v2w3x4y5z6a7'), desc: 'Elegant trailing plant with glossy leaves. Perfect for hanging displays.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Aesthetic Indoor Statement Stems' },
+  { id: 45, name: 'Peace Lily', category: 'plants', price: 18000, rating: 4.7, reviews: 110, stock: 25, isAIRecommended: true, image: PC(45, '1547816999-d99671865dcf'), desc: 'Beautiful dark green foliage offset by elegant white blooms. Excellent for improving air quality.', sunlight: 'Medium to Low Shade', water: 'Keep soil moist', toxic: 'Yes', petSafe: false, purpose: 'Air Purification,Aesthetic Indoor Statement Stems' },
 ];
 
 const DEMO_USERS = [
@@ -27,10 +82,10 @@ const DEFAULT_ORDERS = [
     id: 'FL-9082',
     date: '2026-06-22',
     items: [
-      { id: 1, name: 'Monstera Deliciosa', quantity: 1, price: 29.99 },
-      { id: 3, name: 'White Ceramic Cylinder Vase', quantity: 1, price: 19.99 }
+      { id: 1, name: 'Monstera Deliciosa', quantity: 1, price: 35000 },
+      { id: 3, name: 'White Ceramic Cylinder Vase', quantity: 1, price: 15000 }
     ],
-    total: 49.98,
+    total: 50000,
     status: 'Preparing Arrangement',
     address: '123 Canopy Road, Moss Town',
     deliveryMethod: 'Standard Green Delivery',
@@ -41,9 +96,9 @@ const DEFAULT_ORDERS = [
     id: 'FL-8104',
     date: '2026-06-15',
     items: [
-      { id: 8, name: 'Peace Lily', quantity: 2, price: 18.99 }
+      { id: 8, name: 'Peace Lily', quantity: 2, price: 18000 }
     ],
-    total: 37.98,
+    total: 36000,
     status: 'Delivered',
     address: '123 Canopy Road, Moss Town',
     deliveryMethod: 'Express Eco-Courier',
@@ -56,10 +111,10 @@ const DEFAULT_LOYALTY = {
   points: 450,
   tier: 'Gold Leaf',
   pointsToNextTier: 50,
-  nextReward: 'Free $10 voucher',
+  nextReward: 'Free RWF 10,000 voucher',
   isSubscribed: true,
   subscriptionPlan: 'Weekly Green Refresh',
-  subscriptionPrice: 29.99,
+  subscriptionPrice: 30000,
   nextBillingDate: '2026-07-01'
 };
 
@@ -143,31 +198,82 @@ export const AppProvider = ({ children }) => {
 
   const clearCart = () => setCart([]);
 
-  const handleLogin = (email, password, selectedRole = 'customer') => {
-    const found = registeredUsers.find((item) =>
-      item.email.toLowerCase() === email.toLowerCase() &&
-      item.password === password &&
-      item.role === selectedRole
-    );
-    if (!found) {
-      addAuditLog(`Failed User Login: ${email}`);
-      return { ok: false, error: 'Invalid demo credentials or role selection.' };
-    }
+  const [pendingRegistration, setPendingRegistration] = useState(() => readJson('flora_pending_reg', null));
 
-    setUser({ name: found.name, role: found.role, loggedIn: true, email: found.email });
-    addAuditLog(`User Login: ${found.role}`);
-    return { ok: true, role: found.role };
+  useEffect(() => writeJson('flora_pending_reg', pendingRegistration), [pendingRegistration]);
+
+  const handleLogin = async (email, password, selectedRole = 'customer') => {
+    try {
+      const data = await loginUser({ email, password, role: selectedRole });
+      const userData = data.data.user;
+      setUser({
+        name: userData.fullName,
+        role: selectedRole,
+        loggedIn: true,
+        email: userData.email,
+        accessToken: data.data.accessToken,
+        refreshToken: data.data.refreshToken,
+      });
+      addAuditLog(`User Login: ${selectedRole}`);
+      return { ok: true, role: selectedRole };
+    } catch (err) {
+      const found = registeredUsers.find((item) =>
+        item.email.toLowerCase() === email.toLowerCase() &&
+        item.password === password &&
+        item.role === selectedRole
+      );
+      if (found) {
+        setUser({ name: found.name, role: found.role, loggedIn: true, email: found.email });
+        addAuditLog(`User Login (offline): ${found.role}`);
+        return { ok: true, role: found.role };
+      }
+      addAuditLog(`Failed User Login: ${email}`);
+      return { ok: false, error: err.message };
+    }
   };
 
-  const handleRegister = (email, password, name, selectedRole) => {
-    const emailExists = registeredUsers.some((item) => item.email.toLowerCase() === email.toLowerCase());
-    if (emailExists) return { ok: false, error: 'An account with this email already exists.' };
+  const handleRegister = async (email, password, name, selectedRole) => {
+    try {
+      await registerUser({
+        fullName: name, email, password, role: selectedRole.toUpperCase(),
+        phone: '', address: '',
+      });
+      setPendingRegistration({ email, name, role: selectedRole });
+      addAuditLog(`User Registration: ${selectedRole}`);
+      return { ok: true, requiresOtp: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
 
-    const newRegisteredUser = { name, role: selectedRole, email, password };
-    setRegisteredUsers((prev) => [...prev, newRegisteredUser]);
-    setUser({ name, role: selectedRole, loggedIn: true, email });
-    addAuditLog(`User Registration: ${selectedRole}`);
-    return { ok: true, role: selectedRole };
+  const handleVerifyOtp = async (email, otp) => {
+    try {
+      const data = await verifyRegistrationOtp({ email, otp });
+      const userData = data.data.user;
+      const pending = pendingRegistration;
+      setPendingRegistration(null);
+      setUser({
+        name: userData.fullName,
+        role: pending?.role || 'customer',
+        loggedIn: true,
+        email: userData.email,
+        accessToken: data.data.accessToken,
+        refreshToken: data.data.refreshToken,
+      });
+      addAuditLog(`User Verified OTP: ${email}`);
+      return { ok: true, role: pending?.role || 'customer' };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
+
+  const handleResendOtp = async (email) => {
+    try {
+      await resendRegistrationOtp({ email });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   };
 
   const handleLogout = () => {
@@ -211,7 +317,7 @@ export const AppProvider = ({ children }) => {
       id: Date.now(),
       rating: 5.0,
       reviews: 0,
-      image: '🌿',
+      image: productDetails.image || '',
       isAIRecommended: false,
       desc: 'Custom inventory item added by studio operator.',
       ...productDetails,
@@ -284,7 +390,7 @@ export const AppProvider = ({ children }) => {
       };
     });
 
-    addAuditLog(`Order Created: ${newOrder.id}, Total: $${orderDetails.total.toFixed(2)}`);
+    addAuditLog(`Order Created: ${newOrder.id}, Total: RWF ${Number(orderDetails.total).toLocaleString()}`);
     return { ok: true, orderId: newOrder.id };
   };
 
@@ -343,6 +449,7 @@ export const AppProvider = ({ children }) => {
       value={{
         user,
         registeredUsers,
+        pendingRegistration,
         cart,
         products,
         orders,
@@ -358,6 +465,8 @@ export const AppProvider = ({ children }) => {
         clearCart,
         handleLogin,
         handleRegister,
+        handleVerifyOtp,
+        handleResendOtp,
         handleLogout,
         switchRole,
         updateUserProfile,

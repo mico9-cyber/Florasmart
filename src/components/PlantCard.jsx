@@ -1,5 +1,6 @@
 ﻿import React from 'react';
 import { Sun, Droplet, AlertTriangle, Check, Sprout } from 'lucide-react';
+import ImageWithFallback from './ImageWithFallback';
 
 export default function PlantCard({ plant, onSelect, isSelected }) {
   return (
@@ -13,7 +14,7 @@ export default function PlantCard({ plant, onSelect, isSelected }) {
     >
       <div style={styles.header}>
         <div style={styles.iconContainer}>
-          <span style={styles.emoji}>{plant.image || '🪴'}</span>
+          <ImageWithFallback src={plant.image} alt={plant.name} category={plant.category} style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-sm)' }} />
         </div>
         <div style={styles.titleArea}>
           <h4 style={styles.name}>{plant.name}</h4>

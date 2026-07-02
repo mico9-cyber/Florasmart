@@ -5,6 +5,7 @@ import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import { Trash2, Plus, FileText, Download, CheckCircle2, Edit3 } from 'lucide-react';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function InventoryPage() {
   const { products, updateProductStock, addProduct, updateProduct, deleteProduct } = useContext(AppContext);
@@ -14,7 +15,7 @@ export default function InventoryPage() {
   const [category, setCategory] = useState('plants');
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
-  const [imageEmoji, setImageEmoji] = useState('🌿');
+  const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
@@ -24,7 +25,7 @@ export default function InventoryPage() {
     setCategory('plants');
     setPrice('');
     setStock('');
-    setImageEmoji('🌿');
+    setImageUrl('');
   };
 
   const handleRestock = (id, newStock) => {
@@ -37,7 +38,7 @@ export default function InventoryPage() {
     setCategory(product.category);
     setPrice(String(product.price));
     setStock(String(product.stock));
-    setImageEmoji(product.image || '🌿');
+    setImageUrl(product.image || '');
     setError('');
   };
 
@@ -60,7 +61,7 @@ export default function InventoryPage() {
       category,
       price,
       stock,
-      image: imageEmoji,
+      image: imageUrl || '',
     };
 
     if (!editingId) {
@@ -81,14 +82,14 @@ export default function InventoryPage() {
 
   const handleExportPDF = () => {
     downloadReport('florasmart-inventory-report.txt', 'FloraSmart Inventory Report', [
-      { heading: 'Inventory Summary', lines: products.map((item) => `${item.name} | ${item.category} | $${item.price.toFixed(2)} | ${item.stock} units`) }
+      { heading: 'Inventory Summary', lines: products.map((item) => `${item.name} | ${item.category} | ${formatCurrency(item.price)} | ${item.stock} units`) }
     ]);
   };
 
   const handleExportExcel = () => {
     downloadCsv('florasmart-inventory.csv', [
       ['ID', 'Name', 'Category', 'Price', 'Stock', 'Rating'],
-      ...products.map((item) => [item.id, item.name, item.category, item.price.toFixed(2), item.stock, item.rating])
+      ...products.map((item) => [item.id, item.name, item.category, item.price, item.stock, item.rating])
     ]);
   };
 
@@ -128,7 +129,12 @@ export default function InventoryPage() {
                   {products.map((prod) => (
                     <tr key={prod.id}>
                       <td style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '20px' }}>{prod.image}</span>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0, fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-darker)' }}>
+                          {prod.image && prod.image.startsWith('http') ? (
+                            <img src={prod.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display='none'; e.target.parentElement.style.background='linear-gradient(135deg, #166534, #22C55E)' }} />
+                          ) : null}
+                          <span style={{ display: prod.image?.startsWith('http') ? 'none' : 'flex', fontSize: '16px', background: 'linear-gradient(135deg, #166534, #22C55E)', width: '100%', height: '100%', borderRadius: '4px' }}></span>
+                        </div>
                         <span>{prod.name}</span>
                       </td>
                       <td>
@@ -137,7 +143,7 @@ export default function InventoryPage() {
                           prod.category === 'flowers' ? 'badge-info' : 'badge-warning'
                         }`}>{prod.category}</span>
                       </td>
-                      <td>${prod.price.toFixed(2)}</td>
+                      <td>{formatCurrency(prod.price)}</td>
                       <td>
                         <span style={{
                           color: prod.stock > 10 ? 'var(--text-light)' : prod.stock > 0 ? 'var(--warning)' : 'var(--error)',
@@ -204,23 +210,16 @@ export default function InventoryPage() {
                 ]}
               />
               <FormInput
-                label="Listing Icon Emoji"
-                id="prod-emoji"
-                type="select"
-                value={imageEmoji}
-                onChange={(e) => setImageEmoji(e.target.value)}
-                options={[
-                  { value: '🌿', label: '🌿 Foliage Leaf' },
-                  { value: '🪴', label: '🪴 Potted Houseplant' },
-                  { value: '🌹', label: '🌹 Red Rose' },
-                  { value: '🌷', label: '🌷 Pink Tulip' },
-                  { value: '🏺', label: '🏺 Ceramic Vase' }
-                ]}
+                label="Image URL"
+                id="prod-image"
+                placeholder="https://images.unsplash.com/photo-..."
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
               />
 
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div style={{ flex: 1.2 }}>
-                  <FormInput label="Price ($ USD)" id="prod-price" placeholder="24.99" value={price} onChange={(e) => setPrice(e.target.value)} required />
+                  <FormInput label="Price (RWF)" id="prod-price" placeholder="24000" value={price} onChange={(e) => setPrice(e.target.value)} required />
                 </div>
                 <div style={{ flex: 1 }}>
                   <FormInput label="Initial Stock" id="prod-stock" placeholder="20" value={stock} onChange={(e) => setStock(e.target.value)} required />

@@ -38,12 +38,12 @@ export default function LoginPage() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     try {
-      const result = handleLogin(email, password, role);
+      const result = await handleLogin(email, password, role);
       if (result.ok) {
         navigate(location.state?.from || `/${result.role}-dashboard`);
       } else {

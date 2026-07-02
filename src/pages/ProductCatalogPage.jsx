@@ -1,4 +1,4 @@
-﻿import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext, useEffect } from 'react';
 import { AppContext } from '../context/AppData';
 import ProductCard from '../components/ProductCard';
 import { Search, SlidersHorizontal, Leaf, Flower2, Archive } from 'lucide-react';
@@ -10,6 +10,15 @@ export default function ProductCatalogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('rating'); // rating, price-asc, price-desc
+
+  // Initialize category from URL query params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const categoryParam = urlParams.get('category');
+    if (categoryParam === 'plants' || categoryParam === 'flowers' || categoryParam === 'vases') {
+      setSelectedCategory(categoryParam);
+    }
+  }, []);
 
   // Filter & Sort Logic
   const filteredProducts = products
@@ -193,16 +202,18 @@ const styles = {
     border: '1px solid var(--border-green)',
     borderRadius: 'var(--radius-sm)',
     padding: '0 12px',
+    minWidth: '180px',
   },
   selectInput: {
-    background: 'none',
-    border: 'none',
-    color: 'var(--text-light)',
+    backgroundColor: 'var(--bg-darker)',
+    border: '1px solid var(--border-green)',
+    borderRadius: 'var(--radius-sm)',
+    color: 'var(--text-white)',
     fontSize: '14px',
     fontWeight: '600',
+    padding: '8px 12px',
     outline: 'none',
     cursor: 'pointer',
-    padding: '10px 0',
   },
   tabsRow: {
     display: 'flex',

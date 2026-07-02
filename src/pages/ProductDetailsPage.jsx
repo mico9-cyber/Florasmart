@@ -4,6 +4,8 @@ import { AppContext } from '../context/AppData';
 import { Star, ShoppingCart, ArrowLeft, Sun, Droplets, ShieldAlert, MessageSquare } from 'lucide-react';
 import Button from '../components/Button';
 import FormInput from '../components/FormInput';
+import ImageWithFallback from '../components/ImageWithFallback';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function ProductDetailsPage() {
   const { id } = useParams();
@@ -75,7 +77,7 @@ export default function ProductDetailsPage() {
         {/* Image Display */}
         <div style={styles.imageCol}>
           <div style={styles.imageWrapper}>
-            <span style={styles.emoji}>{product.image}</span>
+            <ImageWithFallback src={product.image || product.imageUrl} alt={product.name} category={product.category} fallbackSrc={product.imageUrl} />
           </div>
         </div>
 
@@ -101,7 +103,7 @@ export default function ProductDetailsPage() {
           </div>
 
           <div style={styles.priceRow}>
-            <span style={styles.price}>${product.price.toFixed(2)}</span>
+            <span style={styles.price}>{formatCurrency(product.price)}</span>
             <span className={`badge ${product.stock > 0 ? 'badge-success' : 'badge-error'}`}>
               {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
             </span>
@@ -250,10 +252,12 @@ export default function ProductDetailsPage() {
                 navigate(`/catalog/${item.id}`);
                 setQty(1);
               }}>
-                <span style={styles.relatedEmoji}>{item.image}</span>
+                <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', flexShrink: 0 }}>
+                  <ImageWithFallback src={item.image || item.imageUrl} alt={item.name} category={item.category} style={{ width: '100%', height: '100%' }} />
+                </div>
                 <div style={{ flex: 1 }}>
                   <h4 style={styles.relatedName}>{item.name}</h4>
-                  <span style={styles.relatedPrice}>${item.price.toFixed(2)}</span>
+                  <span style={styles.relatedPrice}>{formatCurrency(item.price)}</span>
                 </div>
               </div>
             ))}
@@ -290,10 +294,7 @@ const styles = {
     border: '1px solid var(--border-green)',
     borderRadius: 'var(--radius-lg)',
     height: '400px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '160px',
+    overflow: 'hidden',
     boxShadow: 'var(--shadow-md)',
   },
   emoji: {

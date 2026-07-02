@@ -7,12 +7,13 @@ import ChartCard from '../components/ChartCard';
 import { ShieldAlert, Users, DollarSign, Activity, FileDown } from 'lucide-react';
 import Button from '../components/Button';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function AdminDashboard() {
   const { auditLogs, orders, registeredUsers } = useContext(AppContext);
   const navigate = useNavigate();
 
-  const totalRevenue = orders.reduce((acc, order) => acc + order.total, 0) + 1200.50;
+  const totalRevenue = orders.reduce((acc, order) => acc + order.total, 0) + 1500000;
   const pendingCount = orders.filter((order) => order.status !== 'Delivered').length;
   const roleCounts = registeredUsers.reduce((acc, account) => {
     acc[account.role] = (acc[account.role] || 0) + 1;
@@ -21,7 +22,7 @@ export default function AdminDashboard() {
 
   const handleExportPDF = () => {
     downloadReport('florasmart-admin-report.txt', 'FloraSmart Admin System Report', [
-      { heading: 'System Summary', lines: ['Gross Sales: $' + totalRevenue.toFixed(2), 'Open Orders: ' + pendingCount, 'System API Health: 99.98%'] },
+      { heading: 'System Summary', lines: ['Gross Sales: ' + formatCurrency(totalRevenue), 'Open Orders: ' + pendingCount, 'System API Health: 99.98%'] },
       { heading: 'Recent Audit Events', lines: auditLogs.slice(0, 10).map((log) => log.timestamp + ' | ' + log.user + ' | ' + log.action + ' | ' + log.status) },
     ]);
   };
@@ -51,7 +52,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid-cols-4" style={{ margin: '32px 0' }}>
-          <DashboardCard title="Global Gross Sales" value={`$${totalRevenue.toFixed(2)}`} icon={<DollarSign size={20} color="var(--accent-lime)" />} description="Combined store earnings" trend="+18.4%" trendType="positive" />
+          <DashboardCard title="Global Gross Sales" value={formatCurrency(totalRevenue)} icon={<DollarSign size={20} color="var(--accent-lime)" />} description="Combined store earnings" trend="+18.4%" trendType="positive" />
           <DashboardCard title="Registered Users" value={`${registeredUsers.length} Users`} icon={<Users size={20} color="var(--accent-lime)" />} description="Demo and registered local accounts" trend="Local storage" trendType="neutral" />
           <DashboardCard title="Open Orders" value={pendingCount} icon={<ShieldAlert size={20} color="var(--warning)" />} description="Awaiting logistics release" trend="Needs dispatch" trendType="warning" />
           <DashboardCard title="System API Health" value="99.98%" icon={<Activity size={20} color="var(--accent-lime)" />} description="Prototype monitor placeholder" trend="Nominal" trendType="positive" />
@@ -118,7 +119,7 @@ export default function AdminDashboard() {
         </div>
 
         <div style={{ marginTop: '32px' }}>
-          <ChartCard title="Global Sales Volumes & Traffic Hits (Weekly Aggregates)" type="line" data={[1200, 1500, 1800, 1400, 2200, 2600, 2400]} labels={['Wk 21', 'Wk 22', 'Wk 23', 'Wk 24', 'Wk 25', 'Wk 26', 'Wk 27']} valueCallout="$2400.00 Peak" />
+          <ChartCard title="Global Sales Volumes & Traffic Hits (Weekly Aggregates)" type="line" data={[1200, 1500, 1800, 1400, 2200, 2600, 2400]} labels={['Wk 21', 'Wk 22', 'Wk 23', 'Wk 24', 'Wk 25', 'Wk 26', 'Wk 27']} valueCallout="RWF 2,400,000 Peak" />
         </div>
       </div>
   );

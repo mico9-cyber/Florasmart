@@ -1,14 +1,16 @@
 import { successResponse } from '../utils/response.js';
 import { getPrismaClient } from '../database/prisma.js';
 import { AuthService } from '../services/auth.service.js';
+import { createMailer } from '../config/mailer.js';
 import { logger } from '../config/logger.js';
 
-const service = new AuthService({ prisma: getPrismaClient(), logger });
+const mailer = createMailer(logger);
+const service = new AuthService({ prisma: getPrismaClient(), logger, mailer });
 
 export async function register(req, res, next) {
   try {
     const result = await service.register({ ...req.body, ipAddress: req.ip });
-    return successResponse(res, { statusCode: 201, message: 'Registration successful', data: result });
+    return successResponse(res, { statusCode: 201, message: 'Registration successful. Please verify the OTP sent to your email.', data: result });
   } catch (error) { return next(error); }
 }
 
@@ -51,5 +53,19 @@ export async function resetPassword(req, res, next) {
   try {
     await service.resetPassword(req.body.token, req.body.password);
     return successResponse(res, { message: 'Password reset successful', data: { ok: true } });
+  } catch (error) { return next(error); }
+}
+
+export async function verifyRegistrationOtp(req, res, next) {
+  try {
+    const result = await service.verifyRegistrationOtp(req.body.email, req.body.otp, req.ip);
+    return successResponse(res, { message: 'Account verified successfully', data: result });
+  } catch (error) { return next(error); }
+}
+
+export async function resendRegistrationOtp(req, res, next) {
+  try {
+    await service.resendRegistrationOtp(req.body.email);
+    return successResponse(res, { message: 'If the account exists and is not verified, a new OTP has been sent', data: { ok: true } });
   } catch (error) { return next(error); }
 }

@@ -2,9 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { hashToken } from '../utils/crypto.js';
+import { generateOtp, hashOtp, verifyOtpHash, OTP_PURPOSE } from '../utils/otp.js';
 import { addDuration } from '../utils/date.js';
 import { AppError } from '../utils/appError.js';
 import { ROLES } from '../constants/auth.js';
+
+const OTP_ATTEMPTS_MAX = 5;
 
 const userInclude = {
   userRoles: {
@@ -29,6 +32,7 @@ function shapeUser(user) {
     roles,
     permissions,
     isActive: user.isActive,
+    isEmailVerified: user.isEmailVerified,
   };
 }
 
@@ -65,19 +69,104 @@ export class AuthService {
         phone: input.phone,
         address: input.address,
         passwordHash,
+        isEmailVerified: false,
         userRoles: { create: [{ roleId: role.id }] },
       },
       include: userInclude,
     });
 
-    const tokens = await this.issueTokens(user, input.ipAddress);
-    return { user: shapeUser(user), ...tokens };
+    await this.generateAndSendOtp(user.email, user.id, user.name);
+
+    return { email: user.email, requiresOtpVerification: true };
+  }
+
+  async generateAndSendOtp(email, userId, fullName) {
+    const otp = generateOtp();
+    const otpHash = hashOtp(otp);
+    const expiresAt = addDuration(10, 'minute');
+
+    await this.prisma.otpVerification.updateMany({
+      where: { email, purpose: OTP_PURPOSE.REGISTRATION, usedAt: null },
+      data: { expiresAt: new Date(0) },
+    });
+
+    await this.prisma.otpVerification.create({
+      data: {
+        userId,
+        email,
+        otpHash,
+        purpose: OTP_PURPOSE.REGISTRATION,
+        expiresAt,
+      },
+    });
+
+    if (this.mailer?.sendRegistrationOtp) {
+      await this.mailer.sendRegistrationOtp(email, fullName, otp);
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      this.logger.info(`Registration OTP for ${email}: ${otp}`);
+    }
+  }
+
+  async verifyRegistrationOtp(email, otp, ipAddress) {
+    const user = await this.prisma.user.findUnique({ where: { email }, include: userInclude });
+    if (!user) throw new AppError('Verification failed', 400, 'VERIFICATION_FAILED');
+    if (user.isEmailVerified) throw new AppError('Account already verified', 400, 'ALREADY_VERIFIED');
+
+    const otpRecord = await this.prisma.otpVerification.findFirst({
+      where: { email, purpose: OTP_PURPOSE.REGISTRATION, usedAt: null },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRecord) throw new AppError('No OTP found. Request a new one.', 400, 'OTP_NOT_FOUND');
+    if (otpRecord.expiresAt < new Date()) throw new AppError('OTP has expired. Request a new one.', 400, 'OTP_EXPIRED');
+    if (otpRecord.attempts >= OTP_ATTEMPTS_MAX) throw new AppError('Too many failed attempts. Request a new OTP.', 400, 'OTP_ATTEMPTS_EXCEEDED');
+
+    let isValid = false;
+    try {
+      isValid = verifyOtpHash(otp, otpRecord.otpHash);
+    } catch {
+      isValid = false;
+    }
+
+    if (!isValid) {
+      await this.prisma.otpVerification.update({
+        where: { id: otpRecord.id },
+        data: { attempts: otpRecord.attempts + 1 },
+      });
+      throw new AppError('Invalid OTP code', 400, 'INVALID_OTP');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { isEmailVerified: true, emailVerifiedAt: new Date() },
+      }),
+      this.prisma.otpVerification.update({
+        where: { id: otpRecord.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    const tokens = await this.issueTokens(user, ipAddress);
+    return { user: shapeUser({ ...user, isEmailVerified: true }), ...tokens };
+  }
+
+  async resendRegistrationOtp(email) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || user.isEmailVerified) return { ok: true };
+
+    await this.generateAndSendOtp(user.email, user.id, user.name);
+    return { ok: true };
   }
 
   async login({ email, password, ipAddress }) {
     const user = await this.prisma.user.findUnique({ where: { email }, include: userInclude });
     if (!user) throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
     if (!user.isActive) throw new AppError('Account inactive', 401, 'ACCOUNT_INACTIVE');
+    if (!user.isEmailVerified) {
+      throw new AppError('Please verify your account before logging in.', 401, 'ACCOUNT_NOT_VERIFIED');
+    }
     const ok = await comparePassword(password, user.passwordHash);
     if (!ok) throw new AppError('Invalid credentials', 401, 'INVALID_CREDENTIALS');
 

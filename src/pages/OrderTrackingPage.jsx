@@ -3,6 +3,7 @@ import { AppContext } from '../context/AppData';
 import { Search, MapPin, Truck, Calendar, Box, CheckCircle2 } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function OrderTrackingPage() {
   const { orders } = useContext(AppContext);
@@ -157,7 +158,7 @@ export default function OrderTrackingPage() {
               {activeOrder.items.map((item, index) => (
                 <div key={index} style={styles.itemRow}>
                   <span>{item.name} <strong style={{ color: 'var(--accent-lime)' }}>x{item.quantity}</strong></span>
-                  <span>${(item.price * item.quantity).toFixed(2)}</span>
+                  <span>{formatCurrency(item.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
@@ -166,7 +167,7 @@ export default function OrderTrackingPage() {
 
             <div style={styles.totalRow}>
               <span>Order Grand Total</span>
-              <span style={styles.totalPrice}>${activeOrder.total.toFixed(2)}</span>
+              <span style={styles.totalPrice}>{formatCurrency(activeOrder.total)}</span>
             </div>
           </div>
         </div>

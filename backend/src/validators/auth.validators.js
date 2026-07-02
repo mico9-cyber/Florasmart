@@ -1,4 +1,4 @@
-import { body, query } from 'express-validator';
+import { body } from 'express-validator';
 import { validateRequest } from '../middleware/validation.middleware.js';
 import { ROLES } from '../constants/auth.js';
 
@@ -34,6 +34,17 @@ export const resetPasswordValidation = [
   validateRequest,
 ];
 
+export const verifyRegistrationOtpValidation = [
+  body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+  body('otp').matches(/^\d{6}$/).withMessage('OTP must be exactly 6 digits'),
+  validateRequest,
+];
+
+export const resendRegistrationOtpValidation = [
+  body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+  validateRequest,
+];
+
 export const updateProfileValidation = [
   body('fullName').optional().isString().trim().notEmpty(),
   body('phone').optional({ nullable: true }).isString().trim(),
@@ -41,10 +52,5 @@ export const updateProfileValidation = [
   body('language').optional({ nullable: true }).isString().trim(),
   body('gardeningExperience').optional({ nullable: true }).isString().trim(),
   body('gardenSpaceType').optional({ nullable: true }).isString().trim(),
-  validateRequest,
-];
-
-export const authHeaderValidation = [
-  query('token').optional().isString(),
   validateRequest,
 ];

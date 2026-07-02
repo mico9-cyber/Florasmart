@@ -5,6 +5,7 @@ import ChartCard from '../components/ChartCard';
 import { DollarSign, BarChart3, TrendingUp, Sparkles, FileText, Download } from 'lucide-react';
 import Button from '../components/Button';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function AnalyticsPage() {
   const analyticsRows = [
@@ -15,7 +16,7 @@ export default function AnalyticsPage() {
 
   const handleExportPDF = () => {
     downloadReport('florasmart-analytics-report.txt', 'FloraSmart Analytics Report', [
-      { heading: 'KPI Summary', lines: ['Revenue: $1,248.50', 'Conversion Rate: 3.48%', 'Average Order Value: $48.20'] },
+      { heading: 'KPI Summary', lines: ['Revenue: RWF 1,500,000', 'Conversion Rate: 3.48%', 'Average Order Value: RWF 58,000'] },
       { heading: 'Conversion Performance', lines: analyticsRows.map((row) => row.join(' | ')) },
     ]);
   };
@@ -49,7 +50,7 @@ export default function AnalyticsPage() {
         <div className="grid-cols-4" style={{ margin: '32px 0' }}>
           <DashboardCard
             title="Total Net Revenue"
-            value="$1,248.50"
+            value={formatCurrency(1500000)}
             icon={<DollarSign size={20} color="var(--accent-lime)" />}
             description="All florist e-commerce nodes"
             trend="+12.4% MoM"
@@ -73,7 +74,7 @@ export default function AnalyticsPage() {
           />
           <DashboardCard
             title="Avg Order Value"
-            value="$48.20"
+            value={formatCurrency(58000)}
             icon={<Sparkles size={20} color="var(--accent-lime)" />}
             description="Mean e-commerce basket size"
             trend="Stable AOV"
@@ -85,11 +86,11 @@ export default function AnalyticsPage() {
         <div style={styles.chartsGrid}>
           <div style={{ flex: 1, minWidth: '350px' }}>
             <ChartCard
-              title="Weekly Gross Revenue Volume ($ USD)"
+              title="Weekly Gross Revenue Volume (RWF)"
               type="line"
               data={[450, 780, 620, 920, 1100, 1248, 980]}
               labels={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
-              valueCallout="$1,248 Peak Day"
+              valueCallout="RWF 1,500,000 Peak Day"
             />
           </div>
 

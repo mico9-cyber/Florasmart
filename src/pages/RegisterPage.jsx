@@ -48,14 +48,14 @@ export default function RegisterPage() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     try {
-      const result = handleRegister(email, password, name, role);
+      const result = await handleRegister(email, password, name, role);
       if (result.ok) {
-        navigate(`/${result.role}-dashboard`);
+        navigate('/verify-otp', { replace: true });
       } else {
         setSubmitError(result.error);
       }

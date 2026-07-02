@@ -1,5 +1,4 @@
 import { successResponse } from '../utils/response.js';
-import { getPrismaClient } from '../database/prisma.js';
 import { ProductRepository } from '../repositories/product.repository.js';
 import { CategoryRepository } from '../repositories/category.repository.js';
 import { ProductService } from '../services/product.service.js';

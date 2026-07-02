@@ -1,5 +1,4 @@
 import { successResponse } from '../utils/response.js';
-import { getPrismaClient } from '../database/prisma.js';
 import { CategoryRepository } from '../repositories/category.repository.js';
 import { CategoryService } from '../services/category.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';

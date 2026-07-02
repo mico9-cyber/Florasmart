@@ -17,15 +17,23 @@ model User {
   gardeningExperience  String?              @db.VarChar(50)
   gardenSpaceType     String?              @db.VarChar(50)
   passwordHash        String               @db.VarChar(255)
-  isActive            Boolean              @default(true)
-  isEmailVerified     Boolean              @default(false)
-  lastLoginAt         DateTime?
+  isActive              Boolean              @default(true)
+  isEmailVerified       Boolean              @default(false)
+  emailVerifiedAt       DateTime?
+  lastLoginAt           DateTime?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   passwordResetTokens PasswordResetToken[]
   refreshTokens       RefreshToken[]
   userRoles           UserRole[]
   products            Product[]
+  otpVerifications    OtpVerification[]
+  inventoryMovements  InventoryMovement[]
+  carts               Cart[]
+  orders              Order[]
+  orderStatusChanges  OrderStatusHistory[]
+  assignedDeliveries  Delivery[]
+  deliveryEvents      DeliveryEvent[]
 
   @@map("users")
 }
@@ -124,7 +132,7 @@ model Product {
   shortDescription String?            @db.VarChar(500)
   price            Decimal            @db.Decimal(10, 2)
   discountPrice    Decimal?           @db.Decimal(10, 2)
-  currency         String             @default("USD") @db.VarChar(3)
+  currency         String             @default("RWF") @db.VarChar(3)
   categoryId       String             @db.VarChar(36)
   productType      String             @db.VarChar(50)
   imageUrl         String?            @db.VarChar(500)
@@ -148,6 +156,10 @@ model Product {
   createdBy        User               @relation(fields: [createdById], references: [id])
   images           ProductImage[]
   attributes       ProductAttribute[]
+  stockLevels      StockLevel[]
+  movements        InventoryMovement[]
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
 
   @@index([slug])
   @@index([sku])
@@ -182,6 +194,240 @@ model ProductAttribute {
 
   @@index([productId])
   @@map("product_attributes")
+}
+
+model OtpVerification {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  userId    String    @db.VarChar(36)
+  email     String
+  otpHash   String    @db.VarChar(255)
+  purpose   String    @db.VarChar(30)
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@index([purpose])
+  @@index([expiresAt])
+  @@map("otp_verifications")
+}
+
+model InventoryLocation {
+  id          String              @id @default(uuid()) @db.VarChar(36)
+  name        String              @db.VarChar(120)
+  code        String              @unique @db.VarChar(50)
+  description String?             @db.Text
+  address     String?             @db.VarChar(255)
+  active      Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  deletedAt   DateTime?
+  stockLevels StockLevel[]
+  movements   InventoryMovement[]
+
+  @@index([code])
+  @@index([active])
+  @@index([deletedAt])
+  @@map("inventory_locations")
+}
+
+model StockLevel {
+  id               String             @id @default(uuid()) @db.VarChar(36)
+  productId        String             @db.VarChar(36)
+  locationId       String             @db.VarChar(36)
+  quantity         Int                @default(0)
+  reservedQuantity Int                @default(0)
+  lowStockThreshold Int               @default(10)
+  reorderPoint     Int                @default(5)
+  maxStockLevel    Int                @default(100)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  product          Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location         InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locationId])
+  @@index([productId])
+  @@index([locationId])
+  @@index([quantity])
+  @@map("stock_levels")
+}
+
+model InventoryMovement {
+  id              String             @id @default(uuid()) @db.VarChar(36)
+  productId       String             @db.VarChar(36)
+  locationId      String             @db.VarChar(36)
+  movementType    String             @db.VarChar(30)
+  quantity        Int
+  previousQuantity Int
+  newQuantity     Int
+  reason          String             @db.VarChar(255)
+  referenceType   String             @default("MANUAL") @db.VarChar(50)
+  referenceId     String?            @db.VarChar(36)
+  note            String?            @db.Text
+  performedById   String             @db.VarChar(36)
+  createdAt       DateTime           @default(now())
+  product         Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location        InventoryLocation  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  performedBy     User               @relation(fields: [performedById], references: [id])
+
+  @@index([productId])
+  @@index([locationId])
+  @@index([movementType])
+  @@index([performedById])
+  @@index([createdAt])
+  @@map("inventory_movements")
+}
+
+model Cart {
+  id        String     @id @default(uuid()) @db.VarChar(36)
+  userId    String     @db.VarChar(36)
+  status    String     @default("ACTIVE") @db.VarChar(20)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@unique([userId, status])
+  @@index([userId])
+  @@index([status])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  cartId    String   @db.VarChar(36)
+  productId String   @db.VarChar(36)
+  quantity  Int      @default(1)
+  unitPrice Decimal  @db.Decimal(10, 2)
+  currency  String   @default("RWF") @db.VarChar(3)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id              String           @id @default(uuid()) @db.VarChar(36)
+  orderNumber     String           @unique @db.VarChar(30)
+  userId          String           @db.VarChar(36)
+  status          String           @default("PENDING") @db.VarChar(30)
+  paymentStatus   String           @default("PENDING") @db.VarChar(20)
+  subtotal        Decimal          @db.Decimal(10, 2)
+  deliveryFee     Decimal          @default(0) @db.Decimal(10, 2)
+  discountAmount  Decimal          @default(0) @db.Decimal(10, 2)
+  totalAmount     Decimal          @db.Decimal(10, 2)
+  currency        String           @default("RWF") @db.VarChar(3)
+  shippingFullName  String         @db.VarChar(120)
+  shippingPhone     String         @db.VarChar(30)
+  shippingAddress   String         @db.VarChar(255)
+  shippingCity      String         @db.VarChar(100)
+  shippingDistrict  String         @db.VarChar(100)
+  shippingNotes     String?        @db.VarChar(500)
+  deliveryMethod    String         @db.VarChar(30)
+  paymentMethod     String         @db.VarChar(30)
+  cancelledAt       DateTime?
+  cancelReason      String?        @db.VarChar(500)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  statusHistory   OrderStatusHistory[]
+  delivery        Delivery?
+
+  @@index([orderNumber])
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model Delivery {
+  id                String           @id @default(uuid()) @db.VarChar(36)
+  orderId           String           @unique @db.VarChar(36)
+  assignedToId      String?          @db.VarChar(36)
+  status            String           @default("PENDING_ASSIGNMENT") @db.VarChar(30)
+  scheduledAt       DateTime?
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  deliveryAddress   String?          @db.VarChar(255)
+  deliveryPhone     String?          @db.VarChar(30)
+  deliveryNotes     String?          @db.VarChar(500)
+  currentLocation   String?          @db.VarChar(255)
+  proofOfDeliveryUrl String?         @db.VarChar(500)
+  recipientName     String?          @db.VarChar(120)
+  recipientSignature String?         @db.Text
+  failureReason     String?          @db.VarChar(500)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  order             Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  assignedTo        User?            @relation(fields: [assignedToId], references: [id])
+  events            DeliveryEvent[]
+
+  @@index([orderId])
+  @@index([assignedToId])
+  @@index([status])
+  @@map("deliveries")
+}
+
+model DeliveryEvent {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  deliveryId  String   @db.VarChar(36)
+  status      String   @db.VarChar(30)
+  note        String?  @db.VarChar(500)
+  location    String?  @db.VarChar(255)
+  createdById String   @db.VarChar(36)
+  createdAt   DateTime @default(now())
+  delivery    Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([deliveryId])
+  @@index([createdById])
+  @@map("delivery_events")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  orderId     String   @db.VarChar(36)
+  productId   String   @db.VarChar(36)
+  productName String   @db.VarChar(255)
+  productSku  String   @db.VarChar(80)
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(10, 2)
+  currency    String   @default("RWF") @db.VarChar(3)
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model OrderStatusHistory {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  orderId     String   @db.VarChar(36)
+  status      String   @db.VarChar(30)
+  note        String?  @db.VarChar(255)
+  changedById String   @db.VarChar(36)
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  changedBy   User     @relation(fields: [changedById], references: [id])
+
+  @@index([orderId])
+  @@index([changedById])
+  @@map("order_status_history")
 }
 
 model PasswordResetToken {

@@ -4,6 +4,7 @@ import { AppContext } from '../context/AppData';
 import DashboardCard from '../components/DashboardCard';
 import Button from '../components/Button';
 import { Award, Zap, Calendar, CheckCircle } from 'lucide-react';
+import { formatCurrency } from '../utils/formatCurrency';
 
 export default function LoyaltyPage() {
   const { loyalty, updateSubscription } = useContext(AppContext);
@@ -56,7 +57,7 @@ export default function LoyaltyPage() {
           />
           <DashboardCard
             title="Upcoming Billing"
-            value={loyalty.isSubscribed ? `$${loyalty.subscriptionPrice} USD` : "No Subscriptions"}
+            value={loyalty.isSubscribed ? formatCurrency(loyalty.subscriptionPrice) : "No Subscriptions"}
             icon={<Calendar size={20} color="var(--accent-lime)" />}
             description={loyalty.isSubscribed ? `Next Renewal: ${loyalty.nextBillingDate}` : "Inactive plans"}
           />
@@ -78,7 +79,7 @@ export default function LoyaltyPage() {
               }}>
                 <span style={{ fontSize: '32px' }}>🌹</span>
                 <h4 style={styles.planName}>Weekly Flower Drop</h4>
-                <p style={styles.planPrice}>$29.99 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ month</span></p>
+                <p style={styles.planPrice}>{formatCurrency(30000)} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ month</span></p>
                 <p style={styles.planDesc}>
                   Receive a hand-tied seasonal bouquet crafted by professional florists every Friday. Perfect for office decorations.
                 </p>
@@ -98,7 +99,7 @@ export default function LoyaltyPage() {
               }}>
                 <span style={{ fontSize: '32px' }}>🪴</span>
                 <h4 style={styles.planName}>Monthly Green Refresh</h4>
-                <p style={styles.planPrice}>$39.99 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ month</span></p>
+                <p style={styles.planPrice}>{formatCurrency(40000)} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ month</span></p>
                 <p style={styles.planDesc}>
                   A unique pet-safe air-purifying houseplant shipped directly in clay pots. Includes custom AI diagnostics sheets.
                 </p>
