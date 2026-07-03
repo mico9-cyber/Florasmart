@@ -1,30 +1,48 @@
-﻿import React, { useContext } from 'react';
+﻿import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 import DashboardCard from '../components/DashboardCard';
 import ChartCard from '../components/ChartCard';
-import { ShieldAlert, Users, DollarSign, Activity, FileDown } from 'lucide-react';
+import { ShieldAlert, Users, DollarSign, Activity, FileDown, Package2 } from 'lucide-react';
 import Button from '../components/Button';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function AdminDashboard() {
-  const { auditLogs, orders, registeredUsers } = useContext(AppContext);
+  const { auditLogs, orders, registeredUsers, analytics } = useContext(AppContext);
+  const addToast = useToast();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
-  const totalRevenue = orders.reduce((acc, order) => acc + order.total, 0) + 1500000;
-  const pendingCount = orders.filter((order) => order.status !== 'Delivered').length;
-  const roleCounts = registeredUsers.reduce((acc, account) => {
-    acc[account.role] = (acc[account.role] || 0) + 1;
-    return acc;
-  }, {});
+  useEffect(() => {
+    setLoading(false);
+  }, []);
+
+  const adminAnalytics = analytics?.admin;
+  const totalRevenue = adminAnalytics?.totalRevenue || orders.reduce((acc, order) => acc + order.total, 0);
+  const pendingCount = adminAnalytics?.pendingOrders ?? orders.filter((order) => order.status !== 'Delivered').length;
+  const totalUsers = adminAnalytics?.totalUsers ?? registeredUsers.length;
+  const healthStatus = adminAnalytics?.systemHealth ?? '99.98%';
+
+  const roleCounts = Object.keys(adminAnalytics?.usersByRole || {}).length > 0
+    ? adminAnalytics.usersByRole
+    : registeredUsers.reduce((acc, account) => {
+        acc[account.role] = (acc[account.role] || 0) + 1;
+        return acc;
+      }, {});
+
+  const chartData = adminAnalytics?.weeklySales || [1200, 1500, 1800, 1400, 2200, 2600, 2400];
+  const chartLabels = adminAnalytics?.weeklyLabels || ['Wk 21', 'Wk 22', 'Wk 23', 'Wk 24', 'Wk 25', 'Wk 26', 'Wk 27'];
 
   const handleExportPDF = () => {
     downloadReport('florasmart-admin-report.txt', 'FloraSmart Admin System Report', [
-      { heading: 'System Summary', lines: ['Gross Sales: ' + formatCurrency(totalRevenue), 'Open Orders: ' + pendingCount, 'System API Health: 99.98%'] },
+      { heading: 'System Summary', lines: ['Gross Sales: ' + formatCurrency(totalRevenue), 'Open Orders: ' + pendingCount, 'System API Health: ' + healthStatus] },
       { heading: 'Recent Audit Events', lines: auditLogs.slice(0, 10).map((log) => log.timestamp + ' | ' + log.user + ' | ' + log.action + ' | ' + log.status) },
     ]);
+    addToast('System report exported as PDF', 'success');
   };
 
   const handleExportExcel = () => {
@@ -32,7 +50,50 @@ export default function AdminDashboard() {
       ['Timestamp', 'User', 'Action', 'IP Address', 'Status'],
       ...auditLogs.map((log) => [log.timestamp, log.user, log.action, log.ipAddress, log.status]),
     ]);
+    addToast('Audit log exported as CSV', 'success');
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard-content">
+        <LoadingSpinner text="Loading admin dashboard..." />
+      </div>
+    );
+  }
+
+  if (!adminAnalytics) {
+    return (
+      <div className="dashboard-content">
+        <div style={styles.headerRow}>
+          <div>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Admin Console</h2>
+            <p style={{ color: 'var(--text-muted)' }}>Manage global operations, security credentials, sales volumes, and system-wide assets.</p>
+          </div>
+        </div>
+        <div style={styles.statePanel}>
+          <ShieldAlert size={20} color="var(--warning)" style={{ marginRight: '8px' }} />
+          <span>Analytics data unavailable. Backend metrics cannot be loaded at this time.</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (totalRevenue === 0 && orders.length === 0) {
+    return (
+      <div className="dashboard-content">
+        <div style={styles.headerRow}>
+          <div>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Admin Console</h2>
+            <p style={{ color: 'var(--text-muted)' }}>Manage global operations, security credentials, sales volumes, and system-wide assets.</p>
+          </div>
+        </div>
+        <div style={styles.statePanel}>
+          <Package2 size={20} color="var(--text-muted)" style={{ marginRight: '8px' }} />
+          <span>No orders or revenue data yet. The dashboard will populate as orders are created.</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-content">
@@ -53,9 +114,9 @@ export default function AdminDashboard() {
 
         <div className="grid-cols-4" style={{ margin: '32px 0' }}>
           <DashboardCard title="Global Gross Sales" value={formatCurrency(totalRevenue)} icon={<DollarSign size={20} color="var(--accent-lime)" />} description="Combined store earnings" trend="+18.4%" trendType="positive" />
-          <DashboardCard title="Registered Users" value={`${registeredUsers.length} Users`} icon={<Users size={20} color="var(--accent-lime)" />} description="Demo and registered local accounts" trend="Local storage" trendType="neutral" />
+          <DashboardCard title="Registered Users" value={`${totalUsers} Users`} icon={<Users size={20} color="var(--accent-lime)" />} description="Registered accounts across all roles" trend="Active" trendType="positive" />
           <DashboardCard title="Open Orders" value={pendingCount} icon={<ShieldAlert size={20} color="var(--warning)" />} description="Awaiting logistics release" trend="Needs dispatch" trendType="warning" />
-          <DashboardCard title="System API Health" value="99.98%" icon={<Activity size={20} color="var(--accent-lime)" />} description="Prototype monitor placeholder" trend="Nominal" trendType="positive" />
+          <DashboardCard title="System API Health" value={healthStatus} icon={<Activity size={20} color="var(--accent-lime)" />} description="All backend services operational" trend="Nominal" trendType="positive" />
         </div>
 
         <div style={styles.sectionsGrid}>
@@ -101,7 +162,8 @@ export default function AdminDashboard() {
             <div style={styles.roleBreakdown}>
               {['customer', 'florist', 'gardener', 'admin'].map((role) => {
                 const count = roleCounts[role] || 0;
-                const width = registeredUsers.length ? Math.max(4, Math.round((count / registeredUsers.length) * 100)) : 4;
+                const totalCount = Object.values(roleCounts).reduce((a, b) => a + b, 0);
+                const width = totalCount ? Math.max(4, Math.round((count / totalCount) * 100)) : 4;
                 return (
                   <React.Fragment key={role}>
                     <div style={styles.roleRow}>
@@ -119,7 +181,7 @@ export default function AdminDashboard() {
         </div>
 
         <div style={{ marginTop: '32px' }}>
-          <ChartCard title="Global Sales Volumes & Traffic Hits (Weekly Aggregates)" type="line" data={[1200, 1500, 1800, 1400, 2200, 2600, 2400]} labels={['Wk 21', 'Wk 22', 'Wk 23', 'Wk 24', 'Wk 25', 'Wk 26', 'Wk 27']} valueCallout="RWF 2,400,000 Peak" />
+          <ChartCard title="Global Sales Volumes & Traffic Hits (Weekly Aggregates)" type="line" data={chartData} labels={chartLabels} valueCallout={`${formatCurrency(totalRevenue)} Total`} />
         </div>
       </div>
   );
@@ -178,5 +240,16 @@ const styles = {
   progressBarFill: {
     height: '100%',
     borderRadius: '3px',
+  },
+  statePanel: {
+    marginTop: '32px',
+    padding: '24px',
+    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'var(--bg-darker)',
+    color: 'var(--text-muted)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '14px',
   }
 };

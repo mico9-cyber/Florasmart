@@ -1,82 +1,14 @@
 ﻿import React, { useContext, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
-import {
-  LayoutDashboard,
-  Flower2,
-  Settings,
-  Package,
-  Truck,
-  BarChart3,
-  ShieldCheck,
-  User,
-  MessageSquare,
-  Sparkles,
-  Heart,
-  Grid,
-  Home,
-  ShoppingBag,
-  ClipboardList,
-  X,
-  Leaf,
-} from 'lucide-react';
-
-function getPrimaryRole(user) {
-  return user.role || 'customer';
-}
-
-const roleLinksConfig = {
-  customer: [
-    { to: '/customer-dashboard', label: 'Dashboard', icon: Home },
-    { to: '/catalog', label: 'Catalog', icon: ShoppingBag },
-    { to: '/recommendations', label: 'AI Advisor', icon: Sparkles },
-    { to: '/vase-matching', label: 'Vase Match', icon: Flower2 },
-    { to: '/garden-planner', label: 'Garden Planner', icon: Grid },
-    { to: '/chatbot', label: 'Care Bot', icon: MessageSquare },
-    { to: '/loyalty', label: 'Loyalty', icon: Heart },
-    { to: '/order-tracking', label: 'Orders', icon: ClipboardList },
-    { to: '/profile', label: 'Profile', icon: User },
-  ],
-  admin: [
-    { to: '/admin-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/catalog', label: 'Products', icon: ShoppingBag },
-    { to: '/inventory', label: 'Inventory', icon: Package },
-    { to: '/order-tracking', label: 'Orders', icon: ClipboardList },
-    { to: '/delivery', label: 'Delivery', icon: Truck },
-    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { to: '/security', label: 'Security', icon: ShieldCheck },
-    { to: '/profile', label: 'Users/Profile', icon: Settings },
-  ],
-  florist: [
-    { to: '/florist-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/catalog', label: 'Products', icon: ShoppingBag },
-    { to: '/inventory', label: 'Inventory', icon: Package },
-    { to: '/order-tracking', label: 'Orders', icon: ClipboardList },
-    { to: '/delivery', label: 'Delivery', icon: Truck },
-    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { to: '/profile', label: 'Profile', icon: User },
-  ],
-  gardener: [
-    { to: '/gardener-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/garden-planner', label: 'Garden Planner', icon: Grid },
-    { to: '/recommendations', label: 'AI Advisor', icon: Sparkles },
-    { to: '/chatbot', label: 'Care Bot', icon: MessageSquare },
-    { to: '/profile', label: 'Profile', icon: User },
-  ],
-};
-
-const roleLabels = {
-  admin: 'Admin',
-  customer: 'Customer',
-  florist: 'Florist',
-  gardener: 'Gardener',
-};
+import { getNavItemsForRole, normalizeRole, ROLE_LABELS } from '../config/navigation';
+import { User, Leaf, X } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user } = useContext(AppContext);
   const location = useLocation();
-  const role = getPrimaryRole(user);
-  const links = roleLinksConfig[role] || roleLinksConfig.customer;
+  const role = normalizeRole(user.role);
+  const links = getNavItemsForRole(role);
 
   const onCloseRef = useRef(onClose);
   const isOpenRef = useRef(isOpen);
@@ -85,13 +17,33 @@ export default function Sidebar({ isOpen, onClose }) {
 
   useEffect(() => {
     if (isOpenRef.current) onCloseRef.current();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   return (
     <>
-      {isOpen && <div style={styles.overlay} onClick={onClose} />}
-      <aside className="sidebar" style={styles.sidebar(isOpen)}>
+      <style>{`
+        @media (max-width: 768px) {
+          .sidebar {
+            position: fixed !important;
+            top: 64px;
+            left: 0;
+            bottom: 0;
+            width: 280px !important;
+            z-index: 99;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+          }
+          .sidebar.sidebar--open {
+            transform: translateX(0) !important;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+          }
+          .sidebar-overlay {
+            display: block !important;
+          }
+        }
+      `}</style>
+      {isOpen && <div className="sidebar-overlay" style={styles.overlay} onClick={onClose} />}
+      <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`} style={styles.sidebar(isOpen)}>
         <div style={styles.brand}>
           <Leaf size={24} color="var(--accent-lime)" />
           <span style={styles.brandText}>FloraSmart</span>
@@ -125,7 +77,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </div>
             <div style={styles.profileInfo}>
               <span style={styles.profileName}>{user.name || user.email}</span>
-              <span style={styles.profileRole}>{roleLabels[role] || role}</span>
+              <span style={styles.profileRole}>{ROLE_LABELS[role] || role}</span>
             </div>
           </NavLink>
         </div>

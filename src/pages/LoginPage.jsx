@@ -1,6 +1,7 @@
 ﻿import React, { useState, useContext } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
 import { LogIn, ShieldAlert } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const { handleLogin } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const addToast = useToast();
 
   // Form Fields
   const [email, setEmail] = useState('');
@@ -45,6 +47,7 @@ export default function LoginPage() {
     try {
       const result = await handleLogin(email, password, role);
       if (result.ok) {
+        addToast('Logged in successfully.', 'success');
         navigate(location.state?.from || `/${result.role}-dashboard`);
       } else {
         setSubmitError(result.error);
@@ -114,7 +117,7 @@ export default function LoginPage() {
               <input type="checkbox" style={{ marginRight: '8px' }} />
               Remember device
             </label>
-            <a href="#" style={styles.forgotLink}>Forgot password?</a>
+            <Link to="/forgot-password" style={styles.forgotLink}>Forgot password?</Link>
           </div>
 
           <Button type="submit" variant="primary" style={styles.submitBtn}>

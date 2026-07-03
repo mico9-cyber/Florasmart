@@ -1,6 +1,7 @@
 ﻿import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
 import { UserPlus, ShieldAlert } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
@@ -8,6 +9,7 @@ import Button from '../components/Button';
 export default function RegisterPage() {
   const { handleRegister } = useContext(AppContext);
   const navigate = useNavigate();
+  const addToast = useToast();
 
   // Form Fields
   const [name, setName] = useState('');
@@ -17,34 +19,50 @@ export default function RegisterPage() {
   const [role, setRole] = useState('customer');
 
   // Validation States
-  const [errors, setErrors] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
+
+  const validateField = (name, value) => {
+    let error = '';
+    switch (name) {
+      case 'name':
+        if (!value.trim()) error = 'Full name is required.';
+        break;
+      case 'email':
+        if (!value) error = 'Email address is required.';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Enter a valid email address.';
+        break;
+      case 'password':
+        if (!value) error = 'Password is required.';
+        else if (value.length < 6) error = 'Password must be at least 6 characters long.';
+        break;
+      case 'confirmPassword':
+        if (value !== password) error = 'Passwords do not match.';
+        break;
+      case 'role':
+        if (!value) error = 'Workspace role is required.';
+        break;
+    }
+    setFieldErrors(prev => ({ ...prev, [name]: error }));
+    return !error;
+  };
+
+  const handleBlur = (name) => (e) => {
+    validateField(name, e.target.value);
+  };
 
   const validate = () => {
     const tempErrors = {};
-    
-    if (!name.trim()) {
-      tempErrors.name = 'Full name is required.';
-    }
 
-    if (!email) {
-      tempErrors.email = 'Email address is required.';
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) tempErrors.email = 'Enter a valid email address.';
-    }
+    if (!name.trim()) tempErrors.name = 'Full name is required.';
+    if (!email) tempErrors.email = 'Email address is required.';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) tempErrors.email = 'Enter a valid email address.';
+    if (!password) tempErrors.password = 'Password is required.';
+    else if (password.length < 6) tempErrors.password = 'Password must be at least 6 characters long.';
+    if (password !== confirmPassword) tempErrors.confirmPassword = 'Passwords do not match.';
+    if (!role) tempErrors.role = 'Workspace role is required.';
 
-    if (!password) {
-      tempErrors.password = 'Password is required.';
-    } else if (password.length < 6) {
-      tempErrors.password = 'Password must be at least 6 characters long.';
-    }
-
-    if (password !== confirmPassword) {
-      tempErrors.confirmPassword = 'Passwords do not match.';
-    }
-
-    setErrors(tempErrors);
+    setFieldErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
 
@@ -55,6 +73,7 @@ export default function RegisterPage() {
     try {
       const result = await handleRegister(email, password, name, role);
       if (result.ok) {
+        addToast('Registration successful! Check your email for OTP.', 'success');
         navigate('/verify-otp', { replace: true });
       } else {
         setSubmitError(result.error);
@@ -88,10 +107,14 @@ export default function RegisterPage() {
             id="name"
             placeholder="e.g. Darrly Garden"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={errors.name}
+            onChange={(e) => { setName(e.target.value); if (fieldErrors.name) validateField('name', e.target.value); }}
+            onBlur={handleBlur('name')}
+            error={fieldErrors.name}
+            ariaInvalid={!!fieldErrors.name}
+            ariaDescribedby={fieldErrors.name ? 'error-name' : undefined}
             required
           />
+          {fieldErrors.name && <span id="error-name" style={styles.fieldError}>{fieldErrors.name}</span>}
 
           <FormInput
             label="Email Address"
@@ -99,17 +122,25 @@ export default function RegisterPage() {
             type="email"
             placeholder="e.g. darrly@florasmart.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={errors.email}
+            onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) validateField('email', e.target.value); }}
+            onBlur={handleBlur('email')}
+            error={fieldErrors.email}
+            ariaInvalid={!!fieldErrors.email}
+            ariaDescribedby={fieldErrors.email ? 'error-email' : undefined}
             required
           />
+          {fieldErrors.email && <span id="error-email" style={styles.fieldError}>{fieldErrors.email}</span>}
 
           <FormInput
             label="Workspace Role"
             id="role"
             type="select"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => { setRole(e.target.value); if (fieldErrors.role) validateField('role', e.target.value); }}
+            onBlur={handleBlur('role')}
+            error={fieldErrors.role}
+            ariaInvalid={!!fieldErrors.role}
+            ariaDescribedby={fieldErrors.role ? 'error-role' : undefined}
             options={[
               { value: 'customer', label: 'Customer (Shop, Track Orders, AI Advisor)' },
               { value: 'florist', label: 'Florist (Stems Match, Floral Inventory, Deliveries)' },
@@ -117,6 +148,7 @@ export default function RegisterPage() {
               { value: 'admin', label: 'Admin (System Control, Logs, Global Inventory)' }
             ]}
           />
+          {fieldErrors.role && <span id="error-role" style={styles.fieldError}>{fieldErrors.role}</span>}
 
           <div style={styles.pwdRow}>
             <div style={{ flex: 1 }}>
@@ -126,10 +158,14 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={errors.password}
+                onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) validateField('password', e.target.value); }}
+                onBlur={handleBlur('password')}
+                error={fieldErrors.password}
+                ariaInvalid={!!fieldErrors.password}
+                ariaDescribedby={fieldErrors.password ? 'error-password' : undefined}
                 required
               />
+              {fieldErrors.password && <span id="error-password" style={styles.fieldError}>{fieldErrors.password}</span>}
             </div>
             <div style={{ flex: 1 }}>
               <FormInput
@@ -138,10 +174,14 @@ export default function RegisterPage() {
                 type="password"
                 placeholder="••••••"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                error={errors.confirmPassword}
+                onChange={(e) => { setConfirmPassword(e.target.value); if (fieldErrors.confirmPassword) validateField('confirmPassword', e.target.value); }}
+                onBlur={handleBlur('confirmPassword')}
+                error={fieldErrors.confirmPassword}
+                ariaInvalid={!!fieldErrors.confirmPassword}
+                ariaDescribedby={fieldErrors.confirmPassword ? 'error-confirmPassword' : undefined}
                 required
               />
+              {fieldErrors.confirmPassword && <span id="error-confirmPassword" style={styles.fieldError}>{fieldErrors.confirmPassword}</span>}
             </div>
           </div>
 
@@ -234,6 +274,12 @@ const styles = {
   termsLink: {
     color: 'var(--accent-lime)',
     fontWeight: '600',
+  },
+  fieldError: {
+    color: '#e74c3c',
+    fontSize: '12px',
+    marginTop: '4px',
+    display: 'block',
   },
   submitBtn: {
     width: '100%',

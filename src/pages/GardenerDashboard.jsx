@@ -1,22 +1,30 @@
-﻿import React, { useContext, useState } from 'react';
+﻿import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 import DashboardCard from '../components/DashboardCard';
 import ChartCard from '../components/ChartCard';
-import { Sprout, Sun, Droplets, FileSpreadsheet, FileText, CheckCircle2 } from 'lucide-react';
+import { Sprout, Sun, Droplets, FileSpreadsheet, FileText } from 'lucide-react';
 import Button from '../components/Button';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
+import { readJson, writeJson } from '../utils/storage';
 import FormInput from '../components/FormInput';
 
 export default function GardenerDashboard() {
   const { gardenLayout } = useContext(AppContext);
+  const addToast = useToast();
+  const [loading, setLoading] = useState(true);
 
-  // States
   const [plantName, setPlantName] = useState('');
   const [plantType, setPlantType] = useState('indoor');
   const [sunlightNeeds, setSunlightNeeds] = useState('Bright Indirect');
   const [validationErr, setValidationErr] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [specimens, setSpecimens] = useState(() => readJson('flora_specimens', []));
+
+  useEffect(() => { setLoading(false); }, []);
+
+  useEffect(() => writeJson('flora_specimens', specimens), [specimens]);
 
   const occupiedCells = gardenLayout.filter(cell => cell !== null);
 
@@ -27,15 +35,29 @@ export default function GardenerDashboard() {
       return;
     }
     setValidationErr('');
-    setShowSuccess(true);
+    setSpecimens((prev) => [...prev, {
+      id: Date.now(),
+      name: plantName,
+      type: plantType,
+      sunlight: sunlightNeeds,
+      loggedAt: new Date().toISOString(),
+    }]);
+    addToast(`Specimen "${plantName}" logged successfully`, 'success');
     setPlantName('');
-    setTimeout(() => setShowSuccess(false), 3000);
+    setPlantType('indoor');
+    setSunlightNeeds('Bright Indirect');
   };
+
+  const loggedToday = specimens.filter((s) => {
+    const today = new Date().toISOString().substring(0, 10);
+    return s.loggedAt.substring(0, 10) === today;
+  }).length;
 
   const handleExportPDF = () => {
     downloadReport('florasmart-gardener-report.txt', 'FloraSmart Gardener Diagnostics Report', [
       { heading: 'Mapped Garden Cells', lines: gardenLayout.map((cell, idx) => cell ? 'Cell #' + (idx + 1) + ' | ' + cell.name + ' | ' + cell.datePlanted : null).filter(Boolean) },
     ]);
+    addToast('Gardener report exported as PDF', 'success');
   };
 
   const handleExportExcel = () => {
@@ -43,7 +65,16 @@ export default function GardenerDashboard() {
       ['Cell', 'Specimen Name', 'Date Planted'],
       ...gardenLayout.map((cell, idx) => cell ? [idx + 1, cell.name, cell.datePlanted] : null).filter(Boolean),
     ]);
+    addToast('Garden layout exported as CSV', 'success');
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard-content">
+        <LoadingSpinner text="Loading gardener dashboard..." />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-content">
@@ -82,12 +113,12 @@ export default function GardenerDashboard() {
             trendType="positive"
           />
           <DashboardCard
-            title="Luminosity Threshold"
-            value="3500 lm"
+            title="Specimens Logged"
+            value={`${specimens.length} Total`}
             icon={<Sun size={20} color="var(--btn-yellow)" />}
-            description="Bright indirect target active"
-            trend="Nominal Light"
-            trendType="positive"
+            description={`${loggedToday} logged today`}
+            trend={loggedToday > 0 ? 'Active Today' : 'No entries today'}
+            trendType={loggedToday > 0 ? 'positive' : 'neutral'}
           />
         </div>
 
@@ -98,6 +129,12 @@ export default function GardenerDashboard() {
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 16px' }}>
               Map coordinates of the smart garden layout. Click "Planner" on sidebar to edit.
             </p>
+            {occupiedCells.length === 0 ? (
+              <div style={styles.statePanel}>
+                <Sprout size={20} color="var(--text-muted)" style={{ marginRight: '8px' }} />
+                <span>No garden cells planted yet. Use the garden planner on the sidebar to populate the grid.</span>
+              </div>
+            ) : (
             <div style={styles.miniGrid}>
               {gardenLayout.slice(0, 32).map((cell, idx) => (
                 <div
@@ -113,6 +150,7 @@ export default function GardenerDashboard() {
                 </div>
               ))}
             </div>
+            )}
           </div>
 
           {/* Cultivation Log Form */}
@@ -121,13 +159,6 @@ export default function GardenerDashboard() {
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 16px' }}>
               Log external specimens into horticultural databases.
             </p>
-
-            {showSuccess && (
-              <div style={styles.successBanner}>
-                <CheckCircle2 size={16} color="var(--success)" />
-                <span>Specimen logged successfully!</span>
-              </div>
-            )}
 
             <form onSubmit={handleAddPlantRecord}>
               <FormInput
@@ -230,17 +261,15 @@ const styles = {
     fontWeight: '700',
     color: 'var(--text-white)',
   },
-  successBanner: {
+  statePanel: {
+    padding: '18px',
+    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'var(--bg-darker)',
+    color: 'var(--text-muted)',
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-    border: '1px solid var(--success)',
-    padding: '8px 12px',
-    borderRadius: 'var(--radius-sm)',
-    color: 'var(--text-light)',
     fontSize: '13px',
-    marginBottom: '16px',
   }
 };
 

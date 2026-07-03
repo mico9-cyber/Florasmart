@@ -2,6 +2,9 @@ import { BaseService } from './base.service.js';
 import { AppError } from '../utils/appError.js';
 import { getPrismaClient } from '../database/prisma.js';
 import { logAuditEvent } from '../utils/audit.js';
+import { NotificationService } from './notification.service.js';
+
+const _notif = new NotificationService();
 
 const ALLOWED_DELIVERY_TRANSITIONS = {
   PENDING_ASSIGNMENT: ['ASSIGNED', 'CANCELLED'],
@@ -138,6 +141,15 @@ export class DeliveryService extends BaseService {
     }
 
     await logAuditEvent(prisma, { action: 'delivery_assigned', userId: user.userId, deliveryId: delivery.id, orderId });
+
+    try {
+      const orderUser = await prisma.user.findUnique({ where: { id: order.userId }, select: { id: true, name: true } });
+      if (orderUser) {
+        _notif.sendNotification(order.userId, 'DELIVERY', 'Delivery Assigned', `Delivery for order ${order.orderNumber} has been assigned.`, { deliveryId: delivery.id, orderId, orderNumber: order.orderNumber });
+      }
+    } catch {
+    }
+
     return this.repository.findById(delivery.id);
   }
 
@@ -196,6 +208,16 @@ export class DeliveryService extends BaseService {
     }
 
     await logAuditEvent(prisma, { action: 'delivery_status_updated', userId: user.userId, deliveryId: id, status });
+
+    try {
+      const orderUser = await prisma.user.findUnique({ where: { id: delivery.order.userId }, select: { id: true, name: true } });
+      if (orderUser) {
+        const deliveryStatusLabel = status.replace(/_/g, ' ');
+        _notif.sendNotification(delivery.order.userId, 'DELIVERY', `Delivery ${deliveryStatusLabel}`, `Delivery for order ${delivery.order.orderNumber} is now: ${deliveryStatusLabel}.`, { deliveryId: id, orderId: delivery.orderId, orderNumber: delivery.order.orderNumber, status });
+      }
+    } catch {
+    }
+
     return this.repository.findById(id);
   }
 

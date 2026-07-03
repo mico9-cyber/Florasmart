@@ -1,123 +1,62 @@
-﻿import React, { useState, useContext, useCallback } from 'react';
+﻿import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import ImageWithFallback from '../components/ImageWithFallback';
-import { Sparkles, AlertCircle, ShoppingCart, Sun, Droplet, ShieldCheck, ShieldAlert, Eye } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { Sparkles, AlertCircle, ShoppingCart, Sun, Droplet, ShieldCheck, ShieldAlert, Eye, RefreshCw, History } from 'lucide-react';
 import { formatCurrency } from '../utils/formatCurrency';
+import { recommendationService } from '../services/recommendationService';
 
-function scorePlant(plant, sunlight, water, hasPets, purpose) {
-  let score = 0;
-
-  const plantLight = (plant.sunlight || '').toLowerCase();
-  const plantWater = (plant.water || '').toLowerCase();
-  const plantPurposes = (plant.purpose || '').toLowerCase().split(',').map(s => s.trim());
-
-  const lightMap = {
-    direct: ['full sun', 'bright', 'direct'],
-    bright: ['bright', 'indirect', 'full sun'],
-    low: ['low', 'shade', 'dim'],
-  };
-  const lightKw = lightMap[sunlight] || [sunlight];
-  if (lightKw.some(k => plantLight.includes(k))) score += 3;
-
-  const waterMap = {
-    low: ['low', 'bi-weekly', 'every 2-3 weeks', '2-3 weeks', 'minimal'],
-    medium: ['moderate', 'medium', 'once a week', 'weekly', 'keep soil moist'],
-    high: ['high', 'daily', 'keep soil moist', 'moderate', 'water frequently'],
-  };
-  const waterKw = waterMap[water] || [water];
-  if (waterKw.some(k => plantWater.includes(k))) score += 3;
-
-  const isPetSafe = !plant.toxic || plant.toxic.toLowerCase().includes('no') || plant.petSafe === true;
-  if (hasPets === 'yes' && isPetSafe) score += 3;
-  else if (hasPets === 'no') score += 1;
-
-  const purposeMap = {
-    air: ['air purification', 'purify air', 'air quality'],
-    aesthetic: ['indoor beauty', 'aesthetic', 'ornamental', 'statement'],
-    vibrant: ['flowering', 'vibrant', 'colorful', 'flower'],
-    'low-maintenance': ['low maintenance', 'low care', 'beginner'],
-    'outdoor': ['outdoor garden', 'garden', 'outdoor'],
-  };
-  const purposeKw = purposeMap[purpose] || [purpose];
-  if (purposeKw.some(k => plantPurposes.some(p => p.includes(k)))) score += 3;
-
-  return score;
+function resolveObject(payload) {
+  if (payload?.data && !Array.isArray(payload.data)) return payload.data;
+  return payload || {};
 }
 
-function matchPlants(products, sunlight, water, hasPets, purpose) {
-  const plants = products.filter(p => p.category === 'plants' && p.stock > 0);
-
-  const strictMatches = plants.filter(p => {
-    if (hasPets === 'yes') {
-      const isPetSafe = !p.toxic || p.toxic.toLowerCase().includes('no') || p.petSafe === true;
-      if (!isPetSafe) return false;
-    }
-
-    const plantLight = (p.sunlight || '').toLowerCase();
-    const lightMatch = (() => {
-      if (sunlight === 'direct') return plantLight.includes('full sun') || plantLight.includes('bright') || plantLight.includes('direct');
-      if (sunlight === 'bright') return plantLight.includes('bright') || plantLight.includes('indirect');
-      if (sunlight === 'low') return plantLight.includes('low') || plantLight.includes('shade');
-      return true;
-    })();
-    if (!lightMatch) return false;
-
-    const plantWater = (p.water || '').toLowerCase();
-    const waterMatch = (() => {
-      if (water === 'low') return plantWater.includes('low') || plantWater.includes('bi-weekly') || plantWater.includes('2-3 weeks') || plantWater.includes('every 2-3') || plantWater.includes('minimal');
-      if (water === 'medium') return plantWater.includes('moderate') || plantWater.includes('once a week') || plantWater.includes('weekly') || plantWater.includes('keep soil moist') || plantWater.includes('medium');
-      if (water === 'high') return plantWater.includes('daily') || plantWater.includes('high') || plantWater.includes('keep soil moist') || plantWater.includes('moist') || plantWater.includes('frequent');
-      return true;
-    })();
-    if (!waterMatch) return false;
-
-    const plantPurposes = (p.purpose || '').toLowerCase().split(',').map(s => s.trim());
-    const purposeMap = {
-      air: ['air purification', 'purify air', 'air quality'],
-      aesthetic: ['indoor beauty', 'aesthetic', 'ornamental', 'statement'],
-      vibrant: ['flowering', 'vibrant', 'colorful', 'flower'],
-      'low-maintenance': ['low maintenance', 'low care', 'beginner'],
-      'outdoor': ['outdoor garden', 'garden', 'outdoor'],
-    };
-    const purposeKw = purposeMap[purpose] || [purpose];
-    if (!purposeKw.some(k => plantPurposes.some(pu => pu.includes(k)))) return false;
-
-    return true;
-  });
-
-  if (strictMatches.length > 0) {
-    return { matches: strictMatches, isCloseMatch: false };
-  }
-
-  const scored = plants.map(p => ({ plant: p, score: scorePlant(p, sunlight, water, hasPets, purpose) }));
-  scored.sort((a, b) => b.score - a.score);
-  const closeMatches = scored.filter(s => s.score >= 3).slice(0, 6).map(s => s.plant);
-
-  if (closeMatches.length > 0) {
-    return { matches: closeMatches, isCloseMatch: true };
-  }
-
-  return { matches: scored.slice(0, 3).map(s => s.plant), isCloseMatch: true };
+function resolveRows(payload) {
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload)) return payload;
+  return [];
 }
 
 export default function PlantRecommendationPage() {
-  const { products, addToCart } = useContext(AppContext);
+  const { addToCart } = useContext(AppContext);
+  const addToast = useToast();
   const navigate = useNavigate();
 
   const [sunlight, setSunlight] = useState('');
   const [water, setWater] = useState('');
   const [hasPets, setHasPets] = useState('');
   const [purpose, setPurpose] = useState('');
-
+  const [experienceLevel, setExperienceLevel] = useState('');
+  const [spaceType, setSpaceType] = useState('');
   const [matchedPlants, setMatchedPlants] = useState([]);
-  const [isCloseMatch, setIsCloseMatch] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [requestMeta, setRequestMeta] = useState(null);
   const [searched, setSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [validationErr, setValidationErr] = useState('');
+  const [error, setError] = useState('');
 
-  const handleScan = useCallback((e) => {
+  const loadHistory = async () => {
+    try {
+      setHistoryLoading(true);
+      const rows = resolveRows(await recommendationService.history());
+      setHistory(rows);
+    } catch (err) {
+      setError(err.message || 'Failed to load recommendation history.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const handleScan = async (e) => {
     e.preventDefault();
 
     const missing = [];
@@ -130,31 +69,68 @@ export default function PlantRecommendationPage() {
       setValidationErr(`Please select: ${missing.join(', ')}.`);
       return;
     }
+
     setValidationErr('');
+    setError('');
+    setLoading(true);
 
-    const { matches, isCloseMatch: close } = matchPlants(products, sunlight, water, hasPets, purpose);
-    setMatchedPlants(matches);
-    setIsCloseMatch(close);
-    setSearched(true);
-  }, [sunlight, water, hasPets, purpose, products]);
+    try {
+      const payload = resolveObject(await recommendationService.plants({
+        sunlightLevel: sunlight,
+        wateringLevel: water,
+        petSafeRequired: hasPets === 'yes',
+        purpose,
+        experienceLevel: experienceLevel || undefined,
+        spaceType: spaceType || undefined,
+      }));
 
-  const handleAddToCart = useCallback((plant) => {
-    const result = addToCart(plant, 1);
-    if (result.ok) {
-      alert(`${plant.name} added to cart.`);
-    } else {
-      alert(result.error || `Could not add ${plant.name} to cart.`);
+      setMatchedPlants(payload.recommendations || []);
+      setRequestMeta({ requestId: payload.requestId, matchesFound: payload.matchesFound || 0 });
+      setSearched(true);
+      await loadHistory();
+    } catch (err) {
+      const msg = err.message || 'Failed to generate recommendations.';
+      setError(msg);
+      addToast(msg, 'error');
+      setMatchedPlants([]);
+      setSearched(true);
+    } finally {
+      setLoading(false);
     }
-  }, [addToCart]);
+  };
 
-  const handleAddAllToCart = useCallback(() => {
+  const handleAddToCart = async (recommendation) => {
+    const plant = {
+      id: recommendation.product.id,
+      backendId: recommendation.product.id,
+      name: recommendation.product.name,
+      category: 'plants',
+      price: Number(recommendation.product.price || 0),
+      image: recommendation.product.imageUrl || '',
+    };
+    const result = await addToCart(plant, 1);
+    if (result.ok) {
+      addToast(`${recommendation.product.name} added to cart.`, 'success');
+    } else {
+      addToast(result.error || `Could not add ${recommendation.product.name} to cart.`, 'error');
+    }
+  };
+
+  const handleAddAllToCart = async () => {
     let added = 0;
-    matchedPlants.forEach(plant => {
-      const result = addToCart(plant, 1);
-      if (result.ok) added++;
-    });
-    alert(`Added ${added} of ${matchedPlants.length} matched plants to your shopping cart!`);
-  }, [matchedPlants, addToCart]);
+    for (const recommendation of matchedPlants) {
+      const result = await addToCart({
+        id: recommendation.product.id,
+        backendId: recommendation.product.id,
+        name: recommendation.product.name,
+        category: 'plants',
+        price: Number(recommendation.product.price || 0),
+        image: recommendation.product.imageUrl || '',
+      }, 1);
+      if (result.ok) added += 1;
+    }
+    addToast(`Added ${added} of ${matchedPlants.length} matched plants to your shopping cart.`, 'success');
+  };
 
   return (
     <div style={styles.container} className="container">
@@ -164,15 +140,17 @@ export default function PlantRecommendationPage() {
         </div>
         <h1 style={styles.title}>AI Botanical Suitability Advisor</h1>
         <p style={styles.subtitle}>
-          Analyze microclimates, verify pet safety thresholds, and match the ideal green companions.
+          Run the backend recommendation engine against your light, care, and household conditions.
         </p>
       </div>
+
+      {error && <div style={styles.errBanner}><AlertCircle size={16} color="var(--error)" /><span>{error}</span></div>}
 
       <div style={styles.layout}>
         <div className="card" style={styles.scannerCard}>
           <h3 style={styles.sectionTitle}>Suitability Diagnostics</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 20px' }}>
-            Answer these 4 attributes to calibrate the matching matrix.
+            Submit these criteria to the real backend recommendation engine.
           </p>
 
           {validationErr && (
@@ -191,9 +169,10 @@ export default function PlantRecommendationPage() {
               onChange={(e) => setSunlight(e.target.value)}
               options={[
                 { value: '', label: 'Select lighting...' },
-                { value: 'direct', label: 'Full Sun / Direct Sun' },
-                { value: 'bright', label: 'Bright Indirect Light' },
-                { value: 'low', label: 'Low / Shade' },
+                { value: 'full sun', label: 'Full Sun' },
+                { value: 'bright indirect light', label: 'Bright Indirect Light' },
+                { value: 'partial shade', label: 'Partial Shade' },
+                { value: 'low light', label: 'Low Light' },
               ]}
               required
             />
@@ -206,9 +185,9 @@ export default function PlantRecommendationPage() {
               onChange={(e) => setWater(e.target.value)}
               options={[
                 { value: '', label: 'Select watering schedule...' },
-                { value: 'low', label: 'Low (Bi-weekly / Monthly)' },
-                { value: 'medium', label: 'Medium (Weekly)' },
-                { value: 'high', label: 'High (Frequent / Daily)' },
+                { value: 'low', label: 'Low' },
+                { value: 'moderate', label: 'Moderate' },
+                { value: 'high', label: 'High' },
               ]}
               required
             />
@@ -221,8 +200,8 @@ export default function PlantRecommendationPage() {
               onChange={(e) => setHasPets(e.target.value)}
               options={[
                 { value: '', label: 'Are pets present?' },
-                { value: 'yes', label: 'Yes (Show only pet-safe plants)' },
-                { value: 'no', label: 'No (All plant types eligible)' },
+                { value: 'yes', label: 'Yes, show only pet-safe options' },
+                { value: 'no', label: 'No, all plants are eligible' },
               ]}
               required
             />
@@ -235,17 +214,39 @@ export default function PlantRecommendationPage() {
               onChange={(e) => setPurpose(e.target.value)}
               options={[
                 { value: '', label: 'Select primary goal...' },
-                { value: 'air', label: 'Air Purification' },
-                { value: 'aesthetic', label: 'Indoor Beauty / Decoration' },
-                { value: 'vibrant', label: 'Flowering / Vibrant Accents' },
-                { value: 'low-maintenance', label: 'Low Maintenance' },
-                { value: 'outdoor', label: 'Outdoor Garden' },
+                { value: 'air purification', label: 'Air Purification' },
+                { value: 'indoor beauty', label: 'Indoor Beauty' },
+                { value: 'flowering decoration', label: 'Flowering Decoration' },
+                { value: 'low maintenance', label: 'Low Maintenance' },
+                { value: 'outdoor garden', label: 'Outdoor Garden' },
               ]}
               required
             />
 
-            <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }}>
-              Process Matching Matrices
+            <FormInput
+              label="Experience Level"
+              id="experience"
+              type="select"
+              value={experienceLevel}
+              onChange={(e) => setExperienceLevel(e.target.value)}
+              options={[
+                { value: '', label: 'Optional' },
+                { value: 'beginner', label: 'Beginner' },
+                { value: 'intermediate', label: 'Intermediate' },
+                { value: 'expert', label: 'Expert' },
+              ]}
+            />
+
+            <FormInput
+              label="Space Type"
+              id="space-type"
+              value={spaceType}
+              onChange={(e) => setSpaceType(e.target.value)}
+              placeholder="Optional, e.g. balcony garden"
+            />
+
+            <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>
+              {loading ? <><RefreshCw size={16} className="pulse-light" /><span>Processing backend matches...</span></> : 'Process Matching Matrices'}
             </Button>
           </form>
         </div>
@@ -256,12 +257,10 @@ export default function PlantRecommendationPage() {
               <div style={styles.resultsHeader}>
                 <div>
                   <h3 style={{ margin: 0, color: 'var(--text-white)' }}>
-                    {matchedPlants.length} {matchedPlants.length === 1 ? 'Match' : 'Matches'} Found
+                    {requestMeta?.matchesFound || matchedPlants.length} Matches Found
                   </h3>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {isCloseMatch
-                      ? 'No exact matches. Showing closest suitable plants.'
-                      : 'Exact matches based on your criteria.'}
+                    {requestMeta?.requestId ? `Backend request ${requestMeta.requestId}` : 'Live backend recommendations'}
                   </p>
                 </div>
                 {matchedPlants.length > 1 && (
@@ -273,21 +272,21 @@ export default function PlantRecommendationPage() {
 
               {matchedPlants.length > 0 ? (
                 <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {matchedPlants.map((plant) => (
-                    <div key={plant.id} className="card" style={styles.resultCard}>
+                  {matchedPlants.map((recommendation) => (
+                    <div key={recommendation.product.id} className="card" style={styles.resultCard}>
                       <div style={styles.resultCardTop}>
                         <div style={styles.resultImageWrap}>
                           <ImageWithFallback
-                            src={plant.image}
-                            alt={plant.name}
-                            category={plant.category}
+                            src={recommendation.product.imageUrl}
+                            alt={recommendation.product.name}
+                            category="plants"
                             style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-sm)' }}
                           />
                         </div>
                         <div style={styles.resultInfo}>
-                          <h4 style={styles.resultName}>{plant.name}</h4>
-                          <span style={styles.resultCategory}>{plant.category}</span>
-                          <span style={styles.resultPrice}>{formatCurrency(plant.price)}</span>
+                          <h4 style={styles.resultName}>{recommendation.rank}. {recommendation.product.name}</h4>
+                          <span style={styles.resultCategory}>{recommendation.product.category?.name || 'Plant'}</span>
+                          <span style={styles.resultPrice}>{formatCurrency(recommendation.product.price)}</span>
                         </div>
                       </div>
 
@@ -297,36 +296,39 @@ export default function PlantRecommendationPage() {
                         <div style={styles.detailItem}>
                           <Sun size={13} color="var(--btn-yellow)" />
                           <span style={styles.detailLabel}>Sunlight:</span>
-                          <span style={styles.detailValue}>{plant.sunlight || 'N/A'}</span>
+                          <span style={styles.detailValue}>{recommendation.product.lightRequirement || 'N/A'}</span>
                         </div>
                         <div style={styles.detailItem}>
                           <Droplet size={13} color="#38BDF8" />
                           <span style={styles.detailLabel}>Watering:</span>
-                          <span style={styles.detailValue}>{plant.water || 'N/A'}</span>
+                          <span style={styles.detailValue}>{recommendation.product.waterRequirement || 'N/A'}</span>
                         </div>
                         <div style={styles.detailItem}>
-                          {(plant.petSafe || (plant.toxic && plant.toxic.toLowerCase().includes('no'))) ? (
-                            <ShieldCheck size={13} color="var(--success)" />
-                          ) : (
+                          {(recommendation.warnings || []).some((warning) => warning.toLowerCase().includes('pet')) ? (
                             <ShieldAlert size={13} color="var(--error)" />
+                          ) : (
+                            <ShieldCheck size={13} color="var(--success)" />
                           )}
-                          <span style={styles.detailLabel}>Pet Safe:</span>
-                          <span style={{
-                            ...styles.detailValue,
-                            color: (plant.petSafe || (plant.toxic && plant.toxic.toLowerCase().includes('no')))
-                              ? 'var(--success)' : 'var(--error)'
-                          }}>
-                            {(plant.petSafe || (plant.toxic && plant.toxic.toLowerCase().includes('no')))
-                              ? 'Yes' : 'No'}
-                          </span>
+                          <span style={styles.detailLabel}>Score:</span>
+                          <span style={styles.detailValue}>{recommendation.score}</span>
                         </div>
                       </div>
+
+                      <div style={styles.reasonBlock}>
+                        <strong>Why it matched:</strong> {(recommendation.reasons || []).join(' • ') || 'General suitability'}
+                      </div>
+                      {(recommendation.careNotes || []).length > 0 && (
+                        <div style={styles.reasonBlock}><strong>Care notes:</strong> {recommendation.careNotes.join(' • ')}</div>
+                      )}
+                      {(recommendation.warnings || []).length > 0 && (
+                        <div style={{ ...styles.reasonBlock, borderColor: 'rgba(245, 158, 11, 0.35)' }}><strong>Warnings:</strong> {recommendation.warnings.join(' • ')}</div>
+                      )}
 
                       <div style={styles.resultActions}>
                         <Button
                           variant="secondary"
                           icon={<Eye size={14} />}
-                          onClick={() => navigate(`/catalog/${plant.id}`)}
+                          onClick={() => navigate(`/catalog/${recommendation.product.id}`)}
                           style={{ flex: 1, fontSize: '13px', padding: '8px 12px' }}
                         >
                           Details
@@ -334,7 +336,7 @@ export default function PlantRecommendationPage() {
                         <Button
                           variant="lime"
                           icon={<ShoppingCart size={14} />}
-                          onClick={() => handleAddToCart(plant)}
+                          onClick={() => handleAddToCart(recommendation)}
                           style={{ flex: 1, fontSize: '13px', padding: '8px 12px' }}
                         >
                           Add to Cart
@@ -348,7 +350,7 @@ export default function PlantRecommendationPage() {
                   <AlertCircle size={36} color="var(--warning)" />
                   <h4 style={{ color: 'var(--text-white)', margin: '12px 0 4px' }}>No plants found</h4>
                   <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '300px', margin: '0 auto' }}>
-                    Try relaxing your criteria to widen suitable botanical options.
+                    The backend did not return any recommendation rows for this criteria set.
                   </p>
                 </div>
               )}
@@ -357,10 +359,39 @@ export default function PlantRecommendationPage() {
             <div className="card" style={styles.emptyResults}>
               <Sparkles size={48} color="var(--border-green)" />
               <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>
-                Fill out the questionnaire to launch matching algorithms.
+                Fill out the questionnaire to call the backend recommendation engine.
               </h4>
             </div>
           )}
+
+          <div className="card" style={{ marginTop: '24px', padding: '20px' }}>
+            <div style={styles.historyHeader}>
+              <div>
+                <h3 style={{ margin: 0, color: 'var(--text-white)' }}>Recommendation History</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '13px' }}>Recent backend recommendation requests</p>
+              </div>
+              <Button variant="secondary" onClick={loadHistory} icon={<History size={16} />}>
+                Refresh
+              </Button>
+            </div>
+            {historyLoading ? (
+              <div style={styles.historyEmpty}>Loading recommendation history...</div>
+            ) : history.length > 0 ? (
+              <div style={styles.historyList}>
+                {history.map((item) => (
+                  <div key={item.id} style={styles.historyItem}>
+                    <div>
+                      <div style={{ color: 'var(--text-white)', fontWeight: 700 }}>{String(item.type || '').replace(/_/g, ' ')}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Unknown time'}</div>
+                    </div>
+                    <div style={{ color: 'var(--accent-lime)', fontSize: '12px' }}>{(item.results || []).length} results</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={styles.historyEmpty}>No recommendation history yet.</div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -391,9 +422,7 @@ const styles = {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
     borderBottom: '1px solid var(--border-green)', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px',
   },
-  resultCard: {
-    display: 'flex', flexDirection: 'column', gap: '0', padding: '16px',
-  },
+  resultCard: { display: 'flex', flexDirection: 'column', gap: '0', padding: '16px' },
   resultCardTop: { display: 'flex', gap: '14px', alignItems: 'center' },
   resultImageWrap: {
     width: '80px', height: '80px', borderRadius: 'var(--radius-sm)',
@@ -401,13 +430,14 @@ const styles = {
   },
   resultInfo: { display: 'flex', flexDirection: 'column', gap: '2px' },
   resultName: { fontSize: '16px', fontWeight: '700', color: 'var(--text-white)', margin: 0 },
-  resultCategory: { fontSize: '12px', color: 'var(--accent-lime)', fontWeight: '600', textTransform: 'capitalize' },
+  resultCategory: { fontSize: '12px', color: 'var(--accent-lime)', fontWeight: '600' },
   resultPrice: { fontSize: '15px', fontWeight: '800', color: 'var(--btn-yellow)' },
   resultDivider: { height: '1px', backgroundColor: 'var(--border-green)', margin: '12px 0' },
   resultDetails: { display: 'flex', flexWrap: 'wrap', gap: '12px 24px', marginBottom: '12px' },
   detailItem: { display: 'flex', alignItems: 'center', gap: '6px' },
   detailLabel: { fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' },
   detailValue: { fontSize: '12px', color: 'var(--text-light)', fontWeight: '500' },
+  reasonBlock: { marginBottom: '10px', padding: '10px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-darker)', border: '1px solid rgba(132, 204, 22, 0.18)', color: 'var(--text-light)', fontSize: '13px' },
   resultActions: { display: 'flex', gap: '10px' },
   noMatchesCard: { textAlign: 'center', padding: '48px 24px', marginTop: '20px' },
   emptyResults: {
@@ -415,4 +445,8 @@ const styles = {
     justifyContent: 'center', textAlign: 'center', borderStyle: 'dashed',
     borderWidth: '2px', padding: '80px 20px',
   },
+  historyHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
+  historyList: { display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' },
+  historyItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', padding: '12px 14px', borderRadius: 'var(--radius-sm)', backgroundColor: 'var(--bg-darker)' },
+  historyEmpty: { marginTop: '16px', color: 'var(--text-muted)', fontSize: '13px' },
 };

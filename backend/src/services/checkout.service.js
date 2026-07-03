@@ -2,6 +2,7 @@ import { getPrismaClient } from '../database/prisma.js';
 import { AppError } from '../utils/appError.js';
 import { logAuditEvent } from '../utils/audit.js';
 import { generateOrderNumber } from '../utils/orderNumber.js';
+import { NotificationService } from './notification.service.js';
 
 const DELIVERY_FEES = {
   PICKUP: 0,
@@ -145,6 +146,12 @@ export class CheckoutService {
     } catch (error) {
       if (error instanceof AppError) throw error;
       throw new AppError('Checkout failed. Please try again.', 500, 'CHECKOUT_FAILED');
+    }
+
+    try {
+      const userData = { id: userId, name: cart.user?.name || 'Customer', email: '' };
+      notif.sendNotification(userId, 'ORDER', 'Order Confirmed', `Your order ${order.orderNumber} has been placed successfully.`, { orderId: order.id, orderNumber: order.orderNumber });
+    } catch {
     }
 
     return {

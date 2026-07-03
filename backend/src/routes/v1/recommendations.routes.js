@@ -1,6 +1,28 @@
 import { Router } from 'express';
+import { authenticate } from '../../middleware/auth.middleware.js';
+import { requireRoles } from '../../middleware/authorization.middleware.js';
+import {
+  recommendPlants,
+  vaseMatch,
+  recommendGardenPlan,
+  recommendProducts,
+  getRecommendationHistory,
+} from '../../controllers/recommendation.controller.js';
+import {
+  plantRecommendationValidation,
+  vaseMatchValidation,
+  gardenPlanRecommendationValidation,
+  productRecommendationValidation,
+} from '../../validators/recommendation.validators.js';
 
 const router = Router();
 
-export default router;
+router.use(authenticate);
 
+router.post('/plants', requireRoles('CUSTOMER', 'GARDENER', 'ADMIN'), plantRecommendationValidation, recommendPlants);
+router.post('/vase-match', requireRoles('CUSTOMER', 'FLORIST', 'ADMIN'), vaseMatchValidation, vaseMatch);
+router.post('/garden-plan', requireRoles('CUSTOMER', 'GARDENER', 'ADMIN'), gardenPlanRecommendationValidation, recommendGardenPlan);
+router.get('/products', requireRoles('CUSTOMER', 'GARDENER', 'FLORIST', 'ADMIN'), productRecommendationValidation, recommendProducts);
+router.get('/history', requireRoles('CUSTOMER', 'GARDENER', 'FLORIST', 'ADMIN'), getRecommendationHistory);
+
+export default router;

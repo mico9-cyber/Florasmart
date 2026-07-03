@@ -1,11 +1,13 @@
-﻿import React, { useContext } from 'react';
+﻿import React, { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardCard from '../components/DashboardCard';
 import Button from '../components/Button';
 import {
   ShoppingBag, Grid, Award, ArrowRight, Heart, Sparkles, Flower2,
-  MessageSquare, ClipboardList, User, Leaf, Package
+  MessageSquare, ClipboardList, User, Leaf, Package, RefreshCw
 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatCurrency';
 import ImageWithFallback from '../components/ImageWithFallback';
@@ -13,6 +15,8 @@ import ImageWithFallback from '../components/ImageWithFallback';
 export default function CustomerDashboard() {
   const { user, orders, loyalty, products, gardenLayout } = useContext(AppContext);
   const navigate = useNavigate();
+  const addToast = useToast();
+  const [loading] = useState(false);
 
   const recommendedItems = products.filter(p => p.isAIRecommended).slice(0, 4);
   const recentOrders = orders.slice(0, 3);
@@ -29,6 +33,14 @@ export default function CustomerDashboard() {
     { to: '/order-tracking', icon: ClipboardList, title: 'Orders', desc: 'View order history, track deliveries, and reorder.' },
     { to: '/profile', icon: User, title: 'Profile', desc: 'Manage your account, settings, and preferences.' },
   ];
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-content">

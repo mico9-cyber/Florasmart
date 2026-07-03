@@ -1,19 +1,40 @@
-﻿import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+﻿import React, { useContext, useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
-import { ShoppingCart, Leaf, User, Award, LogOut, LogIn, UserPlus, Menu, Sun, Moon } from 'lucide-react';
-
-function getPrimaryRole(user) {
-  return user.role || 'customer';
-}
+import { notificationService } from '../services/notificationService';
+import { ShoppingCart, Leaf, User, Award, LogOut, LogIn, UserPlus, Menu, Sun, Moon, Bell } from 'lucide-react';
+import { normalizeRole, getDashboardRoute } from '../config/navigation';
 
 export default function Navbar({ onToggleSidebar }) {
   const { user, cart, handleLogout, theme, toggleTheme } = useContext(AppContext);
   const navigate = useNavigate();
-  const role = getPrimaryRole(user);
+  const location = useLocation();
+  const role = normalizeRole(user.role);
   const isLoggedIn = user.loggedIn;
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-  const dashboardPath = `/${role}-dashboard`;
+  const dashboardPath = getDashboardRoute(role);
+  const [notifCount, setNotifCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoggedIn) { setNotifCount(0); return; }
+    let cancelled = false;
+    const fetch = async () => {
+      try {
+        const res = await notificationService.unreadCount();
+        if (!cancelled) setNotifCount(res?.data?.count ?? res?.data ?? 0);
+      } catch {
+        if (!cancelled) setNotifCount(0);
+      }
+    };
+    fetch();
+    const interval = setInterval(fetch, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   const handleLogoutClick = () => {
     handleLogout();
@@ -21,72 +42,121 @@ export default function Navbar({ onToggleSidebar }) {
   };
 
   return (
-    <nav style={styles.nav}>
-      <div className="container" style={styles.container}>
-        <div style={styles.left}>
-          {isLoggedIn && (
-            <button className="mobile-sidebar-toggle" onClick={onToggleSidebar} style={styles.hamburger} aria-label="Toggle sidebar">
-              <Menu size={24} />
-            </button>
-          )}
-          {!isLoggedIn && (
-            <Link to="/" style={styles.logoLink}>
+    <>
+      <style>{`
+        .navbar-mobile-toggle {
+          display: none;
+        }
+        @media (max-width: 768px) {
+          .navbar-mobile-toggle {
+            display: inline-flex !important;
+          }
+          .nav-actions {
+            display: none !important;
+          }
+          .nav-actions.nav-actions--open {
+            display: flex !important;
+            flex-direction: column !important;
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: var(--bg-darker) !important;
+            border-bottom: 1px solid var(--navbar-border) !important;
+            padding: 16px !important;
+            gap: 12px !important;
+            z-index: 99 !important;
+            box-shadow: var(--shadow-lg) !important;
+          }
+          .nav-actions.nav-actions--open > *:not(.desktop-only) {
+            display: flex !important;
+          }
+          nav {
+            position: relative !important;
+          }
+        }
+      `}</style>
+      <nav style={styles.nav}>
+        <div className="container" style={styles.container}>
+          <div style={styles.left}>
+            {isLoggedIn && (
+              <button className="mobile-sidebar-toggle" onClick={onToggleSidebar} style={styles.hamburger} aria-label="Toggle sidebar">
+                <Menu size={24} />
+              </button>
+            )}
+            <Link to={isLoggedIn ? '#' : '/'} style={styles.logoLink}>
               <Leaf size={24} color="var(--accent-lime)" />
               <span style={styles.logoText}>FloraSmart</span>
             </Link>
-          )}
-        </div>
+          </div>
 
-        <div style={styles.actions}>
           <button
-            onClick={toggleTheme}
-            style={styles.iconBtn}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="navbar-mobile-toggle"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            style={styles.hamburger}
+            aria-label="Toggle navigation menu"
           >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            <Menu size={24} />
           </button>
 
-          {isLoggedIn && (
-            <>
-              <Link to={dashboardPath} style={styles.dashboardLink} title="Dashboard">
-                <Award size={16} />
-                <span className="desktop-only">Dashboard</span>
-              </Link>
+          <div className={`nav-actions ${menuOpen ? 'nav-actions--open' : ''}`} style={styles.actions}>
+            <button
+              onClick={toggleTheme}
+              style={styles.iconBtn}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
 
-              {role === 'customer' && (
-                <Link to="/cart" style={styles.iconBtn} title="Cart">
-                  <ShoppingCart size={20} color="var(--text-light)" />
-                  {cartCount > 0 && (
-                    <span style={styles.cartBadge}>{cartCount}</span>
+            {isLoggedIn && (
+              <>
+                <Link to={dashboardPath} style={styles.dashboardLink} title="Dashboard">
+                  <Award size={16} />
+                  <span className="desktop-only">Dashboard</span>
+                </Link>
+
+                <Link to="/notifications" style={styles.iconBtn} title="Notifications">
+                  <Bell size={18} />
+                  {notifCount > 0 && (
+                    <span style={styles.cartBadge}>{notifCount > 99 ? '99+' : notifCount}</span>
                   )}
                 </Link>
-              )}
 
-              <Link to="/profile" style={styles.iconBtn} title="Profile">
-                <User size={18} />
-              </Link>
+                {role === 'CUSTOMER' && (
+                  <Link to="/cart" style={styles.iconBtn} title="Cart">
+                    <ShoppingCart size={20} color="var(--text-light)" />
+                    {cartCount > 0 && (
+                      <span style={styles.cartBadge}>{cartCount}</span>
+                    )}
+                  </Link>
+                )}
 
-              <button onClick={handleLogoutClick} style={styles.iconBtn} title="Logout">
-                <LogOut size={18} />
-              </button>
-            </>
-          )}
+                <Link to="/profile" style={styles.iconBtn} title="Profile">
+                  <User size={18} />
+                </Link>
 
-          {!isLoggedIn && (
-            <>
-              <Link to="/login" style={styles.loginBtn}>
-                <LogIn size={16} />
-                <span className="desktop-only">Login</span>
-              </Link>
-              <Link to="/register" style={styles.registerBtn}>
-                <UserPlus size={16} />
-                <span className="desktop-only">Register</span>
-              </Link>
-            </>
-          )}
+                <button onClick={handleLogoutClick} style={styles.iconBtn} title="Logout">
+                  <LogOut size={18} />
+                </button>
+              </>
+            )}
+
+            {!isLoggedIn && (
+              <>
+                <Link to="/login" style={styles.loginBtn}>
+                  <LogIn size={16} />
+                  <span className="desktop-only">Login</span>
+                </Link>
+                <Link to="/register" style={styles.registerBtn}>
+                  <UserPlus size={16} />
+                  <span className="desktop-only">Register</span>
+                </Link>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
 }
 

@@ -1,6 +1,9 @@
 import { BaseService } from './base.service.js';
 import { AppError } from '../utils/appError.js';
 import { getPrismaClient } from '../database/prisma.js';
+import { NotificationService } from './notification.service.js';
+
+const _notif = new NotificationService();
 
 const STOCK_STATUS = {
   IN_STOCK: 'in_stock',
@@ -386,6 +389,22 @@ export class InventoryService extends BaseService {
       where: { id: productId },
       data: { stockStatus: status },
     });
+
+    if (status === STOCK_STATUS.LOW_STOCK || status === STOCK_STATUS.OUT_OF_STOCK) {
+      try {
+        const product = await prisma.product.findUnique({ where: { id: productId }, select: { name: true, sku: true } });
+        const adminUsers = await prisma.userRole.findMany({
+          where: { role: { name: { in: ['ADMIN', 'FLORIST'] } } },
+          include: { user: { select: { id: true } } },
+          distinct: ['userId'],
+        });
+        const adminIds = [...new Set(adminUsers.map(ur => ur.userId))];
+        for (const adminId of adminIds) {
+          _notif.createInAppNotification(adminId, 'INVENTORY', 'Low Stock Alert', `${product?.name || 'Product'} is ${status}. SKU: ${product?.sku}`, { productId, status, sku: product?.sku });
+        }
+      } catch {
+      }
+    }
   }
 
   _deriveStockStatus(availableQuantity, lowStockThreshold) {

@@ -1,0 +1,20 @@
+﻿import { del, get, patch, post, put } from './api';
+export const gardenPlanService = {
+  list: () => get('/garden-plans', { requiresAuth: true }),
+  summary: () => get('/garden-plans/summary/me', { requiresAuth: true }),
+  create: (payload) => post('/garden-plans', payload, { requiresAuth: true }),
+  getById: (planId) => get(`/garden-plans/${planId}`, { requiresAuth: true }),
+  update: (planId, payload) => patch(`/garden-plans/${planId}`, payload, { requiresAuth: true }),
+  remove: (planId) => del(`/garden-plans/${planId}`, { requiresAuth: true }),
+  setDefault: (planId) => post(`/garden-plans/${planId}/default`, {}, { requiresAuth: true }),
+  updateCell: (planId, row, col, payload) => put(`/garden-plans/${planId}/cells/${row}/${col}`, payload, { requiresAuth: true }),
+  removeCell: (planId, row, col) => del(`/garden-plans/${planId}/cells/${row}/${col}`, { requiresAuth: true }),
+  listPlacements: (planId) => get(`/garden-plans/${planId}/placements`, { requiresAuth: true }),
+  addPlacement: (planId, payload) => post(`/garden-plans/${planId}/placements`, payload, { requiresAuth: true }),
+  updatePlacement: (planId, placementId, payload) => patch(`/garden-plans/${planId}/placements/${placementId}`, payload, { requiresAuth: true }),
+  removePlacement: (planId, placementId) => del(`/garden-plans/${planId}/placements/${placementId}`, { requiresAuth: true }),
+  listNotes: (planId) => get(`/garden-plans/${planId}/notes`, { requiresAuth: true }),
+  addNote: (planId, payload) => post(`/garden-plans/${planId}/notes`, payload, { requiresAuth: true }),
+  updateNote: (planId, noteId, payload) => patch(`/garden-plans/${planId}/notes/${noteId}`, payload, { requiresAuth: true }),
+  removeNote: (planId, noteId) => del(`/garden-plans/${planId}/notes/${noteId}`, { requiresAuth: true }),
+};

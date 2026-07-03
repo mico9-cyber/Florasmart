@@ -5,4 +5,10 @@ src/logs/*.log
 uploads/*
 !uploads/.gitkeep
 prisma/dev.db
+reports/*.csv
+reports/*.json
+reports/*.pdf
+reports/*.html
+reports/*.txt
+!reports/.gitkeep
 

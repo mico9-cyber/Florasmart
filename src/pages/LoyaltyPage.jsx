@@ -1,45 +1,40 @@
-﻿import React, { useContext, useState } from 'react';
+﻿import React, { useContext } from 'react';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 import DashboardCard from '../components/DashboardCard';
 import Button from '../components/Button';
-import { Award, Zap, Calendar, CheckCircle } from 'lucide-react';
+import { Award, Zap, Calendar } from 'lucide-react';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function LoyaltyPage() {
-  const { loyalty, updateSubscription } = useContext(AppContext);
-  const [successMsg, setSuccessMsg] = useState('');
+  const { loyalty, subscriptionPlans, updateSubscription } = useContext(AppContext);
+  const addToast = useToast();
 
   const handleSubscribeToggle = (planName, price) => {
     if (loyalty.isSubscribed && loyalty.subscriptionPlan === planName) {
-      // Cancel
       if (window.confirm(`Are you sure you want to cancel your ${planName}?`)) {
         updateSubscription(false);
-        setSuccessMsg(`Cancelled ${planName} subscription.`);
-        setTimeout(() => setSuccessMsg(''), 3000);
+        addToast(`Cancelled ${planName} subscription.`, 'success');
       }
     } else {
-      // Subscribe
       updateSubscription(true, planName, price);
-      setSuccessMsg(`Successfully subscribed to ${planName}!`);
-      setTimeout(() => setSuccessMsg(''), 3000);
+      addToast(`Successfully subscribed to ${planName}!`, 'success');
     }
   };
 
+  const isLoading = !loyalty;
+  const transactions = loyalty?.transactions;
+
+  if (isLoading) return <LoadingSpinner text="Loading loyalty data..." />;
+
   return (
     <div className="dashboard-content">
-        {/* Title Header */}
         <div style={styles.header}>
           <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Loyalty Rewards & Subscriptions</h2>
           <p style={{ color: 'var(--text-muted)' }}>Manage periodic flower drops, review green club levels, and claim shopping vouchers.</p>
         </div>
-
-        {successMsg && (
-          <div style={styles.successBanner}>
-            <CheckCircle size={18} color="var(--success)" />
-            <span>{successMsg}</span>
-          </div>
-        )}
 
         {/* Loyalty details */}
         <div className="grid-cols-3" style={{ margin: '32px 0' }}>
@@ -72,45 +67,29 @@ export default function LoyaltyPage() {
             </p>
 
             <div className="grid-cols-2" style={{ gap: '20px' }}>
-              {/* Plan 1 */}
-              <div className="card" style={{
-                ...styles.planCard,
-                borderColor: loyalty.subscriptionPlan === 'Weekly Flower Drop' ? 'var(--accent-lime)' : 'var(--border-green)'
-              }}>
-                <span style={{ fontSize: '32px' }}>🌹</span>
-                <h4 style={styles.planName}>Weekly Flower Drop</h4>
-                <p style={styles.planPrice}>{formatCurrency(30000)} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ month</span></p>
-                <p style={styles.planDesc}>
-                  Receive a hand-tied seasonal bouquet crafted by professional florists every Friday. Perfect for office decorations.
-                </p>
-                <Button
-                  variant={loyalty.subscriptionPlan === 'Weekly Flower Drop' ? 'secondary' : 'lime'}
-                  style={{ width: '100%', marginTop: '16px' }}
-                  onClick={() => handleSubscribeToggle('Weekly Flower Drop', 29.99)}
-                >
-                  {loyalty.subscriptionPlan === 'Weekly Flower Drop' ? 'Cancel Subscription' : 'Subscribe Now'}
-                </Button>
-              </div>
-
-              {/* Plan 2 */}
-              <div className="card" style={{
-                ...styles.planCard,
-                borderColor: loyalty.subscriptionPlan === 'Monthly Green Refresh' ? 'var(--accent-lime)' : 'var(--border-green)'
-              }}>
-                <span style={{ fontSize: '32px' }}>🪴</span>
-                <h4 style={styles.planName}>Monthly Green Refresh</h4>
-                <p style={styles.planPrice}>{formatCurrency(40000)} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ month</span></p>
-                <p style={styles.planDesc}>
-                  A unique pet-safe air-purifying houseplant shipped directly in clay pots. Includes custom AI diagnostics sheets.
-                </p>
-                <Button
-                  variant={loyalty.subscriptionPlan === 'Monthly Green Refresh' ? 'secondary' : 'lime'}
-                  style={{ width: '100%', marginTop: '16px' }}
-                  onClick={() => handleSubscribeToggle('Monthly Green Refresh', 39.99)}
-                >
-                  {loyalty.subscriptionPlan === 'Monthly Green Refresh' ? 'Cancel Subscription' : 'Subscribe Now'}
-                </Button>
-              </div>
+              {(subscriptionPlans && subscriptionPlans.length > 0 ? subscriptionPlans : [
+                { id: 'basic', name: 'Basic Garden Care', price: 5000, description: 'Monthly soil analysis card and one seasonal seedling.' },
+                { id: 'premium', name: 'Premium Plant Club', price: 15000, description: 'Rare plant delivery every month with AI care sheets.' },
+              ]).map((plan) => (
+                <div key={plan.id} className="card" style={{
+                  ...styles.planCard,
+                  borderColor: loyalty.subscriptionPlan === plan.name ? 'var(--accent-lime)' : 'var(--border-green)'
+                }}>
+                  <span style={{ fontSize: '32px' }}>{plan.name?.includes('Premium') || plan.name?.includes('Plus') ? '🪴' : plan.name?.includes('Basic') ? '🌱' : '🌹'}</span>
+                  <h4 style={styles.planName}>{plan.name}</h4>
+                  <p style={styles.planPrice}>{formatCurrency(Number(plan.price || 0))} <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>/ month</span></p>
+                  <p style={styles.planDesc}>
+                    {plan.description || 'Subscription plan'}
+                  </p>
+                  <Button
+                    variant={loyalty.subscriptionPlan === plan.name ? 'secondary' : 'lime'}
+                    style={{ width: '100%', marginTop: '16px' }}
+                    onClick={() => handleSubscribeToggle(plan.name, plan.price)}
+                  >
+                    {loyalty.subscriptionPlan === plan.name ? 'Cancel Subscription' : 'Subscribe Now'}
+                  </Button>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -118,29 +97,29 @@ export default function LoyaltyPage() {
           <div className="card" style={{ flex: 1, minWidth: '300px', alignSelf: 'flex-start' }}>
             <h3 style={styles.sectionTitle}>Point Accrual Ledger</h3>
             <div style={styles.ledgerList}>
-              <div style={styles.ledgerItem}>
-                <div>
-                  <h5 style={styles.ledgerAction}>Order FL-9082</h5>
-                  <span style={styles.ledgerDate}>June 22, 2026</span>
+              {(transactions && transactions.length > 0 ? transactions : [
+                { description: 'Order FL-9082', createdAt: '2026-06-22', points: 490 },
+                { description: 'Order FL-8104', createdAt: '2026-06-15', points: 370 },
+                { description: 'Account Registration', createdAt: '2026-06-10', points: 50 },
+              ]).slice(0, 10).map((tx, i) => (
+                <div key={i} style={styles.ledgerItem}>
+                  <div>
+                    <h5 style={styles.ledgerAction}>{tx.description || tx.reason || `Transaction #${tx.id}`}</h5>
+                    <span style={styles.ledgerDate}>{tx.createdAt ? new Date(tx.createdAt).toLocaleDateString() : ''}</span>
+                  </div>
+                  <span style={{
+                    ...styles.ledgerPoints,
+                    color: (tx.points || tx.amount || 0) >= 0 ? 'var(--accent-lime)' : 'var(--error)'
+                  }}>
+                    {(tx.points || tx.amount || 0) >= 0 ? '+' : ''}{tx.points || tx.amount || 0} pts
+                  </span>
                 </div>
-                <span style={styles.ledgerPoints}>+490 pts</span>
-              </div>
-
-              <div style={styles.ledgerItem}>
-                <div>
-                  <h5 style={styles.ledgerAction}>Order FL-8104</h5>
-                  <span style={styles.ledgerDate}>June 15, 2026</span>
-                </div>
-                <span style={styles.ledgerPoints}>+370 pts</span>
-              </div>
-
-              <div style={styles.ledgerItem}>
-                <div>
-                  <h5 style={styles.ledgerAction}>Account Registration</h5>
-                  <span style={styles.ledgerDate}>June 10, 2026</span>
-                </div>
-                <span style={styles.ledgerPoints}>+50 pts</span>
-              </div>
+              ))}
+              {(!transactions || transactions.length === 0) && (
+                <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', marginTop: '8px' }}>
+                  No transaction history yet.
+                </p>
+              )}
             </div>
           </div>
         </div>

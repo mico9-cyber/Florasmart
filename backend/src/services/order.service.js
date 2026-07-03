@@ -2,6 +2,9 @@ import { BaseService } from './base.service.js';
 import { AppError } from '../utils/appError.js';
 import { getPrismaClient } from '../database/prisma.js';
 import { logAuditEvent } from '../utils/audit.js';
+import { NotificationService } from './notification.service.js';
+
+const _notif = new NotificationService();
 
 const ALLOWED_TRANSITIONS = {
   PENDING: ['PROCESSING', 'CANCELLED'],
@@ -197,6 +200,16 @@ export class OrderService extends BaseService {
 
     await logAuditEvent(getPrismaClient(), { action: 'order_status_updated', userId: user.userId, orderId: id, status });
 
+    try {
+      const prisma = getPrismaClient();
+      const orderUser = await prisma.user.findUnique({ where: { id: order.userId }, select: { id: true } });
+      if (orderUser) {
+        const statusLabel = status.replace(/_/g, ' ');
+        _notif.sendNotification(order.userId, 'ORDER', `Order ${statusLabel}`, `Your order ${order.orderNumber} is now: ${statusLabel}.`, { orderId: id, orderNumber: order.orderNumber, status });
+      }
+    } catch {
+    }
+
     return this.getById(user, id);
   }
 
@@ -236,6 +249,11 @@ export class OrderService extends BaseService {
     await this._restoreStock(order);
 
     await logAuditEvent(getPrismaClient(), { action: 'order_cancelled', userId: user.userId, orderId: id, reason });
+
+    try {
+      _notif.sendNotification(order.userId, 'ORDER', 'Order Cancelled', `Your order ${order.orderNumber} has been cancelled.`, { orderId: id, orderNumber: order.orderNumber, status: 'CANCELLED', cancelReason: reason });
+    } catch {
+    }
 
     return this.getById(user, id);
   }

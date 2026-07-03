@@ -1,17 +1,21 @@
 ﻿import React, { useState, useContext } from 'react';
 import { AppContext } from '../context/AppData';
-import { Search, MapPin, Truck, Calendar, Box, CheckCircle2 } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { Search, MapPin, Truck, Calendar, Box, CheckCircle2, RefreshCw, Package } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function OrderTrackingPage() {
   const { orders } = useContext(AppContext);
+  const addToast = useToast();
 
   // States
   const [searchId, setSearchId] = useState('');
   const [activeOrder, setActiveOrder] = useState(orders[0] || null);
   const [searchErr, setSearchErr] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -68,7 +72,24 @@ export default function OrderTrackingPage() {
         </form>
       </div>
 
-      {activeOrder ? (
+      {loading && (
+        <div style={{ textAlign: 'center', margin: '40px 0' }}>
+          <RefreshCw size={28} className="spin" />
+        </div>
+      )}
+
+      {orders.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <Package size={56} color="var(--border-green)" />
+          <h3 style={{ color: 'var(--text-white)', marginTop: '20px' }}>No Orders Yet</h3>
+          <p style={{ color: 'var(--text-muted)', margin: '8px 0 24px', maxWidth: '350px', marginLeft: 'auto', marginRight: 'auto' }}>
+            You haven't placed any orders. Browse our catalog and start your green journey!
+          </p>
+          <Button variant="lime" onClick={() => window.location.href = '/catalog'}>
+            Browse Catalog
+          </Button>
+        </div>
+      ) : activeOrder ? (
         <div style={styles.layout}>
           {/* Tracking Status Display */}
           <div className="card" style={styles.statusCard}>
@@ -173,7 +194,7 @@ export default function OrderTrackingPage() {
         </div>
       ) : (
         <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
-          <p style={{ color: 'var(--text-muted)' }}>No order tracking details active. Place an order to review live routes.</p>
+          <p style={{ color: 'var(--text-muted)' }}>No order tracking details active. Use the search above or select an order from your history.</p>
         </div>
       )}
     </div>

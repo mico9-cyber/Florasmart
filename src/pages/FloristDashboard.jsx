@@ -1,5 +1,7 @@
-﻿import React, { useContext, useState } from 'react';
+﻿import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 import DashboardCard from '../components/DashboardCard';
 import ChartCard from '../components/ChartCard';
@@ -12,9 +14,15 @@ import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function FloristDashboard() {
   const { orders, products, updateOrderStatus, updateProductStock } = useContext(AppContext);
+  const addToast = useToast();
+  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [newStatus, setNewStatus] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    setLoading(false);
+  }, []);
 
   // Filter floral items
   const floralInventory = products.filter(p => p.category === 'flowers' || p.category === 'vases');
@@ -27,10 +35,20 @@ export default function FloristDashboard() {
 
   const handleUpdateStatus = () => {
     if (selectedOrder) {
-      updateOrderStatus(selectedOrder.id, newStatus);
+      try {
+        updateOrderStatus(selectedOrder.id, newStatus);
+        addToast(`Order ${selectedOrder.id} status updated to "${newStatus}"`, 'success');
+      } catch {
+        addToast('Failed to update order status', 'error');
+      }
       setModalOpen(false);
       setSelectedOrder(null);
     }
+  };
+
+  const handleRestock = (item) => {
+    updateProductStock(item.id, item.stock + 10);
+    addToast(`${item.name} restocked by 10 units`, 'success');
   };
 
   const handleExportPDF = () => {
@@ -38,6 +56,7 @@ export default function FloristDashboard() {
       { heading: 'Arrangement Queue', lines: orders.map((order) => order.id + ' | ' + order.status + ' | ' + order.address) },
       { heading: 'Floral Inventory', lines: floralInventory.map((item) => item.name + ' | ' + item.stock + ' left') },
     ]);
+    addToast('Florist orders report exported as PDF', 'success');
   };
 
   const handleExportExcel = () => {
@@ -45,7 +64,16 @@ export default function FloristDashboard() {
       ['Order ID', 'Items', 'Destination', 'Status'],
       ...orders.map((order) => [order.id, order.items.map((item) => item.name + ' x' + item.quantity).join('; '), order.address, order.status]),
     ]);
+    addToast('Florist orders exported as CSV', 'success');
   };
+
+  if (loading) {
+    return (
+      <div className="dashboard-content">
+        <LoadingSpinner text="Loading florist dashboard..." />
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard-content">
@@ -77,9 +105,9 @@ export default function FloristDashboard() {
           />
           <DashboardCard
             title="Floral Stems Handled"
-            value="142 Stems"
+            value={`${orders.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.quantity, 0), 0)} Stems`}
             icon={<Flower2 size={20} color="var(--accent-lime)" />}
-            description="Processed in last 24 hours"
+            description="Processed across all orders"
             trend="+12% vs yday"
             trendType="positive"
           />
@@ -98,6 +126,12 @@ export default function FloristDashboard() {
           <div className="card" style={{ flex: 1.5, minWidth: '350px' }}>
             <h3 style={styles.sectionTitle}>Floral Arrangement Queue</h3>
             <div className="table-container" style={{ marginTop: '16px' }}>
+              {orders.length === 0 ? (
+                <div style={styles.statePanel}>
+                  <AlertTriangle size={20} color="var(--text-muted)" style={{ marginRight: '8px' }} />
+                  <span>No floral orders yet. Orders will appear here once placed.</span>
+                </div>
+              ) : (
               <table className="custom-table">
                 <thead>
                   <tr>
@@ -137,6 +171,7 @@ export default function FloristDashboard() {
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
           </div>
 
@@ -144,7 +179,12 @@ export default function FloristDashboard() {
           <div className="card" style={{ flex: 1, minWidth: '300px' }}>
             <h3 style={styles.sectionTitle}>Flower & Vase Inventory</h3>
             <div style={styles.inventoryList}>
-              {floralInventory.map((item) => (
+              {floralInventory.length === 0 ? (
+                <div style={styles.statePanel}>
+                  <span>No floral inventory items available.</span>
+                </div>
+              ) : (
+              floralInventory.map((item) => (
                 <div key={item.id} style={styles.inventoryItem}>
                   <ImageWithFallback src={item.image} alt={item.name} category={item.category} style={{ width: '40px', height: '40px', borderRadius: 'var(--radius-sm)' }} />
                   <div style={{ flex: 1 }}>
@@ -159,7 +199,7 @@ export default function FloristDashboard() {
                       {item.stock} left
                     </span>
                     <button
-                      onClick={() => updateProductStock(item.id, item.stock + 10)}
+                      onClick={() => handleRestock(item)}
                       style={styles.quickRestock}
                       title="Quickly restock +10 units"
                     >
@@ -167,7 +207,8 @@ export default function FloristDashboard() {
                     </button>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </div>
         </div>
@@ -266,6 +307,16 @@ const styles = {
     fontWeight: '700',
     cursor: 'pointer',
     marginTop: '4px',
+  },
+  statePanel: {
+    padding: '18px',
+    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'var(--bg-darker)',
+    color: 'var(--text-muted)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '13px',
   }
 };
 

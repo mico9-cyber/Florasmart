@@ -6,6 +6,7 @@ import { generateOtp, hashOtp, verifyOtpHash, OTP_PURPOSE } from '../utils/otp.j
 import { addDuration } from '../utils/date.js';
 import { AppError } from '../utils/appError.js';
 import { ROLES } from '../constants/auth.js';
+import { NotificationService } from './notification.service.js';
 
 const OTP_ATTEMPTS_MAX = 5;
 
@@ -105,6 +106,11 @@ export class AuthService {
     }
     if (process.env.NODE_ENV !== 'production') {
       this.logger.info(`Registration OTP for ${email}: ${otp}`);
+    }
+    try {
+      const notif = new NotificationService();
+      await notif.createInAppNotification(userId, 'AUTH', 'Registration OTP Sent', `An OTP has been sent to ${email} for registration verification.`);
+    } catch {
     }
   }
 
@@ -253,6 +259,11 @@ export class AuthService {
     });
     if (this.mailer?.sendResetToken) await this.mailer.sendResetToken(user.email, rawToken);
     else if (process.env.NODE_ENV !== 'production') this.logger.info('Password reset token', { email: user.email, token: rawToken });
+    try {
+      const notif = new NotificationService();
+      await notif.createInAppNotification(user.id, 'AUTH', 'Password Reset Requested', 'A password reset link has been sent to your email.');
+    } catch {
+    }
     return { ok: true };
   }
 

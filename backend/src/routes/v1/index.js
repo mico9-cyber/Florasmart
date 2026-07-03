@@ -12,11 +12,14 @@ import checkoutRoutes from './checkout.routes.js';
 import orderRoutes from './orders.routes.js';
 import deliveryRoutes from './delivery.routes.js';
 import loyaltyRoutes from './loyalty.routes.js';
+import subscriptionRoutes from './subscription.routes.js';
 import auditRoutes from './audit.routes.js';
 import recommendationRoutes from './recommendations.routes.js';
 import chatbotRoutes from './chatbot.routes.js';
 import analyticsRoutes from './analytics.routes.js';
 import reportsRoutes from './reports.routes.js';
+import gardenPlanRoutes from './garden-plans.routes.js';
+import notificationsRoutes from './notifications.routes.js';
 
 const router = Router();
 
@@ -33,11 +36,14 @@ router.use('/checkout', checkoutRoutes);
 router.use('/orders', orderRoutes);
 router.use('/deliveries', deliveryRoutes);
 router.use('/loyalty', loyaltyRoutes);
+router.use('/subscriptions', subscriptionRoutes);
 router.use('/audit', auditRoutes);
 router.use('/recommendations', recommendationRoutes);
 router.use('/chatbot', chatbotRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/garden-plans', gardenPlanRoutes);
+router.use('/notifications', notificationsRoutes);
 
 export default router;
 

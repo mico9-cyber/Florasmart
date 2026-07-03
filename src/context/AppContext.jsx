@@ -1,245 +1,462 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { AppContext } from './AppData';
 import { readJson, writeJson } from '../utils/storage';
-import { registerUser, loginUser, verifyRegistrationOtp, resendRegistrationOtp } from '../utils/api';
+import { setAuthSession, clearAuthSession } from '../services/api';
+import { authService } from '../services/authService';
+import { categoryService } from '../services/categoryService';
+import { productService } from '../services/productService';
+import { inventoryService } from '../services/inventoryService';
+import { cartService } from '../services/cartService';
+import { orderService } from '../services/orderService';
+import { deliveryService } from '../services/deliveryService';
+import { loyaltyService } from '../services/loyaltyService';
+import { subscriptionService } from '../services/subscriptionService';
+import { gardenPlanService } from '../services/gardenPlanService';
+import { recommendationService } from '../services/recommendationService';
+import { chatbotService } from '../services/chatbotService';
+import { analyticsService } from '../services/analyticsService';
 
-const APP_DATA_VERSION = 'florasmart-v4-ai-advisor-fix';
-
-function migrateStorage() {
-  const stored = readJson('flora_app_version', null);
-  if (stored !== APP_DATA_VERSION) {
-    const keys = ['flora_products', 'flora_cart', 'flora_orders', 'flora_loyalty', 'flora_garden', 'flora_pending_reg', 'flora_user'];
-    keys.forEach(k => localStorage.removeItem(k));
-    writeJson('flora_app_version', APP_DATA_VERSION);
-  }
-}
-
-const PHOTO_URL = 'https://images.unsplash.com/photo-';
-
-migrateStorage();
-
-const PC = (id, path) => PHOTO_URL + path + '?w=600&h=600&fit=crop';
-
-const INITIAL_PRODUCTS = [
-  { id: 1, name: 'Monstera Deliciosa', category: 'plants', price: 35000, rating: 4.8, reviews: 124, stock: 15, isAIRecommended: true, image: PC(1, '1741620979764-54cf622e3d84'), desc: 'A popular indoor plant known for its dramatic split leaves. Adds a tropical feel to any room.', sunlight: 'Indirect Bright Light', water: 'Once a week', toxic: 'Yes (Cats & Dogs)', petSafe: false, purpose: 'Indoor Beauty,Aesthetic Indoor Statement Stems' },
-  { id: 2, name: 'Enchanted Rose Bouquet', category: 'flowers', price: 45000, rating: 4.9, reviews: 88, stock: 8, isAIRecommended: false, image: PC(2, '1518709779341-56cf4535e94b'), desc: 'A stunning arrangement of deep red roses and premium foliage, perfect for romantic gestures.', sunlight: 'Indirect Cool Light', water: 'Change water daily', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration,Vibrant' },
-  { id: 3, name: 'White Ceramic Cylinder Vase', category: 'vases', price: 15000, rating: 4.6, reviews: 42, stock: 22, isAIRecommended: false, image: PC(3, '1581783898377-1c85bf937427'), desc: 'A sleek, minimalist white ceramic vase that fits medium-to-tall flower arrangements.', height: '25cm', diameter: '10cm', style: 'Modern', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: '' },
-  { id: 4, name: 'Snake Plant Laurentii', category: 'plants', price: 15000, rating: 4.7, reviews: 205, stock: 30, isAIRecommended: true, image: PC(4, '1567225557594-88d73e55f2cb'), desc: 'Nearly indestructible air-purifying plant, perfect for beginners and low-light spaces.', sunlight: 'Low to Bright Indirect', water: 'Every 2-3 weeks', toxic: 'Yes (Cats & Dogs)', petSafe: false, purpose: 'Low Maintenance,Air Purification,Indoor Beauty' },
-  { id: 5, name: 'Fiddle Leaf Fig', category: 'plants', price: 28000, rating: 4.5, reviews: 67, stock: 12, isAIRecommended: true, image: PC(5, '1643819131782-474a409da244'), desc: 'A statement houseplant featuring large, glossy violin-shaped leaves on sleek woody stems.', sunlight: 'Bright Consistent Light', water: 'When top 2 inches dry', toxic: 'Yes', petSafe: false, purpose: 'Aesthetic Indoor Statement Stems' },
-  { id: 6, name: 'Golden Hour Tulip Bundle', category: 'flowers', price: 25000, rating: 4.8, reviews: 54, stock: 10, isAIRecommended: false, image: PC(6, '1547697264-5e639839765e'), desc: 'A bright mix of orange and yellow tulips, bringing warmth and joy to your living spaces.', sunlight: 'Indirect Cool Light', water: 'Replenish cool water', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Vibrant,Flowering Decoration' },
-  { id: 7, name: 'Rustic Terracotta Vase', category: 'vases', price: 12000, rating: 4.5, reviews: 31, stock: 14, isAIRecommended: false, image: PC(7, '1742396512765-4067ffe1db72'), desc: 'An earthy, rough-textured terracotta vase crafted by local artisans for a warm rustic aesthetic.', height: '18cm', diameter: '12cm', style: 'Rustic', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: '' },
-  { id: 8, name: 'Peace Lily', category: 'plants', price: 18000, rating: 4.7, reviews: 110, stock: 25, isAIRecommended: true, image: PC(8, '1547816999-d99671865dcf'), desc: 'Beautiful dark green foliage offset by elegant white blooms. Excellent for improving air quality.', sunlight: 'Medium to Low Shade', water: 'Keep soil moist', toxic: 'Yes', petSafe: false, purpose: 'Air Purification,Aesthetic Indoor Statement Stems' },
-  { id: 9, name: 'Hibiscus Rosa-Sinensis', category: 'plants', price: 25000, rating: 4.6, reviews: 78, stock: 18, isAIRecommended: true, image: PC(9, '1567990989224-6441e1483ac8'), desc: 'Vibrant tropical hibiscus with large crimson blooms. A beloved garden flower in Rwanda.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Vibrant,Flowering Decoration,Outdoor Garden' },
-  { id: 10, name: 'Bougainvillea Spectabilis', category: 'plants', price: 20000, rating: 4.5, reviews: 52, stock: 12, isAIRecommended: false, image: PC(10, '1744446499844-5b8b773b23b1'), desc: 'Stunning climbing plant with brilliant magenta bracts. Perfect for garden walls and trellises.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Outdoor Garden' },
-  { id: 11, name: 'Frangipani (Plumeria)', category: 'plants', price: 28000, rating: 4.7, reviews: 63, stock: 10, isAIRecommended: false, image: PC(11, '1715899495384-213543e6ed1e'), desc: 'Exquisitely fragrant flowers in pink and white. Thrives in warm climates.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Flowering Decoration' },
-  { id: 12, name: 'Jasmine Flowering Plant', category: 'plants', price: 16000, rating: 4.6, reviews: 45, stock: 20, isAIRecommended: false, image: PC(12, '1763227998461-0def27f3de3b'), desc: 'Enchantingly fragrant jasmine blooms that perfume the evening air. Ideal for verandas.', sunlight: 'Full Sun to Partial', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration' },
-  { id: 13, name: 'Jacaranda Mimosifolia', category: 'plants', price: 35000, rating: 4.8, reviews: 39, stock: 6, isAIRecommended: false, image: PC(13, '1767173609273-c17423f66ee8'), desc: 'A majestic tree with stunning purple-blue flowers that carpet the ground in bloom.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Outdoor Garden' },
-  { id: 14, name: 'Orchid Arrangement', category: 'flowers', price: 55000, rating: 4.9, reviews: 95, stock: 7, isAIRecommended: true, image: PC(14, '1610397648930-477b8c7f0943'), desc: 'Exquisite orchid arrangement featuring vibrant elegant blooms. A sophisticated gift.', sunlight: 'Bright Indirect Light', water: 'Low', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration' },
-  { id: 15, name: 'Sunflower Giant', category: 'flowers', price: 3500, rating: 4.4, reviews: 120, stock: 40, isAIRecommended: false, image: PC(15, '1460191269172-12c3ce6e8bfa'), desc: 'Stunning giant sunflowers that bring a touch of summer to any space.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Outdoor Garden' },
-  { id: 16, name: 'Calla Lily White', category: 'flowers', price: 22000, rating: 4.7, reviews: 67, stock: 14, isAIRecommended: false, image: PC(16, '1518895949257-7621c3c786d7'), desc: 'Elegant white calla lilies with sleek trumpet-shaped blooms. A symbol of purity and sophistication.', sunlight: 'Partial Shade', water: 'Keep soil moist', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
-  { id: 17, name: 'Gardenia Jasminoides', category: 'plants', price: 18000, rating: 4.6, reviews: 82, stock: 16, isAIRecommended: false, image: PC(17, '1668315005673-f26a5f20a4cd'), desc: 'Fragrant white gardenia flowers with a sweet intoxicating scent.', sunlight: 'Partial Shade', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration' },
-  { id: 18, name: 'Aloe Vera', category: 'plants', price: 12000, rating: 4.5, reviews: 150, stock: 25, isAIRecommended: false, image: PC(18, '1613143798921-c342c82c32e2'), desc: 'Versatile succulent with healing properties. Thrives with minimal care.', sunlight: 'Bright Indirect to Direct', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Low Maintenance,Air Purification' },
-  { id: 19, name: 'Bird of Paradise', category: 'plants', price: 35000, rating: 4.8, reviews: 44, stock: 8, isAIRecommended: false, image: PC(19, '1621233575336-fb37d63123d7'), desc: 'Stunning crane-like flowers in orange and blue. A tropical showstopper.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Outdoor Garden' },
-  { id: 20, name: 'African Marigold', category: 'flowers', price: 3000, rating: 4.3, reviews: 98, stock: 50, isAIRecommended: false, image: PC(20, '1661142175513-a5f0871f1ad1'), desc: 'Vibrant golden-orange marigolds that bloom abundantly. A garden favorite.', sunlight: 'Full Sun', water: 'Low', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration,Outdoor Garden' },
-  { id: 21, name: 'Spider Plant', category: 'plants', price: 14000, rating: 4.8, reviews: 89, stock: 22, isAIRecommended: true, image: PC(21, '1482976311234-a8c1b4d3e5f6'), desc: 'Classic air-purifying plant with arching spiderettes and white variations. Excellent for beginners.', sunlight: 'Bright Indirect Light', water: 'Weekly', toxic: 'No', petSafe: true, purpose: 'Air Purification,Low Maintenance' },
-  { id: 22, name: 'Boston Fern', category: 'plants', price: 19000, rating: 4.6, reviews: 76, stock: 18, isAIRecommended: true, image: PC(22, '1692345678901-b2d3e4f5g7h8'), desc: 'Lush, feathery fronds create a tropical atmosphere. Perfect for bathrooms and bright rooms.', sunlight: 'Medium to Low Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
-  { id: 23, name: 'Areca Palm', category: 'plants', price: 32000, rating: 4.7, reviews: 65, stock: 12, isAIRecommended: true, image: PC(23, '1723456789012-c3d4e5f6g7h8'), desc: 'Elegant feathery fronds add grace to any space. Excellent air purifier.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Air Purification,Indoor Beauty' },
-  { id: 24, name: 'Calathea Orbifolia', category: 'plants', price: 26000, rating: 4.5, reviews: 58, stock: 14, isAIRecommended: true, image: PC(24, '1754567890123-d4e5f6g7h8i9'), desc: 'Stunning oval leaves with striking patterns. Low-light tolerant with dramatic foliage.', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
-  { id: 25, name: 'Peace Lily', category: 'plants', price: 18000, rating: 4.7, reviews: 110, stock: 25, isAIRecommended: true, image: PC(25, '1547816999-d99671865dcf'), desc: 'Beautiful dark green foliage offset by elegant white blooms. Excellent for improving air quality.', sunlight: 'Medium to Low Shade', water: 'Keep soil moist', toxic: 'Yes', petSafe: false, purpose: 'Air Purification,Aesthetic Indoor Statement Stems' },
-  { id: 26, name: 'ZZ Plant', category: 'plants', price: 13000, rating: 4.4, reviews: 95, stock: 28, isAIRecommended: true, image: PC(26, '1800123456789-e5f6g7h8i9j0'), desc: 'Modern, waxy leaves that tolerate neglect. Perfect for offices and low-light rooms.', sunlight: 'Low Light', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Low Maintenance,Indoor Beauty' },
-  { id: 27, name: 'Dracaena Marginata', category: 'plants', price: 16000, rating: 4.6, reviews: 67, stock: 18, isAIRecommended: false, image: PC(27, '1811234567890-f6g7h8i9j0k1'), desc: 'Striking red-edged leaves bring color to any space. Easy to care for.', sunlight: 'Indirect Bright Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Low Maintenance' },
-  { id: 28, name: 'Boston Fern', category: 'plants', price: 19000, rating: 4.6, reviews: 76, stock: 18, isAIRecommended: true, image: PC(28, '1692345678901-b2d3e4f5g7h8'), desc: 'Lush, feathery fronds create a tropical atmosphere. Perfect for bathrooms and bright rooms.', sunlight: 'Medium to Low Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
-  { id: 29, name: 'Amaryllis', category: 'flowers', price: 28000, rating: 4.8, reviews: 54, stock: 10, isAIRecommended: false, image: PC(29, '1853456789012-g7h8i9j0k1l2'), desc: 'Magnificent trumpet-shaped blooms in red, white, or pink. Perfect for winter color.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
-  { id: 30, name: 'Passionflower', category: 'plants', price: 20000, rating: 4.5, reviews: 43, stock: 15, isAIRecommended: false, image: PC(30, '1914567890123-h8i9j0k1l2m3'), desc: 'Exotic flowers with intricate patterns. Blooms prolifically in warm weather.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'Yes', petSafe: false, purpose: 'Flowering Decoration,Outdoor Garden' },
-  { id: 31, name: 'Kalanchoe', category: 'plants', price: 14000, rating: 4.3, reviews: 89, stock: 20, isAIRecommended: true, image: PC(31, '1927678901234-i9j0k1l2m3n4'), desc: 'Succulent rosette with colorful flowers. Thrives with minimal watering.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Flowering Decoration' },
-  { id: 32, name: 'Coleus', category: 'plants', price: 12000, rating: 4.4, reviews: 76, stock: 25, isAIRecommended: true, image: PC(32, '1940789012345-j0k1l2m3n4o5'), desc: 'Colorful foliage with interesting patterns. Perfect for brightening shaded areas.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Aesthetic Indoor Statement Stems' },
-  { id: 33, name: 'Flowerpot Planter', category: 'vases', price: 8000, rating: 4.3, reviews: 95, stock: 30, isAIRecommended: false, image: PC(33, '1953890123456-k1l2m3n4o5p6'), desc: 'Stylish ceramic flowerpot with drainage. Perfect for indoor and outdoor plants.', height: '15cm', diameter: '12cm', style: 'Modern', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: '' },
-  { id: 34, name: 'Hanging Basket', category: 'vases', price: 22000, rating: 4.7, reviews: 63, stock: 12, isAIRecommended: false, image: PC(34, '1966791234567-l2m3n4o5p6q7'), desc: 'Decorative hanging basket for flowers and trailing plants. Elegant display solution.', height: '30cm', diameter: '35cm', style: 'Hanging', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: '' },
-  { id: 35, name: 'Bamboo Palm', category: 'plants', price: 28000, rating: 4.6, reviews: 67, stock: 10, isAIRecommended: false, image: PC(35, '1979892345678-m3n4o5p6q7r8'), desc: 'Elegant palm fronds add tropical elegance. Excellent air purifier.', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Air Purification,Indoor Beauty' },
-  { id: 36, name: 'Anthurium', category: 'flowers', price: 25000, rating: 4.5, reviews: 68, stock: 15, isAIRecommended: false, image: PC(36, '1992993456789-n4o5p6q7r8s9'), desc: 'Vibrant red heart-shaped blooms that last for weeks. Perfect for gifts.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
-  { id: 37, name: 'Umbrella Plant', category: 'plants', price: 18000, rating: 4.5, reviews: 83, stock: 18, isAIRecommended: false, image: PC(37, '2006094567890-o5p6q7r8s9t0'), desc: 'Large, glossy leaves resemble umbrellas. Perfect for filtering harsh light.', sunlight: 'Bright Indirect Light', water: 'High', toxic: 'No', petSafe: true, purpose: 'Indoor Beauty,Low Maintenance' },
-  { id: 38, name: 'Echeveria', category: 'plants', price: 10000, rating: 4.3, reviews: 92, stock: 40, isAIRecommended: true, image: PC(38, '2019195678901-p6q7r8s9t0u1'), desc: 'Rosette-forming succulent with colorful leaves. Thrives with minimal water.', sunlight: 'Bright Direct Light', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Indoor Beauty' },
-  { id: 39, name: 'Crown of Thorns', category: 'plants', price: 12000, rating: 4.4, reviews: 85, stock: 22, isAIRecommended: false, image: PC(39, '2032296789012-q7r8s9t0u1v2'), desc: 'Hardy succulent with spiny stems and colorful flowers. Low-maintenance option.', sunlight: 'Full Sun', water: 'Low', toxic: 'Yes', petSafe: false, purpose: 'Low Maintenance,Flowering Decoration' },
-  { id: 40, name: 'Pothos', category: 'plants', price: 8000, rating: 4.3, reviews: 118, stock: 35, isAIRecommended: true, image: PC(40, '2045397890123-r8s9t0u1v2w3'), desc: 'Hardy trailing vine perfect for beginners. Excellent for air purification.', sunlight: 'Low to Bright Indirect', water: 'Low', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Air Purification,Low Maintenance' },
-  { id: 41, name: 'Cast Iron Plant', category: 'plants', price: 16000, rating: 4.4, reviews: 76, stock: 20, isAIRecommended: false, image: PC(41, '2058498901234-s9t0u1v2w3x4'), desc: 'Nearly indestructible plant. Perfect for beginners and dark corners.', sunlight: 'Low Light', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Low Maintenance,Indoor Beauty' },
-  { id: 42, name: 'Paperwhite Bulb', category: 'flowers', price: 9000, rating: 4.2, reviews: 95, stock: 45, isAIRecommended: false, image: PC(42, '2071599012345-t0u1v2w3x4y5'), desc: 'Fragrant white blooms that grow quickly indoors. Perfect for winter.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Flowering Decoration' },
-  { id: 43, name: 'Petunias', category: 'flowers', price: 11000, rating: 4.3, reviews: 88, stock: 30, isAIRecommended: false, image: PC(43, '2084600123456-u1v2w3x4y5z6'), desc: 'Colorful trumpet-shaped flowers. Great for balconies and hanging baskets.', sunlight: 'Full Sun', water: 'Moderate', toxic: 'No', petSafe: true, purpose: 'Flowering Decoration,Outdoor Garden' },
-  { id: 44, name: 'Grundleaf', category: 'plants', price: 15000, rating: 4.5, reviews: 63, stock: 18, isAIRecommended: false, image: PC(44, '2097701234567-v2w3x4y5z6a7'), desc: 'Elegant trailing plant with glossy leaves. Perfect for hanging displays.', sunlight: 'Bright Indirect Light', water: 'Moderate', toxic: 'Yes (Pets)', petSafe: false, purpose: 'Aesthetic Indoor Statement Stems' },
-  { id: 45, name: 'Peace Lily', category: 'plants', price: 18000, rating: 4.7, reviews: 110, stock: 25, isAIRecommended: true, image: PC(45, '1547816999-d99671865dcf'), desc: 'Beautiful dark green foliage offset by elegant white blooms. Excellent for improving air quality.', sunlight: 'Medium to Low Shade', water: 'Keep soil moist', toxic: 'Yes', petSafe: false, purpose: 'Air Purification,Aesthetic Indoor Statement Stems' },
-];
-
-const DEMO_USERS = [
-  { name: 'Darrly Garden', role: 'customer', email: 'darrly@florasmart.com', password: 'demo123' },
-  { name: 'Flora Studio', role: 'florist', email: 'florist@florasmart.com', password: 'demo123' },
-  { name: 'Green Keeper', role: 'gardener', email: 'gardener@florasmart.com', password: 'demo123' },
-  { name: 'Admin Operator', role: 'admin', email: 'admin@florasmart.com', password: 'demo123' },
-];
-
-const DEFAULT_USER = { name: '', role: 'customer', loggedIn: false, email: '' };
-
-const DEFAULT_ORDERS = [
-  {
-    id: 'FL-9082',
-    date: '2026-06-22',
-    items: [
-      { id: 1, name: 'Monstera Deliciosa', quantity: 1, price: 35000 },
-      { id: 3, name: 'White Ceramic Cylinder Vase', quantity: 1, price: 15000 }
-    ],
-    total: 50000,
-    status: 'Preparing Arrangement',
-    address: '123 Canopy Road, Moss Town',
-    deliveryMethod: 'Standard Green Delivery',
-    trackingNumber: 'TRK-MONSTERA-9082',
-    estimatedDelivery: '2026-06-25'
-  },
-  {
-    id: 'FL-8104',
-    date: '2026-06-15',
-    items: [
-      { id: 8, name: 'Peace Lily', quantity: 2, price: 18000 }
-    ],
-    total: 36000,
-    status: 'Delivered',
-    address: '123 Canopy Road, Moss Town',
-    deliveryMethod: 'Express Eco-Courier',
-    trackingNumber: 'TRK-PEACE-8104',
-    estimatedDelivery: '2026-06-17'
-  }
-];
-
-const DEFAULT_LOYALTY = {
-  points: 450,
-  tier: 'Gold Leaf',
-  pointsToNextTier: 50,
-  nextReward: 'Free RWF 10,000 voucher',
-  isSubscribed: true,
-  subscriptionPlan: 'Weekly Green Refresh',
-  subscriptionPrice: 30000,
-  nextBillingDate: '2026-07-01'
+const DEFAULT_USER = { name: '', role: 'customer', loggedIn: false, email: '', roles: [] };
+const ORDER_STATUS_LABELS = {
+  PENDING: 'Order Placed',
+  PROCESSING: 'Preparing Arrangement',
+  CONFIRMED: 'Preparing Arrangement',
+  PREPARING: 'Preparing Arrangement',
+  READY_FOR_DELIVERY: 'Out for Delivery',
+  OUT_FOR_DELIVERY: 'Out for Delivery',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+};
+const DISPLAY_TO_BACKEND_ORDER_STATUS = {
+  'Order Placed': 'PENDING',
+  'Preparing Arrangement': 'PREPARING',
+  'Out for Delivery': 'OUT_FOR_DELIVERY',
+  Delivered: 'DELIVERED',
+  Cancelled: 'CANCELLED',
+};
+const PRODUCT_TYPE_BY_CATEGORY = {
+  plants: 'PLANT',
+  flowers: 'FLOWER',
+  vases: 'VASE',
 };
 
-const DEFAULT_AUDIT_LOGS = [
-  { id: 1, timestamp: '2026-06-24 11:15:30', user: 'darrly@florasmart.com', action: 'User Sign In', ipAddress: '192.168.1.45', status: 'Success' },
-  { id: 2, timestamp: '2026-06-24 10:45:12', user: 'darrly@florasmart.com', action: 'Role Switched to Customer', ipAddress: '192.168.1.45', status: 'Success' },
-  { id: 3, timestamp: '2026-06-23 15:20:00', user: 'florist@florasmart.com', action: 'Inventory Stock Update', ipAddress: '192.168.1.12', status: 'Success' },
-  { id: 4, timestamp: '2026-06-23 09:12:05', user: 'admin@florasmart.com', action: 'Database Backup Completed', ipAddress: '10.0.0.8', status: 'Success' },
-];
+function stockFromStatus(stockStatus) {
+  if (stockStatus === 'out_of_stock') return 0;
+  if (stockStatus === 'low_stock') return 5;
+  if (stockStatus === 'pre_order') return 1;
+  return 25;
+}
 
-const createDefaultGarden = () => Array(64).fill(null).map((_, idx) => {
-  if (idx === 10) return { name: 'Monstera', color: '#22C55E', emoji: '🌿', datePlanted: '2026-06-10' };
-  if (idx === 18) return { name: 'Rose', color: '#EF4444', emoji: '🌹', datePlanted: '2026-06-12' };
-  if (idx === 29) return { name: 'Tulip', color: '#F59E0B', emoji: '🌷', datePlanted: '2026-06-20' };
-  return null;
-});
+function normalizeProduct(raw, stockMap = new Map(), recommendedIds = new Set()) {
+  const stockEntry = stockMap.get(raw.id);
+  const stock = stockEntry?.quantity ?? stockFromStatus(raw.stockStatus);
+  const category = raw.category?.slug || String(raw.productType || '').toLowerCase() || 'plants';
+  return {
+    id: raw.id,
+    backendId: raw.id,
+    categoryId: raw.categoryId || raw.category?.id,
+    name: raw.name,
+    category,
+    price: Number(raw.discountPrice ?? raw.price ?? 0),
+    basePrice: Number(raw.price ?? 0),
+    rating: Number(raw.rating ?? 4.7),
+    reviews: Number(raw.reviews ?? 0),
+    stock,
+    stockStatus: raw.stockStatus,
+    isAIRecommended: recommendedIds.has(raw.id) || Boolean(raw.featured),
+    image: raw.imageUrl || raw.images?.[0]?.url || '',
+    imageUrl: raw.imageUrl || raw.images?.[0]?.url || '',
+    desc: raw.description || raw.shortDescription || 'No product description available.',
+    sunlight: raw.lightRequirement || raw.attributes?.find((item) => item.name.toLowerCase().includes('light'))?.value || 'See care guide',
+    water: raw.waterRequirement || raw.attributes?.find((item) => item.name.toLowerCase().includes('water'))?.value || 'See care guide',
+    toxic: raw.tags?.toLowerCase().includes('pet-safe') ? 'No' : raw.tags?.toLowerCase().includes('toxic') ? 'Yes' : 'Unknown',
+    petSafe: raw.tags?.toLowerCase().includes('pet-safe') || false,
+    purpose: raw.tags || raw.occasion || '',
+    style: raw.attributes?.find((item) => item.name.toLowerCase().includes('style'))?.value || '',
+    productType: raw.productType,
+    sku: raw.sku,
+    color: raw.color,
+    raw,
+  };
+}
+
+function normalizeCart(cartData, productsMap = new Map()) {
+  return (cartData?.items || []).map((item) => {
+    const product = productsMap.get(item.productId);
+    return {
+      id: item.productId,
+      cartItemId: item.id,
+      quantity: item.quantity,
+      price: Number(item.unitPrice || 0),
+      name: product?.name || item.product?.name || 'Product',
+      category: product?.category || item.product?.category?.slug || 'plants',
+      image: product?.image || item.product?.imageUrl || '',
+      stock: product?.stock ?? 0,
+    };
+  });
+}
+
+function normalizeOrderSummary(order, detail = null) {
+  const source = detail || order;
+  const items = (source.items || []).map((item) => ({
+    id: item.productId || item.productSku || item.productName,
+    name: item.productName,
+    quantity: item.quantity,
+    price: Number(item.unitPrice || 0),
+  }));
+  return {
+    id: source.orderNumber || order.orderNumber,
+    backendId: source.id || order.id,
+    date: new Date(source.createdAt || Date.now()).toISOString().substring(0, 10),
+    items,
+    total: Number(source.totalAmount || order.totalAmount || 0),
+    status: ORDER_STATUS_LABELS[source.status] || source.status,
+    backendStatus: source.status,
+    address: [source.shippingAddress, source.shippingCity, source.shippingDistrict].filter(Boolean).join(', '),
+    deliveryMethod: source.deliveryMethod === 'EXPRESS' ? 'Express Eco-Courier' : source.deliveryMethod === 'PICKUP' ? 'Pickup' : 'Standard Green Delivery',
+    trackingNumber: source.delivery?.id || source.orderNumber,
+    estimatedDelivery: source.delivery?.scheduledAt ? new Date(source.delivery.scheduledAt).toISOString().substring(0, 10) : '',
+  };
+}
+
+function buildGardenLayout(plan, productsMap) {
+  const totalCells = 64;
+  const layout = Array(totalCells).fill(null);
+  for (const placement of plan?.placements || []) {
+    const idx = (placement.row * 8) + placement.col;
+    if (idx < 0 || idx >= totalCells) continue;
+    const product = productsMap.get(placement.productId) || normalizeProduct(placement.product || {}, new Map(), new Set());
+    layout[idx] = {
+      placementId: placement.id,
+      productId: placement.productId,
+      name: product.name,
+      color: product.color || '#22C55E',
+      emoji: '🌱',
+      datePlanted: placement.plantedAt ? new Date(placement.plantedAt).toISOString().substring(0, 10) : new Date(placement.createdAt || Date.now()).toISOString().substring(0, 10),
+    };
+  }
+  return layout;
+}
+
+function expandRoleCountsToUsers(usersByRole = []) {
+  const mapped = [];
+  for (const entry of usersByRole) {
+    const role = String(entry.role || '').toLowerCase();
+    const count = Number(entry.count || 0);
+    for (let i = 0; i < count; i += 1) {
+      mapped.push({ role, email: `${role}${i + 1}@backend.local` });
+    }
+  }
+  return mapped;
+}
+
+function synthesizeAuditLogs({ user, orders, deliveries, subscriptions }) {
+  const logs = [];
+  if (user.loggedIn) {
+    logs.push({
+      id: `login-${user.email}`,
+      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      user: user.email,
+      action: 'Authenticated session loaded',
+      ipAddress: 'API',
+      status: 'Success',
+    });
+  }
+  for (const order of orders.slice(0, 12)) {
+    logs.push({
+      id: `order-${order.backendId}`,
+      timestamp: `${order.date} 00:00:00`,
+      user: user.email || 'customer',
+      action: `Order ${order.id} is ${order.status}`,
+      ipAddress: 'API',
+      status: order.status === 'Cancelled' ? 'Failure' : 'Success',
+    });
+  }
+  for (const delivery of deliveries.slice(0, 8)) {
+    logs.push({
+      id: `delivery-${delivery.id}`,
+      timestamp: new Date(delivery.createdAt || Date.now()).toISOString().replace('T', ' ').substring(0, 19),
+      user: delivery.assignedTo?.email || 'delivery-system',
+      action: `Delivery ${delivery.orderNumber || delivery.orderId} status ${delivery.status}`,
+      ipAddress: 'API',
+      status: delivery.status === 'FAILED' ? 'Failure' : 'Success',
+    });
+  }
+  for (const sub of subscriptions.slice(0, 6)) {
+    logs.push({
+      id: `sub-${sub.id}`,
+      timestamp: new Date(sub.createdAt || Date.now()).toISOString().replace('T', ' ').substring(0, 19),
+      user: user.email || 'customer',
+      action: `Subscription ${sub.plan?.name || sub.id} ${String(sub.status || '').toLowerCase()}`,
+      ipAddress: 'API',
+      status: sub.status === 'CANCELLED' ? 'Failure' : 'Success',
+    });
+  }
+  return logs.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
+}
 
 export const AppProvider = ({ children }) => {
-  const [registeredUsers, setRegisteredUsers] = useState(() => readJson('flora_registered_users', DEMO_USERS));
   const [user, setUser] = useState(() => readJson('flora_user', DEFAULT_USER));
-  const [cart, setCart] = useState(() => readJson('flora_cart', []));
-  const [products, setProducts] = useState(() => readJson('flora_products', INITIAL_PRODUCTS));
-  const [orders, setOrders] = useState(() => readJson('flora_orders', DEFAULT_ORDERS));
-  const [loyalty, setLoyalty] = useState(() => readJson('flora_loyalty', DEFAULT_LOYALTY));
-  const [auditLogs, setAuditLogs] = useState(() => readJson('flora_audit', DEFAULT_AUDIT_LOGS));
-  const [gardenLayout, setGardenLayout] = useState(() => readJson('flora_garden', createDefaultGarden()));
+  const [pendingRegistration, setPendingRegistration] = useState(() => readJson('flora_pending_reg', null));
+  const [theme, setThemeState] = useState(() => readJson('flora_theme', 'dark') === 'light' ? 'light' : 'dark');
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [cart, setCart] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loyalty, setLoyalty] = useState({ points: 0, tier: 'Bronze', pointsToNextTier: 0, isSubscribed: false, subscriptionPlan: '', subscriptionPrice: 0, nextBillingDate: '' });
+  const [gardenLayout, setGardenLayout] = useState(Array(64).fill(null));
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);
+  const [analytics, setAnalytics] = useState({ admin: null, florist: null, customer: null, recommendedProducts: [] });
+  const [inventoryLocations, setInventoryLocations] = useState([]);
+  const [registeredUsers, setRegisteredUsers] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [dataState, setDataState] = useState({ loading: false, error: '' });
 
-  useEffect(() => writeJson('flora_registered_users', registeredUsers), [registeredUsers]);
   useEffect(() => writeJson('flora_user', user), [user]);
-  useEffect(() => writeJson('flora_cart', cart), [cart]);
-  useEffect(() => writeJson('flora_products', products), [products]);
-  useEffect(() => writeJson('flora_orders', orders), [orders]);
-  useEffect(() => writeJson('flora_loyalty', loyalty), [loyalty]);
-  useEffect(() => writeJson('flora_audit', auditLogs), [auditLogs]);
-  useEffect(() => writeJson('flora_garden', gardenLayout), [gardenLayout]);
+  useEffect(() => writeJson('flora_pending_reg', pendingRegistration), [pendingRegistration]);
+  useEffect(() => writeJson('flora_theme', theme), [theme]);
 
-  const addAuditLog = (action) => {
-    const newLog = {
-      id: Date.now(),
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      user: user.loggedIn ? user.email : 'Anonymous',
-      action,
-      ipAddress: '192.168.1.45',
-      status: action.startsWith('Failed') ? 'Failure' : 'Success'
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      setUser(DEFAULT_USER);
+      setCart([]);
+      setOrders([]);
+      setSubscriptions([]);
+      setLoyalty({ points: 0, tier: 'Bronze', pointsToNextTier: 0, isSubscribed: false, subscriptionPlan: '', subscriptionPrice: 0, nextBillingDate: '' });
+      setGardenLayout(Array(64).fill(null));
     };
-    setAuditLogs((prev) => [newLog, ...prev.slice(0, 49)]);
-  };
+    window.addEventListener('auth:logout', handleAuthLogout);
+    return () => window.removeEventListener('auth:logout', handleAuthLogout);
+  }, []);
 
-  const addToCart = (product, quantity = 1) => {
-    const currentProduct = products.find((item) => item.id === product.id);
-    const maxStock = currentProduct?.stock ?? product.stock ?? 0;
-    if (maxStock <= 0) return { ok: false, error: `${product.name} is out of stock.` };
+  const refreshPublicData = async (currentUser = user) => {
+    const [categoryRes, productRes, plansRes] = await Promise.all([
+      categoryService.list(),
+      productService.list('?limit=100'),
+      subscriptionService.plans(),
+    ]);
 
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        const nextQty = Math.min(existing.quantity + quantity, maxStock);
-        return prev.map((item) => item.id === product.id ? { ...item, quantity: nextQty } : item);
+    const categoryList = categoryRes?.data || [];
+    setCategories(categoryList);
+    setSubscriptionPlans(plansRes?.data || []);
+
+    let recommendedIds = new Set();
+    if (currentUser.loggedIn) {
+      try {
+        const recommendedRes = await recommendationService.products();
+        recommendedIds = new Set((recommendedRes?.data || []).map((item) => item.id));
+        setAnalytics((prev) => ({ ...prev, recommendedProducts: recommendedRes?.data || [] }));
+      } catch {
+        recommendedIds = new Set();
       }
-      return [...prev, { ...product, quantity: Math.min(quantity, maxStock) }];
-    });
-    addAuditLog(`Item Added to Cart: ${product.name} (Qty: ${quantity})`);
-    return { ok: true };
+    }
+
+    const productList = productRes?.data || [];
+    setProducts(productList.map((item) => normalizeProduct(item, new Map(), recommendedIds)));
+    return { categoryList, productList, recommendedIds };
   };
 
-  const removeFromCart = (productId) => {
-    const item = cart.find((cartItem) => cartItem.id === productId);
-    setCart((prev) => prev.filter((cartItem) => cartItem.id !== productId));
-    if (item) addAuditLog(`Item Removed from Cart: ${item.name}`);
+  const ensureGardenPlan = async () => {
+    const plansRes = await gardenPlanService.list();
+    const plans = plansRes?.data || [];
+    let defaultPlan = plans.find((plan) => plan.isDefault) || plans[0];
+    if (!defaultPlan) {
+      const created = await gardenPlanService.create({ name: 'My Garden Plan', width: 8, height: 8, description: 'Frontend-created default plan' });
+      defaultPlan = created?.data;
+    }
+    return defaultPlan;
   };
 
-  const updateCartQuantity = (productId, qty) => {
-    if (qty <= 0) {
-      removeFromCart(productId);
+  const refreshPrivateData = async (currentUser = user) => {
+    if (!currentUser.loggedIn) return;
+
+    const { productList } = await refreshPublicData(currentUser);
+    const productMap = new Map(productList.map((item) => [item.id, item]));
+
+    let stockMap = new Map();
+    if (['admin', 'florist'].includes(currentUser.role)) {
+      try {
+        const [stockRes, locationRes] = await Promise.all([
+          inventoryService.stock(),
+          inventoryService.locations(),
+        ]);
+        const stockRows = stockRes?.data || [];
+        stockMap = new Map(stockRows.map((row) => [row.productId, row]));
+        setInventoryLocations(locationRes?.data || []);
+      } catch {
+        stockMap = new Map();
+      }
+    }
+
+    const normalizedProducts = productList.map((item) => normalizeProduct(item, stockMap, new Set((analytics.recommendedProducts || []).map((p) => p.id))));
+    const normalizedProductMap = new Map(normalizedProducts.map((item) => [item.id, item]));
+    setProducts(normalizedProducts);
+
+    if (currentUser.role === 'customer') {
+      const [cartRes, ordersRes, loyaltyRes, transactionRes, subscriptionsRes, customerAnalyticsRes] = await Promise.all([
+        cartService.getCart(),
+        orderService.list(),
+        loyaltyService.me().catch(() => ({ data: null })),
+        loyaltyService.transactions().catch(() => ({ data: [] })),
+        subscriptionService.me().catch(() => ({ data: [] })),
+        analyticsService.customerOverview().catch(() => ({ data: null })),
+      ]);
+
+      const orderSummaries = ordersRes?.data || [];
+      const orderDetails = await Promise.all(orderSummaries.map((item) => orderService.getById(item.id).then((res) => res?.data).catch(() => null)));
+      const normalizedOrders = orderSummaries.map((item, index) => normalizeOrderSummary(item, orderDetails[index])).filter(Boolean);
+      const activeSubs = subscriptionsRes?.data || [];
+      const activeSub = activeSubs.find((item) => item.status === 'ACTIVE');
+      const loyaltyAccount = loyaltyRes?.data;
+
+      setCart(normalizeCart(cartRes?.data, normalizedProductMap));
+      setOrders(normalizedOrders);
+      setSubscriptions(activeSubs);
+      setLoyalty({
+        points: loyaltyAccount?.pointsBalance || 0,
+        tier: loyaltyAccount?.tier || 'Bronze',
+        pointsToNextTier: 0,
+        nextReward: '',
+        isSubscribed: Boolean(activeSub),
+        subscriptionPlan: activeSub?.plan?.name || '',
+        subscriptionPrice: Number(activeSub?.plan?.price || 0),
+        nextBillingDate: activeSub?.currentPeriodEnd ? new Date(activeSub.currentPeriodEnd).toISOString().substring(0, 10) : '',
+        transactions: transactionRes?.data || [],
+      });
+      setAnalytics((prev) => ({ ...prev, customer: customerAnalyticsRes?.data }));
+
+      const defaultPlan = await ensureGardenPlan();
+      setGardenLayout(buildGardenLayout(defaultPlan, normalizedProductMap));
+    }
+
+    if (['florist', 'admin'].includes(currentUser.role)) {
+      const [ordersRes, deliveriesRes, floristRes] = await Promise.all([
+        orderService.list(),
+        deliveryService.list().catch(() => ({ data: [] })),
+        currentUser.role === 'admin' ? analyticsService.adminOverview().catch(() => ({ data: null })) : analyticsService.floristOverview().catch(() => ({ data: null })),
+      ]);
+      const orderSummaries = ordersRes?.data || [];
+      const orderDetails = await Promise.all(orderSummaries.map((item) => orderService.getById(item.id).then((res) => res?.data).catch(() => null)));
+      const normalizedOrders = orderSummaries.map((item, index) => normalizeOrderSummary(item, orderDetails[index])).filter(Boolean);
+      setOrders(normalizedOrders);
+      setDeliveries(deliveriesRes?.data || []);
+
+      if (currentUser.role === 'admin') {
+        setAnalytics((prev) => ({ ...prev, admin: floristRes?.data }));
+        setRegisteredUsers(expandRoleCountsToUsers(floristRes?.data?.users || []));
+      } else {
+        setAnalytics((prev) => ({ ...prev, florist: floristRes?.data }));
+      }
+    }
+
+    if (['gardener', 'admin', 'florist'].includes(currentUser.role)) {
+      try {
+        const defaultPlan = await ensureGardenPlan();
+        setGardenLayout(buildGardenLayout(defaultPlan, normalizedProductMap));
+      } catch {
+        setGardenLayout(Array(64).fill(null));
+      }
+      if (currentUser.role === 'gardener') {
+        const customerAnalyticsRes = await analyticsService.customerOverview().catch(() => ({ data: null }));
+        setAnalytics((prev) => ({ ...prev, customer: customerAnalyticsRes?.data }));
+      }
+    }
+  };
+
+  useEffect(() => {
+    refreshPublicData(user).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!user.loggedIn) {
+      setCart([]);
+      setOrders([]);
+      setDeliveries([]);
+      setSubscriptions([]);
+      setRegisteredUsers([]);
+      setAuditLogs([]);
+      refreshPublicData(user).catch(() => undefined);
       return;
     }
-    const currentProduct = products.find((item) => item.id === productId);
-    const cappedQty = Math.min(qty, currentProduct?.stock ?? qty);
-    setCart((prev) => prev.map((item) => item.id === productId ? { ...item, quantity: cappedQty } : item));
+    refreshPrivateData(user).catch(() => undefined);
+  }, [user.loggedIn, user.role, user.accessToken]);
+
+  useEffect(() => {
+    setAuditLogs(synthesizeAuditLogs({ user, orders, deliveries, subscriptions }));
+  }, [user, orders, deliveries, subscriptions]);
+
+  const addToCartHandler = async (product, quantity = 1) => {
+    if (!user.loggedIn || user.role !== 'customer') {
+      return { ok: false, error: 'Please sign in as a customer to add items to cart.' };
+    }
+    try {
+      const cartRes = await cartService.addItem({ productId: product.backendId || product.id, quantity });
+      const productsMap = new Map(products.map((item) => [item.id, item]));
+      setCart(normalizeCart(cartRes?.data, productsMap));
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   };
 
-  const clearCart = () => setCart([]);
+  const removeFromCartHandler = async (productId) => {
+    const item = cart.find((entry) => entry.id === productId || entry.cartItemId === productId);
+    if (!item) return;
+    const cartRes = await cartService.removeItem(item.cartItemId);
+    const productsMap = new Map(products.map((entry) => [entry.id, entry]));
+    setCart(normalizeCart(cartRes?.data, productsMap));
+  };
 
-  const [pendingRegistration, setPendingRegistration] = useState(() => readJson('flora_pending_reg', null));
+  const updateCartQuantityHandler = async (productId, qty) => {
+    const item = cart.find((entry) => entry.id === productId || entry.cartItemId === productId);
+    if (!item) return;
+    if (qty <= 0) {
+      await removeFromCartHandler(productId);
+      return;
+    }
+    const cartRes = await cartService.updateItem(item.cartItemId, { quantity: qty });
+    const productsMap = new Map(products.map((entry) => [entry.id, entry]));
+    setCart(normalizeCart(cartRes?.data, productsMap));
+  };
 
-  useEffect(() => writeJson('flora_pending_reg', pendingRegistration), [pendingRegistration]);
+  const clearCartHandler = async () => {
+    if (!user.loggedIn || user.role !== 'customer') {
+      setCart([]);
+      return;
+    }
+    await cartService.clear();
+    setCart([]);
+  };
 
   const handleLogin = async (email, password, selectedRole = 'customer') => {
     try {
-      const data = await loginUser({ email, password, role: selectedRole });
+      const data = await authService.login({ email, password, role: selectedRole });
       const userData = data.data.user;
+      const availableRoles = (userData.roles || []).map((role) => role.toLowerCase());
+      if (availableRoles.length > 0 && !availableRoles.includes(selectedRole)) {
+        return { ok: false, error: `This account does not have ${selectedRole} access.` };
+      }
       setUser({
         name: userData.fullName,
         role: selectedRole,
+        roles: availableRoles,
         loggedIn: true,
         email: userData.email,
         accessToken: data.data.accessToken,
         refreshToken: data.data.refreshToken,
       });
-      addAuditLog(`User Login: ${selectedRole}`);
       return { ok: true, role: selectedRole };
     } catch (err) {
-      const found = registeredUsers.find((item) =>
-        item.email.toLowerCase() === email.toLowerCase() &&
-        item.password === password &&
-        item.role === selectedRole
-      );
-      if (found) {
-        setUser({ name: found.name, role: found.role, loggedIn: true, email: found.email });
-        addAuditLog(`User Login (offline): ${found.role}`);
-        return { ok: true, role: found.role };
-      }
-      addAuditLog(`Failed User Login: ${email}`);
       return { ok: false, error: err.message };
     }
   };
 
   const handleRegister = async (email, password, name, selectedRole) => {
     try {
-      await registerUser({
-        fullName: name, email, password, role: selectedRole.toUpperCase(),
-        phone: '', address: '',
-      });
+      await authService.register({ fullName: name, email, password, role: selectedRole.toUpperCase(), phone: '', address: '' });
       setPendingRegistration({ email, name, role: selectedRole });
-      addAuditLog(`User Registration: ${selectedRole}`);
       return { ok: true, requiresOtp: true };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -248,20 +465,21 @@ export const AppProvider = ({ children }) => {
 
   const handleVerifyOtp = async (email, otp) => {
     try {
-      const data = await verifyRegistrationOtp({ email, otp });
+      const data = await authService.verifyRegistrationOtp({ email, otp });
       const userData = data.data.user;
       const pending = pendingRegistration;
+      const selectedRole = pending?.role || (userData.roles?.[0] || 'CUSTOMER').toLowerCase();
       setPendingRegistration(null);
       setUser({
         name: userData.fullName,
-        role: pending?.role || 'customer',
+        role: selectedRole,
+        roles: (userData.roles || []).map((role) => role.toLowerCase()),
         loggedIn: true,
         email: userData.email,
         accessToken: data.data.accessToken,
         refreshToken: data.data.refreshToken,
       });
-      addAuditLog(`User Verified OTP: ${email}`);
-      return { ok: true, role: pending?.role || 'customer' };
+      return { ok: true, role: selectedRole };
     } catch (err) {
       return { ok: false, error: err.message };
     }
@@ -269,179 +487,207 @@ export const AppProvider = ({ children }) => {
 
   const handleResendOtp = async (email) => {
     try {
-      await resendRegistrationOtp({ email });
+      await authService.resendRegistrationOtp({ email });
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err.message };
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      if (user.refreshToken) {
+        await authService.logout(user.refreshToken);
+      }
+    } catch {
+    }
+    clearAuthSession();
     setUser(DEFAULT_USER);
-    clearCart();
-    addAuditLog('User Logout');
+    setCart([]);
+    setOrders([]);
+    setSubscriptions([]);
+    setLoyalty({ points: 0, tier: 'Bronze', pointsToNextTier: 0, isSubscribed: false, subscriptionPlan: '', subscriptionPrice: 0, nextBillingDate: '' });
+    setGardenLayout(Array(64).fill(null));
   };
 
   const switchRole = (newRole) => {
     setUser((prev) => ({ ...prev, role: newRole }));
-    addAuditLog(`Role Changed: ${user.role} to ${newRole}`);
   };
 
-  const updateUserProfile = ({ name, email, password }) => {
+  const updateUserProfile = async ({ name, email, password }) => {
     if (email !== user.email) {
-      const emailExists = registeredUsers.some((item) => item.email.toLowerCase() === email.toLowerCase());
-      if (emailExists) return { ok: false, error: 'That email is already assigned to another demo account.' };
+      return { ok: false, error: 'Email changes are not supported by the current backend profile endpoint.' };
     }
-
-    setRegisteredUsers((prev) => prev.map((item) =>
-      item.email === user.email ? { ...item, name, email, password: password || item.password } : item
-    ));
-    setUser((prev) => ({ ...prev, name, email }));
-    addAuditLog(`User Profile Updated: ${name}`);
-    return { ok: true };
-  };
-
-  const updateProductStock = (productId, newStock) => {
-    const normalizedStock = Math.max(0, Number(newStock) || 0);
-    setProducts((prev) => prev.map((product) => product.id === productId ? { ...product, stock: normalizedStock } : product));
-    setCart((prev) => prev
-      .map((item) => item.id === productId ? { ...item, quantity: Math.min(item.quantity, normalizedStock) } : item)
-      .filter((item) => item.quantity > 0)
-    );
-    const product = products.find((item) => item.id === productId);
-    if (product) addAuditLog(`Inventory Stock Update: ${product.name} to ${normalizedStock}`);
-  };
-
-  const addProduct = (productDetails) => {
-    const newProduct = {
-      id: Date.now(),
-      rating: 5.0,
-      reviews: 0,
-      image: productDetails.image || '',
-      isAIRecommended: false,
-      desc: 'Custom inventory item added by studio operator.',
-      ...productDetails,
-      price: Number(productDetails.price),
-      stock: Math.max(0, Number(productDetails.stock) || 0),
-    };
-    setProducts((prev) => [newProduct, ...prev]);
-    addAuditLog(`New Inventory Product Added: ${newProduct.name} (Qty: ${newProduct.stock})`);
-    return newProduct;
-  };
-
-  const updateProduct = (productId, updates) => {
-    setProducts((prev) => prev.map((product) =>
-      product.id === productId
-        ? {
-            ...product,
-            ...updates,
-            price: updates.price === undefined ? product.price : Number(updates.price),
-            stock: updates.stock === undefined ? product.stock : Math.max(0, Number(updates.stock) || 0),
-          }
-        : product
-    ));
-    addAuditLog(`Inventory Product Updated: ${productId}`);
-  };
-
-  const deleteProduct = (productId) => {
-    setProducts((prev) => prev.filter((product) => product.id !== productId));
-    setCart((prev) => prev.filter((item) => item.id !== productId));
-    addAuditLog(`Inventory Item Deleted: ${productId}`);
-  };
-
-  const createOrder = (orderDetails) => {
-    if (cart.length === 0) return { ok: false, error: 'Your cart is empty.' };
-
-    const unavailableItem = cart.find((item) => {
-      const product = products.find((current) => current.id === item.id);
-      return !product || product.stock < item.quantity;
-    });
-    if (unavailableItem) {
-      return { ok: false, error: `${unavailableItem.name} is no longer available in the requested quantity.` };
+    if (password) {
+      return { ok: false, error: 'Password changes are not supported on this screen yet.' };
     }
-
-    const newOrder = {
-      id: `FL-${Math.floor(1000 + Math.random() * 9000)}`,
-      date: new Date().toISOString().substring(0, 10),
-      items: cart.map((item) => ({ id: item.id, name: item.name, quantity: item.quantity, price: item.price })),
-      total: orderDetails.total,
-      status: 'Order Placed',
-      address: orderDetails.address,
-      deliveryMethod: orderDetails.deliveryMethod,
-      trackingNumber: `TRK-FL-${Math.floor(100000 + Math.random() * 900000)}`,
-      estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10)
-    };
-
-    setOrders((prev) => [newOrder, ...prev]);
-    setProducts((prev) => prev.map((product) => {
-      const orderedItem = cart.find((item) => item.id === product.id);
-      return orderedItem ? { ...product, stock: Math.max(0, product.stock - orderedItem.quantity) } : product;
-    }));
-    clearCart();
-
-    const pointsGained = Math.round(orderDetails.total * 10);
-    setLoyalty((prev) => {
-      const totalPoints = prev.points + pointsGained;
-      return {
-        ...prev,
-        points: totalPoints,
-        pointsToNextTier: Math.max(0, 500 - totalPoints),
-        tier: totalPoints >= 500 ? 'Gold Leaf' : totalPoints >= 200 ? 'Silver Bud' : 'Bronze Seedling'
-      };
-    });
-
-    addAuditLog(`Order Created: ${newOrder.id}, Total: RWF ${Number(orderDetails.total).toLocaleString()}`);
-    return { ok: true, orderId: newOrder.id };
-  };
-
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders((prev) => prev.map((order) => order.id === orderId ? { ...order, status: newStatus } : order));
-    addAuditLog(`Order Status Update: ${orderId} set to ${newStatus}`);
-  };
-
-  const updateSubscription = (subscribe, planName = '', price = 0) => {
-    setLoyalty((prev) => ({
-      ...prev,
-      isSubscribed: subscribe,
-      subscriptionPlan: subscribe ? planName : '',
-      subscriptionPrice: subscribe ? price : 0,
-      nextBillingDate: subscribe ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10) : ''
-    }));
-    addAuditLog(subscribe ? `Subscribed to ${planName}` : 'Cancelled subscription');
-  };
-
-  const updateGardenCell = (index, plantInfo) => {
-    setGardenLayout((prev) => {
-      const nextGrid = [...prev];
-      nextGrid[index] = plantInfo;
-      return nextGrid;
-    });
-    addAuditLog(plantInfo ? `Garden Grid Edit: planted ${plantInfo.name} at ${index}` : `Garden Grid Edit: cleared ${index}`);
-  };
-
-  const readTheme = () => {
     try {
-      const saved = readJson('flora_theme', 'dark');
-      return saved === 'light' ? 'light' : 'dark';
-    } catch {
-      return 'dark';
+      const result = await authService.updateMe({ fullName: name, phone: user.phone || '', address: user.address || '', language: user.language || '' });
+      setUser((prev) => ({ ...prev, name: result?.data?.user?.fullName || name }));
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
     }
   };
 
-  const [theme, setThemeState] = useState(readTheme);
+  const updateProductStock = async (productId, newStock) => {
+    const product = products.find((item) => item.id === productId);
+    const location = inventoryLocations[0];
+    if (!product || !location) return;
+    const currentStock = Number(product.stock || 0);
+    const targetStock = Math.max(0, Number(newStock) || 0);
+    const diff = targetStock - currentStock;
+    if (diff === 0) return;
+    await inventoryService.adjust({
+      productId: product.backendId || product.id,
+      locationId: location.id,
+      quantity: Math.abs(diff),
+      movementType: diff > 0 ? 'STOCK_IN' : 'STOCK_OUT',
+      reason: `Frontend stock adjustment to ${targetStock}`,
+      note: 'Updated from inventory page',
+    });
+    await refreshPrivateData(user);
+  };
+
+  const addProduct = async (productDetails) => {
+    const category = categories.find((item) => item.slug === productDetails.category) || categories[0];
+    const payload = {
+      name: productDetails.name,
+      sku: `FS-${Date.now()}`,
+      price: Number(productDetails.price),
+      categoryId: category?.id,
+      productType: PRODUCT_TYPE_BY_CATEGORY[productDetails.category] || 'PLANT',
+      description: productDetails.desc || 'Product created from the frontend inventory workspace.',
+      shortDescription: productDetails.desc || productDetails.name,
+      imageUrl: productDetails.image || '',
+      active: true,
+      featured: false,
+      tags: productDetails.category,
+      lightRequirement: productDetails.sunlight || null,
+      waterRequirement: productDetails.water || null,
+      color: productDetails.color || null,
+    };
+    const created = await productService.create(payload);
+    const location = inventoryLocations[0];
+    if (location && Number(productDetails.stock) > 0) {
+      await inventoryService.adjust({
+        productId: created?.data?.id,
+        locationId: location.id,
+        quantity: Number(productDetails.stock),
+        movementType: 'STOCK_IN',
+        reason: 'Initial stock from frontend inventory form',
+        note: 'New product created from frontend',
+      });
+    }
+    await refreshPrivateData(user);
+    return created?.data;
+  };
+
+  const updateProduct = async (productId, updates) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
+    const category = categories.find((item) => item.slug === updates.category) || categories.find((item) => item.id === product.categoryId);
+    await productService.update(product.backendId || product.id, {
+      name: updates.name,
+      price: Number(updates.price),
+      categoryId: category?.id,
+      productType: PRODUCT_TYPE_BY_CATEGORY[updates.category || product.category] || product.productType,
+      description: updates.desc || product.desc,
+      shortDescription: updates.desc || product.desc,
+      imageUrl: updates.image || '',
+      tags: updates.category || product.category,
+    });
+    if (updates.stock !== undefined) {
+      await updateProductStock(productId, updates.stock);
+    } else {
+      await refreshPrivateData(user);
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
+    await productService.remove(product.backendId || product.id);
+    await refreshPrivateData(user);
+  };
+
+  const createOrder = async (orderDetails) => {
+    try {
+      const result = await orderService.checkout({
+        shippingFullName: orderDetails.fullName || user.name,
+        shippingPhone: user.phone || 'N/A',
+        shippingAddress: orderDetails.address,
+        shippingCity: orderDetails.city || orderDetails.address,
+        shippingDistrict: orderDetails.zip || 'N/A',
+        shippingNotes: '',
+        deliveryMethod: orderDetails.deliveryMethod === 'Express Eco-Courier' ? 'EXPRESS' : 'STANDARD',
+        paymentMethod: 'CARD',
+      });
+      await refreshPrivateData(user);
+      return { ok: true, orderId: result?.data?.orderNumber || result?.data?.id };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    const order = orders.find((item) => item.id === orderId || item.backendId === orderId);
+    if (!order) return;
+    await orderService.updateStatus(order.backendId, { status: DISPLAY_TO_BACKEND_ORDER_STATUS[newStatus] || newStatus });
+    await refreshPrivateData(user);
+  };
+
+  const updateSubscription = async (subscribe, planName = '', price = 0) => {
+    if (!user.loggedIn || user.role !== 'customer') return;
+    if (subscribe) {
+      const plan = subscriptionPlans.find((item) => item.name === planName) || subscriptionPlans.find((item) => Number(item.price) === Number(price));
+      if (!plan) throw new Error('Subscription plan not found in backend data.');
+      await subscriptionService.subscribe({ planId: plan.id, autoRenew: true });
+    } else {
+      const activeSub = subscriptions.find((item) => item.status === 'ACTIVE');
+      if (activeSub) {
+        await subscriptionService.cancel(activeSub.id, { reason: 'Cancelled from frontend dashboard' });
+      }
+    }
+    await refreshPrivateData(user);
+  };
+
+  const updateGardenCell = async (index, plantInfo) => {
+    if (!user.loggedIn) return;
+    const plan = await ensureGardenPlan();
+    const row = Math.floor(index / 8);
+    const col = index % 8;
+    const existing = gardenLayout[index];
+    if (!plantInfo) {
+      if (existing?.placementId) {
+        await gardenPlanService.removePlacement(plan.id, existing.placementId);
+      }
+    } else {
+      const product = products.find((item) => item.name === plantInfo.name) || products.find((item) => item.category === 'plants');
+      if (!product) return;
+      if (existing?.placementId) {
+        await gardenPlanService.removePlacement(plan.id, existing.placementId);
+      }
+      await gardenPlanService.addPlacement(plan.id, {
+        productId: product.backendId || product.id,
+        row,
+        col,
+        quantity: 1,
+        plantedAt: new Date().toISOString(),
+        notes: plantInfo.name,
+      });
+    }
+    await refreshPrivateData(user);
+  };
+
+  const addAuditLog = () => {};
 
   const toggleTheme = () => {
-    setThemeState((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      writeJson('flora_theme', next);
-      return next;
-    });
+    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   const setTheme = (t) => {
-    const next = t === 'light' ? 'light' : 'dark';
-    setThemeState(next);
-    writeJson('flora_theme', next);
+    setThemeState(t === 'light' ? 'light' : 'dark');
   };
 
   return (
@@ -457,12 +703,15 @@ export const AppProvider = ({ children }) => {
         auditLogs,
         gardenLayout,
         theme,
+        analytics,
+        subscriptionPlans,
+        deliveries,
         toggleTheme,
         setTheme,
-        addToCart,
-        removeFromCart,
-        updateCartQuantity,
-        clearCart,
+        addToCart: addToCartHandler,
+        removeFromCart: removeFromCartHandler,
+        updateCartQuantity: updateCartQuantityHandler,
+        clearCart: clearCartHandler,
         handleLogin,
         handleRegister,
         handleVerifyOtp,
@@ -479,6 +728,20 @@ export const AppProvider = ({ children }) => {
         updateSubscription,
         updateGardenCell,
         addAuditLog,
+        recommendPlantsApi: (body) => recommendationService.plants(body),
+        quickAskChatbot: (body) => chatbotService.quickAsk(body),
+        trackDelivery: (orderId) => deliveryService.track(orderId),
+        refreshAppData: async () => {
+          setDataState({ loading: true, error: '' });
+          try {
+            return await (user.loggedIn ? refreshPrivateData(user) : refreshPublicData(user));
+          } catch (err) {
+            setDataState({ loading: false, error: err?.message || 'Failed to load app data.' });
+            throw err;
+          } finally {
+            setDataState((prev) => ({ ...prev, loading: false }));
+          }
+        },
       }}
     >
       {children}

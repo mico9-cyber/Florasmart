@@ -540,3 +540,170 @@ a:hover {
   display: flex;
   gap: 12px;
 }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.spin {
+  animation: spin 1.5s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================ */
+/* Mobile Responsive — 768px and below          */
+/* ============================================ */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 12px !important;
+  }
+  .dashboard-content {
+    padding: 16px !important;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-cards {
+    grid-template-columns: 1fr !important;
+  }
+  .card {
+    padding: 16px !important;
+  }
+  .chat-container {
+    width: 100% !important;
+    max-height: none !important;
+    height: calc(100vh - 200px) !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .chat-messages {
+    max-height: 320px !important;
+  }
+  .chat-message {
+    max-width: 90% !important;
+  }
+  .chat-input-area {
+    padding: 12px !important;
+  }
+
+  /* Card > table: stack cells on mobile */
+  .card table,
+  .card .custom-table {
+    display: block !important;
+  }
+  .card table thead,
+  .card .custom-table thead {
+    display: none !important;
+  }
+  .card table tbody,
+  .card .custom-table tbody,
+  .card table tr,
+  .card .custom-table tr {
+    display: block !important;
+    width: 100% !important;
+  }
+  .card table tr,
+  .card .custom-table tr {
+    margin-bottom: 12px !important;
+    border-bottom: 1px solid var(--border-green) !important;
+    padding-bottom: 8px !important;
+  }
+  .card table td,
+  .card .custom-table td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+    border: none !important;
+  }
+  .card table td::before,
+  .card .custom-table td::before {
+    content: attr(data-label) !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    font-size: 12px !important;
+    margin-right: 12px !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ============================================ */
+/* Mobile Responsive — 480px and below          */
+/* ============================================ */
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 12px !important;
+  }
+  .dashboard-content {
+    padding: 12px !important;
+  }
+  .card {
+    padding: 12px !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .chat-container {
+    height: calc(100vh - 160px) !important;
+    border-radius: 0 !important;
+  }
+  .chat-messages {
+    max-height: 260px !important;
+    padding: 12px !important;
+  }
+  .chat-message {
+    max-width: 95% !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+  .chat-input-area {
+    padding: 8px 12px !important;
+    gap: 8px !important;
+  }
+  .chat-header {
+    padding: 12px 16px !important;
+  }
+  .btn {
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+  }
+  .table-container {
+    border-radius: var(--radius-sm) !important;
+  }
+  .custom-table th,
+  .custom-table td {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+  }
+  .modal-content {
+    padding: 24px 20px !important;
+    margin: 0 12px !important;
+  }
+  .section-title {
+    font-size: 28px !important;
+  }
+  .hero-section {
+    padding: 48px 0 !important;
+  }
+  .hero-subtitle-playfair {
+    font-size: 20px !important;
+  }
+  .section-subtitle {
+    font-size: 15px !important;
+    margin-bottom: 32px !important;
+  }
+  .planner-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px !important;
+    padding: 8px !important;
+  }
+  .planner-cell {
+    font-size: 9px !important;
+  }
+}

@@ -1,6 +1,7 @@
 ﻿import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
+import { useToast } from '../context/ToastContext';
 
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
@@ -9,6 +10,7 @@ import { User, LogOut, CheckCircle } from 'lucide-react';
 export default function ProfilePage() {
   const { user, handleLogout, switchRole, updateUserProfile } = useContext(AppContext);
   const navigate = useNavigate();
+  const addToast = useToast();
 
   // Settings Fields States
   const [name, setName] = useState(user.name);
@@ -48,11 +50,13 @@ export default function ProfilePage() {
     const result = updateUserProfile({ name, email, password });
     if (!result.ok) {
       setErrors({ email: result.error });
+      addToast(result.error || 'Failed to update profile.', 'error');
       return;
     }
     setSuccess(true);
     setPassword('');
     setConfirmPassword('');
+    addToast('Profile updated successfully!', 'success');
     setTimeout(() => setSuccess(false), 3000);
   };
 

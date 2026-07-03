@@ -1,36 +1,80 @@
-﻿import React from 'react';
+﻿import React, { useContext } from 'react';
+import { AppContext } from '../context/AppData';
 
 import DashboardCard from '../components/DashboardCard';
 import ChartCard from '../components/ChartCard';
-import { DollarSign, BarChart3, TrendingUp, Sparkles, FileText, Download } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { DollarSign, BarChart3, TrendingUp, Sparkles, FileText, Download, BarChart } from 'lucide-react';
 import Button from '../components/Button';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function AnalyticsPage() {
-  const analyticsRows = [
-    ['Indoor Plants', '5,420 views', '18.4%', '112 units', 'High Conversion'],
-    ['Flower Bouquets', '4,210 views', '12.2%', '54 units', 'Nominal'],
-    ['Ceramic Vases', '2,870 views', '8.5%', '8 units', 'Underperforming'],
-  ];
+  const { analytics, user } = useContext(AppContext);
+
+  const activeAnalytics = user?.role === 'admin' ? analytics.admin
+    : user?.role === 'florist' ? analytics.florist
+    : analytics.customer;
+
+  if (activeAnalytics === null) {
+    const header = (
+      <div style={styles.headerRow}>
+        <div>
+          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Horticultural Sales Analytics</h2>
+          <p style={{ color: 'var(--text-muted)' }}>Perform revenue inspections, catalog conversions, and average order value (AOV) updates.</p>
+        </div>
+      </div>
+    );
+    return (
+      <div className="dashboard-content">
+        {header}
+        <div className="card" style={{ textAlign: 'center', padding: '64px 24px' }}>
+          <BarChart size={48} color="var(--border-green)" />
+          <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>Analytics data unavailable</h4>
+          <p style={{ color: 'var(--text-muted)', fontSize: '13px', maxWidth: '400px', margin: '8px auto 0' }}>
+            {user?.role ? `The analytics backend for ${user.role} has not returned data yet.` : 'Sign in to view analytics.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const revenue = activeAnalytics?.totalRevenue || activeAnalytics?.totalSales || 0;
+  const conversionRate = activeAnalytics?.conversionRate || 0;
+  const totalOrders = activeAnalytics?.totalOrders || activeAnalytics?.orderCount || 0;
+  const aov = activeAnalytics?.averageOrderValue || activeAnalytics?.aov || 0;
+  const impressions = activeAnalytics?.totalViews || activeAnalytics?.impressions || 0;
+
+  const salesData = activeAnalytics?.salesTrend || activeAnalytics?.weeklyRevenue || [];
+  const ordersData = activeAnalytics?.ordersTrend || activeAnalytics?.weeklyOrders || [];
+
+  const hasData = revenue > 0 || totalOrders > 0 || salesData.length > 0;
+
+  const productRows = (activeAnalytics?.productPerformance || activeAnalytics?.topProducts || []).slice(0, 5);
+  const displayRows = productRows.length > 0 ? productRows.map((p) => [
+    p.name || p.category || p.productName,
+    `${p.views || p.impressions || 0} views`,
+    `${p.conversionRate || p.addToCartRate || 0}%`,
+    `${p.sales || p.orders || p.unitsSold || 0} units`,
+    (Number(p.conversionRate) > 15 || p.status === 'high') ? 'High Conversion' : 'Nominal',
+  ]) : [];
 
   const handleExportPDF = () => {
     downloadReport('florasmart-analytics-report.txt', 'FloraSmart Analytics Report', [
-      { heading: 'KPI Summary', lines: ['Revenue: RWF 1,500,000', 'Conversion Rate: 3.48%', 'Average Order Value: RWF 58,000'] },
-      { heading: 'Conversion Performance', lines: analyticsRows.map((row) => row.join(' | ')) },
+      { heading: 'KPI Summary', lines: [`Revenue: ${formatCurrency(revenue)}`, `Conversion Rate: ${conversionRate}`, `Average Order Value: ${formatCurrency(aov)}`] },
+      { heading: 'Conversion Performance', lines: displayRows.map((row) => row.join(' | ')) },
     ]);
   };
 
   const handleExportExcel = () => {
     downloadCsv('florasmart-analytics.csv', [
       ['Product Category', 'Impressions', 'Add To Cart Ratio', 'Order Completions', 'Conversion Status'],
-      ...analyticsRows,
+      ...displayRows,
     ]);
   };
 
   return (
     <div className="dashboard-content">
-        {/* Header Row */}
         <div style={styles.headerRow}>
           <div>
             <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Horticultural Sales Analytics</h2>
@@ -46,11 +90,10 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* Analytics stats */}
         <div className="grid-cols-4" style={{ margin: '32px 0' }}>
           <DashboardCard
             title="Total Net Revenue"
-            value={formatCurrency(1500000)}
+            value={formatCurrency(revenue)}
             icon={<DollarSign size={20} color="var(--accent-lime)" />}
             description="All florist e-commerce nodes"
             trend="+12.4% MoM"
@@ -58,7 +101,7 @@ export default function AnalyticsPage() {
           />
           <DashboardCard
             title="Conversion Rate"
-            value="3.48%"
+            value={typeof conversionRate === 'number' ? `${conversionRate}%` : conversionRate}
             icon={<TrendingUp size={20} color="var(--accent-lime)" />}
             description="Visits converting to checkout"
             trend="+0.6% weekly"
@@ -66,7 +109,7 @@ export default function AnalyticsPage() {
           />
           <DashboardCard
             title="Catalog Impressions"
-            value="12.5K views"
+            value={typeof impressions === 'number' ? `${impressions.toLocaleString()} views` : impressions}
             icon={<BarChart3 size={20} color="var(--accent-lime)" />}
             description="Specimen page details queried"
             trend="+8.2% views"
@@ -74,7 +117,7 @@ export default function AnalyticsPage() {
           />
           <DashboardCard
             title="Avg Order Value"
-            value={formatCurrency(58000)}
+            value={formatCurrency(aov)}
             icon={<Sparkles size={20} color="var(--accent-lime)" />}
             description="Mean e-commerce basket size"
             trend="Stable AOV"
@@ -82,15 +125,14 @@ export default function AnalyticsPage() {
           />
         </div>
 
-        {/* Double charts layouts */}
         <div style={styles.chartsGrid}>
           <div style={{ flex: 1, minWidth: '350px' }}>
             <ChartCard
               title="Weekly Gross Revenue Volume (RWF)"
               type="line"
-              data={[450, 780, 620, 920, 1100, 1248, 980]}
+              data={salesData}
               labels={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
-              valueCallout="RWF 1,500,000 Peak Day"
+              valueCallout={`${formatCurrency(revenue)} Total`}
             />
           </div>
 
@@ -98,14 +140,13 @@ export default function AnalyticsPage() {
             <ChartCard
               title="E-Commerce Conversions & Checkout Completions"
               type="bar"
-              data={[14, 22, 19, 28, 35, 42, 30]}
+              data={ordersData}
               labels={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
-              valueCallout="174 Orders Total"
+              valueCallout={`${totalOrders} Orders Total`}
             />
           </div>
         </div>
 
-        {/* Ledger logs below */}
         <div className="card" style={{ marginTop: '32px' }}>
           <h3 style={styles.sectionTitle}>Conversion Performance Summary</h3>
           <div className="table-container" style={{ marginTop: '16px' }}>
@@ -120,27 +161,15 @@ export default function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td style={{ fontWeight: 'bold' }}>🌿 Indoor Plants</td>
-                  <td>5,420 views</td>
-                  <td>18.4%</td>
-                  <td>112 units</td>
-                  <td><span className="badge badge-success">High Conversion</span></td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 'bold' }}>🌹 Flower Bouquets</td>
-                  <td>4,210 views</td>
-                  <td>12.2%</td>
-                  <td>54 units</td>
-                  <td><span className="badge badge-info">Nominal</span></td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 'bold' }}>🏺 Ceramic Vases</td>
-                  <td>2,870 views</td>
-                  <td>8.5%</td>
-                  <td>8 units</td>
-                  <td><span className="badge badge-warning">Underperforming</span></td>
-                </tr>
+                {displayRows.map((row, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 'bold' }}>{row[0]}</td>
+                    <td>{row[1]}</td>
+                    <td>{row[2]}</td>
+                    <td>{row[3]}</td>
+                    <td><span className={`badge ${row[4] === 'High Conversion' ? 'badge-success' : row[4] === 'Underperforming' ? 'badge-warning' : 'badge-info'}`}>{row[4]}</span></td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

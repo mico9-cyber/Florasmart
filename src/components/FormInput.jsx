@@ -11,7 +11,9 @@ export default function FormInput({
   error,
   options = [],
   required = false,
-  rows = 3
+  rows = 3,
+  ariaInvalid,
+  ariaDescribedby
 }) {
   return (
     <div className="form-group">
@@ -28,6 +30,8 @@ export default function FormInput({
           onChange={onChange}
           className="form-control"
           style={{ borderColor: error ? 'var(--error)' : 'var(--border-green)' }}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedby}
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -47,6 +51,8 @@ export default function FormInput({
             borderColor: error ? 'var(--error)' : 'var(--border-green)',
             resize: 'vertical'
           }}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedby}
         />
       ) : (
         <input
@@ -57,6 +63,8 @@ export default function FormInput({
           onChange={onChange}
           className="form-control"
           style={{ borderColor: error ? 'var(--error)' : 'var(--border-green)' }}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedby}
         />
       )}
 

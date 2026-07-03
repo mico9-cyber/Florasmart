@@ -1,14 +1,42 @@
-﻿import React, { useContext } from 'react';
+﻿import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
-import { Trash2, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { Trash2, ShoppingBag, ArrowLeft, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
 import Button from '../components/Button';
 import { formatCurrency } from '../utils/formatCurrency';
 import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function ShoppingCartPage() {
-  const { cart, updateCartQuantity, removeFromCart } = useContext(AppContext);
+  const { cart, updateCartQuantity, removeFromCart, clearCart } = useContext(AppContext);
   const navigate = useNavigate();
+  const addToast = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const handleUpdateQty = (id, qty) => {
+    if (qty < 1) return;
+    setLoading(true);
+    updateCartQuantity(id, qty);
+    setLoading(false);
+    addToast('Cart quantity updated.', 'info');
+  };
+
+  const handleRemoveItem = (id) => {
+    setLoading(true);
+    removeFromCart(id);
+    setLoading(false);
+    addToast('Item removed from cart.', 'warning');
+  };
+
+  const handleClearCart = () => {
+    if (clearCart) {
+      setLoading(true);
+      clearCart();
+      setLoading(false);
+      addToast('Cart cleared.', 'warning');
+    }
+  };
 
   // Price Calculations
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -36,9 +64,9 @@ export default function ShoppingCartPage() {
 
                 {/* Qty Adjustment */}
                 <div style={styles.qtyControl}>
-                  <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} style={styles.qtyBtn}>-</button>
+                  <button onClick={() => handleUpdateQty(item.id, item.quantity - 1)} style={styles.qtyBtn}>-</button>
                   <span style={styles.qtyVal}>{item.quantity}</span>
-                  <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} style={styles.qtyBtn}>+</button>
+                  <button onClick={() => handleUpdateQty(item.id, item.quantity + 1)} style={styles.qtyBtn}>+</button>
                 </div>
 
                 {/* Total Price */}
@@ -48,16 +76,23 @@ export default function ShoppingCartPage() {
                 </div>
 
                 {/* Remove Btn */}
-                <button onClick={() => removeFromCart(item.id)} style={styles.removeBtn} title="Remove item">
+                <button onClick={() => handleRemoveItem(item.id)} style={styles.removeBtn} title="Remove item">
                   <Trash2 size={18} />
                 </button>
               </div>
             ))}
 
-            <Link to="/catalog" style={styles.continueLink}>
-              <ArrowLeft size={16} />
-              <span>Continue Shopping</span>
-            </Link>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+              <Link to="/catalog" style={styles.continueLink}>
+                <ArrowLeft size={16} />
+                <span>Continue Shopping</span>
+              </Link>
+              {cart.length > 1 && (
+                <button onClick={handleClearCart} style={styles.clearCartBtn}>
+                  <Trash2 size={14} /> Clear Cart
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Pricing Summary Card */}
@@ -84,6 +119,12 @@ export default function ShoppingCartPage() {
               <span>Grand Total</span>
               <span style={{ color: 'var(--accent-lime)' }}>{formatCurrency(grandTotal)}</span>
             </div>
+
+            {loading && (
+              <div style={{ textAlign: 'center', margin: '12px 0' }}>
+                <RefreshCw size={20} className="spin" />
+              </div>
+            )}
 
             {shipping > 0 && (
               <p style={styles.freeShippingAlert}>
@@ -223,8 +264,19 @@ const styles = {
     gap: '8px',
     fontSize: '14px',
     color: 'var(--accent-lime)',
-    marginTop: '12px',
-    alignSelf: 'flex-start',
+    fontWeight: '600',
+  },
+  clearCartBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    background: 'none',
+    border: '1px solid var(--error)',
+    color: 'var(--error)',
+    padding: '6px 12px',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    fontSize: '12px',
     fontWeight: '600',
   },
   summaryCard: {
