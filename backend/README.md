@@ -21,7 +21,7 @@ npm run dev
 
 ## Database setup
 
-1. Create the MySQL database `florasmart_db`.
+1. Create the MySQL database `florasmart`.
 2. Set `DATABASE_URL` in `.env`.
 3. Run Prisma migrations:
 

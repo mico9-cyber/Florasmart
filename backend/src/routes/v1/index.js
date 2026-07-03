@@ -20,6 +20,7 @@ import analyticsRoutes from './analytics.routes.js';
 import reportsRoutes from './reports.routes.js';
 import gardenPlanRoutes from './garden-plans.routes.js';
 import notificationsRoutes from './notifications.routes.js';
+import consultationRoutes from './consultation.routes.js';
 
 const router = Router();
 
@@ -44,6 +45,7 @@ router.use('/analytics', analyticsRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/garden-plans', gardenPlanRoutes);
 router.use('/notifications', notificationsRoutes);
+router.use('/consultations', consultationRoutes);
 
 export default router;
 

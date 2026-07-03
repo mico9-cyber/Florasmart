@@ -4,6 +4,8 @@ import { authService } from '../services/authService';
 import { Lock, ArrowLeft, CheckCircle2, AlertCircle, ShieldAlert } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import { validatePassword } from '../utils/passwordValidation';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -14,11 +16,12 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!password) { setError('New password is required.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (!validatePassword(password).valid) { setError('Password does not meet all requirements.'); return; }
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (!token) { setError('Reset token is missing. Use the link from your email.'); return; }
     setError('');
@@ -73,12 +76,13 @@ export default function ResetPasswordPage() {
             label="New Password"
             id="password"
             type="password"
-            placeholder="Min. 6 characters"
+            placeholder="Min. 12 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            error={error}
+            error={error && !password ? error : ''}
             required
           />
+          <PasswordStrengthIndicator password={password} onValidationChange={setPasswordValid} />
           <FormInput
             label="Confirm Password"
             id="confirm-password"
@@ -88,7 +92,7 @@ export default function ResetPasswordPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
           />
-          <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>
+          <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={loading || (password.length > 0 && !passwordValid)}>
             {loading ? 'Resetting...' : 'Reset Password'}
           </Button>
         </form>

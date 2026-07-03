@@ -206,7 +206,7 @@ const styles = {
   actions: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '16px',
     flexShrink: 0,
   },
   dashboardLink: {

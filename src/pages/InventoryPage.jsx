@@ -9,8 +9,21 @@ import { downloadCsv, downloadReport } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/formatCurrency';
 import { inventoryService } from '../services/inventoryService';
 
+const CATEGORY_SLUG_TO_KEY = {
+  'pots-vases': 'vases',
+  'indoor-plants': 'plants',
+  'outdoor-plants': 'plants',
+  'flowers': 'flowers',
+};
+
+const PRODUCT_TYPE_TO_CATEGORY_KEY = {
+  plant: 'plants',
+  flower: 'flowers',
+  vase: 'vases',
+};
+
 function parseCategory(product) {
-  return product?.category?.slug || String(product?.productType || '').toLowerCase() || 'plants';
+  return CATEGORY_SLUG_TO_KEY[product?.category?.slug] || PRODUCT_TYPE_TO_CATEGORY_KEY[product?.productType?.toLowerCase()] || 'plants';
 }
 
 function resolveRows(payload) {

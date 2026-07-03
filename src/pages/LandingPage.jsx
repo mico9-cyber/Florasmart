@@ -27,22 +27,49 @@ export default function LandingPage() {
 
   return (
     <div style={styles.page}>
+      <style>{`
+        @media (max-width: 900px) {
+          .lp-hero-container { flex-direction: column !important; text-align: center; }
+          .lp-hero-text { align-items: center !important; }
+          .lp-hero-title { font-size: 36px !important; }
+          .lp-hero-actions { justify-content: center; }
+          .lp-hero-image { max-width: 360px; }
+          .lp-hero-floating { display: none; }
+          .lp-contrast-container { flex-direction: column !important; }
+          .lp-contrast-card { margin-top: 32px; }
+          .lp-role-grid { grid-template-columns: 1fr !important; }
+          .lp-newsletter-form { flex-direction: column; }
+          .lp-section-title { font-size: 24px !important; }
+          .lp-contrast-title { font-size: 24px !important; }
+          .lp-newsletter-title { font-size: 22px !important; }
+          .lp-stat-number { font-size: 22px !important; }
+        }
+        @media (max-width: 600px) {
+          .lp-hero-container { padding-top: 32px; padding-bottom: 32px; }
+          .lp-hero-title { font-size: 28px !important; }
+          .lp-stats-container { gap: 16px !important; }
+          .lp-features-section { padding: 48px 0 !important; }
+          .lp-contrast-section { padding: 48px 0 !important; }
+          .lp-newsletter-section { padding: 48px 0 !important; }
+        }
+        [data-theme="light"] .lp-contrast-section {
+          background-color: #E4F0E4 !important;
+        }
+        [data-theme="light"] .lp-contrast-section h2,
+        [data-theme="light"] .lp-contrast-section p,
+        [data-theme="light"] .lp-contrast-section .lp-role-grid span {
+          color: #1A3A1A !important;
+        }
+      `}</style>
       {/* Hero Section */}
       <section style={styles.heroSection}>
-        <div className="container" style={styles.heroContainer}>
-          <div style={styles.heroText}>
-            <div style={styles.badge}>
-              <Sparkles size={14} color="var(--bg-darker)" />
-              <span>Next-Gen Gardening AI</span>
-            </div>
-            <h1 style={styles.heroTitle}>
+        <div className="container lp-hero-container" style={styles.heroContainer}>
+          <div className="lp-hero-text" style={styles.heroText}>
+            <h1 className="lp-hero-title" style={styles.heroTitle}>
               Grow Smarter, <br />
               <span style={{ color: 'var(--accent-lime)' }}>Bloom Brighter.</span>
             </h1>
-            <p style={styles.heroDescription}>
-              Experience FloraSmart: An AI-powered ecosystem combining botanical intelligence, vase stem matching, and professional garden planners.
-            </p>
-            <div style={styles.heroActions}>
+            <div className="lp-hero-actions" style={styles.heroActions}>
               <Button onClick={() => navigate('/register')} variant="primary" icon={<ArrowRight size={18} />}>
                 Get Started Free
               </Button>
@@ -52,14 +79,14 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div style={styles.heroImageContainer}>
+          <div className="lp-hero-image" style={styles.heroImageContainer}>
             <img
               src="/hero_garden_florist.jpg"
               alt="Smart Greenhouse"
               style={styles.heroImage}
             />
             {/* Overlay card */}
-            <div style={styles.heroFloatingCard} className="pulse-light">
+            <div className="lp-hero-floating pulse-light" style={styles.heroFloatingCard}>
               <Sprout size={24} color="var(--accent-lime)" />
               <div>
                 <h4 style={{ margin: 0, fontSize: '14px' }}>AI Recommended</h4>
@@ -72,30 +99,30 @@ export default function LandingPage() {
 
       {/* Stats Bar */}
       <section style={styles.statsBar}>
-        <div className="container" style={styles.statsContainer}>
+        <div className="container lp-stats-container" style={styles.statsContainer}>
           <div style={styles.statItem}>
-            <h3 style={styles.statNumber}>99.4%</h3>
+            <h3 className="lp-stat-number" style={styles.statNumber}>99.4%</h3>
             <span style={styles.statLabel}>AI Matching Accuracy</span>
           </div>
           <div style={styles.statItem}>
-            <h3 style={styles.statNumber}>15K+</h3>
+            <h3 className="lp-stat-number" style={styles.statNumber}>15K+</h3>
             <span style={styles.statLabel}>Gardens Guided</span>
           </div>
           <div style={styles.statItem}>
-            <h3 style={styles.statNumber}>250+</h3>
+            <h3 className="lp-stat-number" style={styles.statNumber}>250+</h3>
             <span style={styles.statLabel}>Stems & Vases Calibrated</span>
           </div>
           <div style={styles.statItem}>
-            <h3 style={styles.statNumber}>24/7</h3>
+            <h3 className="lp-stat-number" style={styles.statNumber}>24/7</h3>
             <span style={styles.statLabel}>Autonomous Care Diagnostics</span>
           </div>
         </div>
       </section>
 
       {/* Feature Section with Green/White Contrast */}
-      <section style={styles.featuresSection}>
+      <section className="lp-features-section" style={styles.featuresSection}>
         <div className="container">
-          <h2 style={styles.sectionTitle}>Smart Garden Core Systems</h2>
+          <h2 className="lp-section-title" style={styles.sectionTitle}>Smart Garden Core Systems</h2>
           <p style={styles.sectionSubtitle}>
             Our unified platform is tailored for customers, professional florists, garden planners, and store managers.
           </p>
@@ -144,14 +171,14 @@ export default function LandingPage() {
       </section>
 
       {/* Middle banner section with light background to provide contrast */}
-      <section style={styles.whiteContrastSection}>
-        <div className="container" style={styles.contrastContainer}>
+      <section className="lp-contrast-section" style={styles.whiteContrastSection}>
+        <div className="container lp-contrast-container" style={styles.contrastContainer}>
           <div style={styles.contrastTextCol}>
-            <h2 style={styles.contrastTitle}>Designed for Both Enthusiasts and Experts</h2>
+            <h2 className="lp-contrast-title" style={styles.contrastTitle}>Designed for Both Enthusiasts and Experts</h2>
             <p style={styles.contrastText}>
               Whether you are looking to purchase your first houseplant, build custom floral displays for events, manage physical inventory in greenhouses, or track delivery vehicles out on the road, FloraSmart provides dedicated dashboard workspaces for every role.
             </p>
-            <div style={styles.roleGrid}>
+            <div className="lp-role-grid" style={styles.roleGrid}>
               <div style={styles.roleItem}>
                 <CheckCircle2 size={18} color="var(--accent-lime)" />
                 <span>Florist Order Handlers</span>
@@ -175,7 +202,7 @@ export default function LandingPage() {
               </Button>
             </div>
           </div>
-          <div style={styles.contrastImageCol}>
+          <div className="lp-contrast-card" style={styles.contrastImageCol}>
             <div style={styles.contrastCard}>
               <ShieldCheck size={48} color="var(--accent-lime)" />
               <h3 style={{ margin: '16px 0 8px', color: 'var(--text-white)' }}>Enterprise Grade Security</h3>
@@ -188,10 +215,10 @@ export default function LandingPage() {
       </section>
 
       {/* Newsletter Section */}
-      <section style={styles.newsletterSection}>
+      <section className="lp-newsletter-section" style={styles.newsletterSection}>
         <div className="container" style={styles.newsletterContainer}>
           <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 style={styles.newsletterTitle}>Get Botanical Insights in Your Inbox</h2>
+            <h2 className="lp-newsletter-title" style={styles.newsletterTitle}>Get Botanical Insights in Your Inbox</h2>
             <p style={styles.newsletterSubtitle}>
               Subscribe to receive weekly care sheets, early access florist drops, and intelligence updates on plant health.
             </p>
@@ -202,7 +229,7 @@ export default function LandingPage() {
                 <span>Success! You have been subscribed to our mailing list.</span>
               </div>
             ) : (
-              <form onSubmit={handleSubscribe} style={styles.form}>
+              <form onSubmit={handleSubscribe} className="lp-newsletter-form" style={styles.form}>
                 <div style={{ flex: 1 }}>
                   <input
                     type="email"
@@ -383,7 +410,7 @@ const styles = {
     marginTop: '8px',
   },
   whiteContrastSection: {
-    backgroundColor: '#07160F', /* Slightly darker tone for design contrast */
+    backgroundColor: '#07160F',
     borderTop: '1px solid var(--border-green)',
     borderBottom: '1px solid var(--border-green)',
     padding: '80px 0',

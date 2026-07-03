@@ -36,6 +36,9 @@ import NotificationsPage from './pages/NotificationsPage';
 import LoyaltyPage from './pages/LoyaltyPage';
 import SecurityPage from './pages/SecurityPage';
 import ProfilePage from './pages/ProfilePage';
+import BookConsultationPage from './pages/BookConsultationPage';
+import ManageConsultationsPage from './pages/ManageConsultationsPage';
+import LegalPage from './pages/LegalPage';
 
 import './App.css';
 
@@ -61,7 +64,7 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-const noSidebarRoutes = ['/', '/login', '/register', '/verify-otp', '/forgot-password', '/reset-password'];
+const noSidebarRoutes = ['/', '/login', '/register', '/verify-otp', '/forgot-password', '/reset-password', '/legal'];
 
 function AppLayout() {
   const { user, theme } = useContext(AppContext);
@@ -91,6 +94,7 @@ function AppLayout() {
             <Route path="/verify-otp" element={<OtpVerificationPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/legal" element={<LegalPage />} />
 
             <Route path="/customer-dashboard" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerDashboard /></ProtectedRoute>} />
             <Route path="/florist-dashboard" element={<ProtectedRoute allowedRoles={["florist"]}><FloristDashboard /></ProtectedRoute>} />
@@ -116,6 +120,9 @@ function AppLayout() {
             <Route path="/loyalty" element={<ProtectedRoute allowedRoles={["customer", "admin"]}><LoyaltyPage /></ProtectedRoute>} />
             <Route path="/security" element={<ProtectedRoute allowedRoles={["admin"]}><SecurityPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+            <Route path="/book-consultation" element={<ProtectedRoute allowedRoles={["customer"]}><BookConsultationPage /></ProtectedRoute>} />
+            <Route path="/manage-consultations" element={<ProtectedRoute allowedRoles={["gardener"]}><ManageConsultationsPage /></ProtectedRoute>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

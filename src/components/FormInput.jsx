@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { AlertCircle } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function FormInput({
   label,
@@ -15,6 +15,10 @@ export default function FormInput({
   ariaInvalid,
   ariaDescribedby
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+  const inputType = isPassword && showPassword ? 'text' : type;
+
   return (
     <div className="form-group">
       {label && (
@@ -55,17 +59,45 @@ export default function FormInput({
           aria-describedby={ariaDescribedby}
         />
       ) : (
-        <input
-          id={id}
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          className="form-control"
-          style={{ borderColor: error ? 'var(--error)' : 'var(--border-green)' }}
-          aria-invalid={ariaInvalid}
-          aria-describedby={ariaDescribedby}
-        />
+        <div style={{ position: 'relative' }}>
+          <input
+            id={id}
+            type={inputType}
+            placeholder={placeholder}
+            value={value}
+            onChange={onChange}
+            className="form-control"
+            style={{
+              borderColor: error ? 'var(--error)' : 'var(--border-green)',
+              paddingRight: isPassword ? '40px' : undefined,
+            }}
+            aria-invalid={ariaInvalid}
+            aria-describedby={ariaDescribedby}
+          />
+          {isPassword && (
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              tabIndex={-1}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                color: 'var(--text-muted)',
+              }}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          )}
+        </div>
       )}
 
       {error && (

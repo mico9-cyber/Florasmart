@@ -1,4 +1,4 @@
-﻿import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppData';
 import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -8,7 +8,7 @@ import Button from '../components/Button';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function OrderTrackingPage() {
-  const { orders } = useContext(AppContext);
+  const { orders, refreshAppData } = useContext(AppContext);
   const addToast = useToast();
 
   // States
@@ -16,6 +16,29 @@ export default function OrderTrackingPage() {
   const [activeOrder, setActiveOrder] = useState(orders[0] || null);
   const [searchErr, setSearchErr] = useState('');
   const [loading, setLoading] = useState(false);
+  const pollingRef = useRef(null);
+
+  // Auto-refresh orders every 10 seconds for live tracking
+  useEffect(() => {
+    pollingRef.current = setInterval(async () => {
+      try {
+        await refreshAppData();
+      } catch {
+        // silent
+      }
+    }, 10000);
+    return () => clearInterval(pollingRef.current);
+  }, []);
+
+  // Keep active order in sync with refreshed data
+  useEffect(() => {
+    if (!activeOrder) {
+      setActiveOrder(orders[0] || null);
+    } else {
+      const updated = orders.find(o => o.id === activeOrder.id || o.backendId === activeOrder.backendId);
+      if (updated) setActiveOrder(updated);
+    }
+  }, [orders]);
 
   const handleSearch = (e) => {
     e.preventDefault();

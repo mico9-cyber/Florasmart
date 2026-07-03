@@ -2,12 +2,19 @@ import { body } from 'express-validator';
 import { validateRequest } from '../middleware/validation.middleware.js';
 import { ROLES } from '../constants/auth.js';
 
+const strongPassword = body('password')
+  .isLength({ min: 12 }).withMessage('password must be at least 12 characters')
+  .matches(/[A-Z]/).withMessage('password must contain at least one uppercase letter')
+  .matches(/[a-z]/).withMessage('password must contain at least one lowercase letter')
+  .matches(/[0-9]/).withMessage('password must contain at least one number')
+  .matches(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/).withMessage('password must contain at least one special character');
+
 export const registerValidation = [
   body('fullName').trim().notEmpty().withMessage('fullName is required'),
   body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
   body('phone').optional().isString().trim(),
   body('address').optional().isString().trim(),
-  body('password').isLength({ min: 8 }).withMessage('password must be at least 8 characters'),
+  strongPassword,
   body('role').isIn([ROLES.CUSTOMER, ROLES.FLORIST, ROLES.GARDENER]).withMessage('role must be CUSTOMER, FLORIST, or GARDENER'),
   validateRequest,
 ];
@@ -30,7 +37,7 @@ export const forgotPasswordValidation = [
 
 export const resetPasswordValidation = [
   body('token').notEmpty().withMessage('token is required'),
-  body('password').isLength({ min: 8 }).withMessage('password must be at least 8 characters'),
+  strongPassword,
   validateRequest,
 ];
 

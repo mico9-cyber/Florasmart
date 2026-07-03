@@ -12,10 +12,16 @@ for (const key of required) {
   }
 }
 
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const clientUrls = process.env.CLIENT_URLS
+  ? process.env.CLIENT_URLS.split(',').map((url) => url.trim()).filter(Boolean)
+  : [clientUrl];
+
 export const environment = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: Number(process.env.PORT || 5000),
-  clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+  clientUrl,
+  clientUrls,
   databaseUrl: process.env.DATABASE_URL || '',
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret',

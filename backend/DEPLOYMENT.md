@@ -21,7 +21,7 @@ npm install
 Copy `.env.example` to `.env` and fill in:
 
 ```env
-DATABASE_URL="mysql://user:password@host:3306/florasmart_db"
+DATABASE_URL="mysql://user:password@host:3306/florasmart"
 JWT_ACCESS_SECRET=<random-64-char-string>
 JWT_REFRESH_SECRET=<random-64-char-string>
 JWT_ACCESS_EXPIRES_IN=15m
@@ -43,7 +43,7 @@ REPORTS_DIR=reports
 
 ```bash
 # Create the database
-mysql -u root -p -e "CREATE DATABASE florasmart_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+mysql -u root -p -e "CREATE DATABASE florasmart CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # Run migrations
 npx prisma migrate deploy

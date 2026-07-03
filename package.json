@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "start:all": "concurrently \"npm --prefix backend run dev\" \"npm run dev\"",
     "start:all:with-db": "concurrently \"npm --prefix backend run start:with-db\" \"npm run dev\"",
-    "bootstrap-and-start": "npm install && npm --prefix backend install && npm run start:all"
+    "bootstrap-and-start": "npm install && npm --prefix backend install && npm run start:all",
+    "start": "npm run bootstrap-and-start",
+    "start:with-db": "npm run start:all:with-db"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",

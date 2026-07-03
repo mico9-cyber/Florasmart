@@ -102,7 +102,11 @@ export class AuthService {
     });
 
     if (this.mailer?.sendRegistrationOtp) {
-      await this.mailer.sendRegistrationOtp(email, fullName, otp);
+      try {
+        await this.mailer.sendRegistrationOtp(email, fullName, otp);
+      } catch (err) {
+        this.logger.warn('Failed to send OTP email', { email, error: err.message });
+      }
     }
     if (process.env.NODE_ENV !== 'production') {
       this.logger.info(`Registration OTP for ${email}: ${otp}`);

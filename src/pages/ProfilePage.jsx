@@ -5,6 +5,8 @@ import { useToast } from '../context/ToastContext';
 
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import { validatePassword } from '../utils/passwordValidation';
 import { User, LogOut, CheckCircle } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -21,6 +23,7 @@ export default function ProfilePage() {
   // Form Validation
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(true);
 
   const validate = () => {
     const tempErrors = {};
@@ -32,8 +35,8 @@ export default function ProfilePage() {
       if (!emailRegex.test(email)) tempErrors.email = 'Enter a valid email address.';
     }
 
-    if (password && password.length < 6) {
-      tempErrors.password = 'New password must be at least 6 characters.';
+    if (password && !validatePassword(password).valid) {
+      tempErrors.password = 'Password does not meet all requirements.';
     }
     if (password !== confirmPassword) {
       tempErrors.confirmPassword = 'Passwords do not match.';
@@ -156,11 +159,12 @@ export default function ProfilePage() {
                     label="New Password (optional)"
                     id="pwd-input"
                     type="password"
-                    placeholder="••••••"
+                    placeholder="Min. 12 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     error={errors.password}
                   />
+                  <PasswordStrengthIndicator password={password} onValidationChange={setPasswordValid} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <FormInput
@@ -175,7 +179,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <Button type="submit" variant="lime" style={{ marginTop: '12px' }}>
+              <Button type="submit" variant="lime" style={{ marginTop: '12px' }} disabled={password.length > 0 && !passwordValid}>
                 Save Profile Changes
               </Button>
             </form>

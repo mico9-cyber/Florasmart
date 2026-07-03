@@ -18,25 +18,31 @@ export function createMailer(logger) {
     port: environment.mail.port,
     secure: environment.mail.secure,
     auth: { user: environment.mail.user, pass: environment.mail.pass },
+    tls: { rejectUnauthorized: false },
   });
 
   const from = environment.mail.from || environment.mail.user;
 
   return {
     async sendResetToken(email, token) {
-      await transporter.sendMail({
-        from,
-        to: email,
-        subject: 'FloraSmart password reset',
-        text: 'Password reset token: ' + token,
-      });
+      try {
+        await transporter.sendMail({
+          from,
+          to: email,
+          subject: 'FloraSmart password reset',
+          text: 'Password reset token: ' + token,
+        });
+      } catch (err) {
+        logger?.error('Failed to send password reset email', { error: err.message, email });
+      }
     },
     async sendRegistrationOtp(email, fullName, otp) {
-      await transporter.sendMail({
-        from,
-        to: email,
-        subject: 'Your FloraSmart Registration OTP',
-        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+      try {
+        await transporter.sendMail({
+          from,
+          to: email,
+          subject: 'Your FloraSmart Registration OTP',
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
           <h2>Welcome to FloraSmart!</h2>
           <p>Hi ${fullName},</p>
           <p>Use the OTP below to complete your registration. It expires in 10 minutes.</p>
@@ -44,7 +50,11 @@ export function createMailer(logger) {
           <p>If you did not request this, please ignore this email.</p>
           <hr><small style="color:#888">FloraSmart</small>
         </div>`,
-      });
+        });
+        logger?.info(`Registration OTP sent to ${email}`);
+      } catch (err) {
+        logger?.error('Failed to send registration OTP email', { error: err.message, email });
+      }
     },
   };
 }

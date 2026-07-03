@@ -105,10 +105,10 @@ export default function LoginPage() {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             options={[
-              { value: 'customer', label: 'Customer Portal' },
-              { value: 'florist', label: 'Florist Studio Dashboard' },
-              { value: 'gardener', label: 'Gardener Landscaping Dashboard' },
-              { value: 'admin', label: 'System Administrator Console' }
+              { value: 'customer', label: 'Customer' },
+              { value: 'florist', label: 'Florist' },
+              { value: 'gardener', label: 'Gardener' },
+              { value: 'admin', label: 'Admin' }
             ]}
           />
 

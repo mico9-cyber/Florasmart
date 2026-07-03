@@ -43,7 +43,11 @@ export default function NotificationsPage() {
     setError('');
     try {
       const res = await notificationService.list();
-      setNotifications(res?.data || []);
+      const payload = res?.data;
+      const items = Array.isArray(payload)
+        ? payload
+        : payload?.notifications || [];
+      setNotifications(items);
     } catch {
       setError('Failed to load notifications.');
     } finally {

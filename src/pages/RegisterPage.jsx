@@ -5,6 +5,8 @@ import { useToast } from '../context/ToastContext';
 import { UserPlus, ShieldAlert } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import { validatePassword } from '../utils/passwordValidation';
 
 export default function RegisterPage() {
   const { handleRegister } = useContext(AppContext);
@@ -16,11 +18,12 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('customer');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   // Validation States
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
+  const [passwordValid, setPasswordValid] = useState(false);
 
   const validateField = (name, value) => {
     let error = '';
@@ -34,13 +37,11 @@ export default function RegisterPage() {
         break;
       case 'password':
         if (!value) error = 'Password is required.';
-        else if (value.length < 6) error = 'Password must be at least 6 characters long.';
+        else if (!validatePassword(value).valid) error = 'Password does not meet all requirements.';
         break;
       case 'confirmPassword':
-        if (value !== password) error = 'Passwords do not match.';
-        break;
-      case 'role':
-        if (!value) error = 'Workspace role is required.';
+        if (!value) error = 'Please confirm your password.';
+        else if (value !== password) error = 'Passwords do not match.';
         break;
     }
     setFieldErrors(prev => ({ ...prev, [name]: error }));
@@ -58,9 +59,10 @@ export default function RegisterPage() {
     if (!email) tempErrors.email = 'Email address is required.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) tempErrors.email = 'Enter a valid email address.';
     if (!password) tempErrors.password = 'Password is required.';
-    else if (password.length < 6) tempErrors.password = 'Password must be at least 6 characters long.';
-    if (password !== confirmPassword) tempErrors.confirmPassword = 'Passwords do not match.';
-    if (!role) tempErrors.role = 'Workspace role is required.';
+    else if (!validatePassword(password).valid) tempErrors.password = 'Password does not meet all requirements.';
+    if (!confirmPassword) tempErrors.confirmPassword = 'Please confirm your password.';
+    else if (password !== confirmPassword) tempErrors.confirmPassword = 'Passwords do not match.';
+    if (!agreeToTerms) tempErrors.terms = 'You must agree to the Privacy Policy & Terms of Service.';
 
     setFieldErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -71,7 +73,7 @@ export default function RegisterPage() {
     if (!validate()) return;
 
     try {
-      const result = await handleRegister(email, password, name, role);
+      const result = await handleRegister(email, password, name, 'customer');
       if (result.ok) {
         addToast('Registration successful! Check your email for OTP.', 'success');
         navigate('/verify-otp', { replace: true });
@@ -114,7 +116,6 @@ export default function RegisterPage() {
             ariaDescribedby={fieldErrors.name ? 'error-name' : undefined}
             required
           />
-          {fieldErrors.name && <span id="error-name" style={styles.fieldError}>{fieldErrors.name}</span>}
 
           <FormInput
             label="Email Address"
@@ -129,26 +130,6 @@ export default function RegisterPage() {
             ariaDescribedby={fieldErrors.email ? 'error-email' : undefined}
             required
           />
-          {fieldErrors.email && <span id="error-email" style={styles.fieldError}>{fieldErrors.email}</span>}
-
-          <FormInput
-            label="Workspace Role"
-            id="role"
-            type="select"
-            value={role}
-            onChange={(e) => { setRole(e.target.value); if (fieldErrors.role) validateField('role', e.target.value); }}
-            onBlur={handleBlur('role')}
-            error={fieldErrors.role}
-            ariaInvalid={!!fieldErrors.role}
-            ariaDescribedby={fieldErrors.role ? 'error-role' : undefined}
-            options={[
-              { value: 'customer', label: 'Customer (Shop, Track Orders, AI Advisor)' },
-              { value: 'florist', label: 'Florist (Stems Match, Floral Inventory, Deliveries)' },
-              { value: 'gardener', label: 'Gardener (Landscape Planner, Care database, Catalog)' },
-              { value: 'admin', label: 'Admin (System Control, Logs, Global Inventory)' }
-            ]}
-          />
-          {fieldErrors.role && <span id="error-role" style={styles.fieldError}>{fieldErrors.role}</span>}
 
           <div style={styles.pwdRow}>
             <div style={{ flex: 1 }}>
@@ -156,7 +137,7 @@ export default function RegisterPage() {
                 label="Password"
                 id="password"
                 type="password"
-                placeholder="••••••"
+                placeholder="Enter password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) validateField('password', e.target.value); }}
                 onBlur={handleBlur('password')}
@@ -165,14 +146,13 @@ export default function RegisterPage() {
                 ariaDescribedby={fieldErrors.password ? 'error-password' : undefined}
                 required
               />
-              {fieldErrors.password && <span id="error-password" style={styles.fieldError}>{fieldErrors.password}</span>}
             </div>
             <div style={{ flex: 1 }}>
               <FormInput
                 label="Confirm Password"
                 id="confirmPassword"
                 type="password"
-                placeholder="••••••"
+                placeholder="Re-enter password"
                 value={confirmPassword}
                 onChange={(e) => { setConfirmPassword(e.target.value); if (fieldErrors.confirmPassword) validateField('confirmPassword', e.target.value); }}
                 onBlur={handleBlur('confirmPassword')}
@@ -181,19 +161,21 @@ export default function RegisterPage() {
                 ariaDescribedby={fieldErrors.confirmPassword ? 'error-confirmPassword' : undefined}
                 required
               />
-              {fieldErrors.confirmPassword && <span id="error-confirmPassword" style={styles.fieldError}>{fieldErrors.confirmPassword}</span>}
             </div>
           </div>
 
           <div style={styles.termsRow}>
             <label style={styles.termsLabel}>
-              <input type="checkbox" required style={{ marginRight: '8px' }} />
-              I agree to the <a href="#" style={styles.termsLink}>Privacy Policy</a> & <a href="#" style={styles.termsLink}>Terms of Service</a>
+              <input type="checkbox" required style={{ marginRight: '8px' }} checked={agreeToTerms} onChange={(e) => setAgreeToTerms(e.target.checked)} />
+              I agree to the <Link to="/legal" style={styles.termsLink}>Privacy Policy & Terms of Service</Link>
             </label>
+            {fieldErrors.terms && <span style={styles.fieldError}>{fieldErrors.terms}</span>}
           </div>
 
-          <Button type="submit" variant="primary" style={styles.submitBtn}>
-            Register Workspace Account
+          <PasswordStrengthIndicator password={password} onValidationChange={setPasswordValid} />
+
+          <Button type="submit" variant="primary" style={styles.submitBtn} disabled={!agreeToTerms || (password.length > 0 && !passwordValid)}>
+            Register Account
           </Button>
         </form>
 

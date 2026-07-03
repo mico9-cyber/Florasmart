@@ -10,7 +10,7 @@ The FloraSmart backend is a Node.js + Express.js + MySQL + Prisma REST API for a
 |-------|--------|
 | Server running | ✅ Port 5000 |
 | Health endpoint | ✅ /api/v1/health |
-| Database connection | ✅ MySQL florasmart_db |
+| Database connection | ✅ MySQL florasmart |
 | Prisma schema valid | ✅ 28 models |
 | Migrations applied | ✅ 10 migrations |
 | Seed data loaded | ✅ 4 users, 41 products, 8 categories, 30 KB entries |

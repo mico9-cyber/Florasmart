@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 import { API_PREFIX } from './constants/api.js';
 import { serverConfig } from './config/server.js';
+import { environment } from './config/environment.js';
 import { logger } from './config/logger.js';
 import { v1Router } from './routes/index.js';
 import { notFoundHandler, prismaErrorHandler, globalErrorHandler } from './middleware/error.middleware.js';
@@ -14,8 +15,26 @@ const app = express();
 
 app.disable('x-powered-by');
 app.use(helmet());
+
+const allowedClientUrls = Array.from(new Set([
+  serverConfig.clientUrl,
+  ...(serverConfig.clientUrls || []),
+]));
+
+const localDevOriginRegex = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+
 app.use(cors({
-  origin: serverConfig.clientUrl,
+  origin(origin, callback) {
+    if (!origin || allowedClientUrls.includes(origin)) {
+      return callback(null, true);
+    }
+
+    if (environment.nodeEnv === 'development' && localDevOriginRegex.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(rateLimit({

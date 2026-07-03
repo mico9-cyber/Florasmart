@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, ShoppingBag, ShoppingCart, ClipboardList, Sparkles, User, Grid, Package, BarChart3, FileText } from 'lucide-react';
+import { LayoutDashboard, Home, ShoppingBag, ShoppingCart, ClipboardList, Sparkles, User, Grid, Package, BarChart3, FileText, Calendar } from 'lucide-react';
 
 export const ROLE_NAV_ITEMS = {
   CUSTOMER: [
@@ -6,6 +6,7 @@ export const ROLE_NAV_ITEMS = {
     { to: '/catalog', label: 'Shop', icon: ShoppingBag },
     { to: '/cart', label: 'Cart', icon: ShoppingCart },
     { to: '/order-tracking', label: 'My Orders', icon: ClipboardList },
+    { to: '/book-consultation', label: 'Book Consultation', icon: Calendar },
     { to: '/recommendations', label: 'AI Advisor', icon: Sparkles },
     { to: '/profile', label: 'Profile', icon: User },
   ],
@@ -19,6 +20,7 @@ export const ROLE_NAV_ITEMS = {
 
   GARDENER: [
     { to: '/gardener-dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/manage-consultations', label: 'Consultations', icon: Calendar },
     { to: '/garden-planner', label: 'Garden Planner', icon: Grid },
     { to: '/recommendations', label: 'AI Advisor', icon: Sparkles },
     { to: '/profile', label: 'Profile', icon: User },

@@ -3,13 +3,16 @@ import React, { useState } from 'react';
 const PHOTO_URL = 'https://images.unsplash.com/photo-';
 
 const FALLBACKS = {
-  plants: PHOTO_URL + '1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop',
-  flowers: PHOTO_URL + '1518895949257-7621c3c786d7?w=600&h=600&fit=crop',
-  vases: PHOTO_URL + '1581783898377-1c85bf937427?w=600&h=600&fit=crop',
-  seeds: PHOTO_URL + '1460191269172-12c3ce6e8bfa?w=600&h=600&fit=crop',
-  tools: PHOTO_URL + '1581783898377-1c85bf937427?w=600&h=600&fit=crop',
-  fertilizers: PHOTO_URL + '1613143798921-c342c82c32e2?w=600&h=600&fit=crop',
-  default: PHOTO_URL + '1507003211169-0a1dd7228f2d?w=600&h=600&fit=crop',
+  plants: PHOTO_URL + '1459411552864-8cd36dfb7436?w=600&h=600&fit=crop',
+  flowers: PHOTO_URL + '1490750967868-88aa4f44baee?w=600&h=600&fit=crop',
+  vases: PHOTO_URL + '1578500494893-f760f0e48b2d?w=600&h=600&fit=crop',
+  seeds: PHOTO_URL + '1416879595382-4da1acebcd36?w=600&h=600&fit=crop',
+  tools: PHOTO_URL + '1592417817098-8fd3d9eb14a5?w=600&h=600&fit=crop',
+  fertilizers: PHOTO_URL + '1585336763698-24f8a0e4e8e3?w=600&h=600&fit=crop',
+  'pots-vases': PHOTO_URL + '1485955900006-10f4d324d411?w=600&h=600&fit=crop',
+  'garden-tools': PHOTO_URL + '1416879595382-4da1acebcd36?w=600&h=600&fit=crop',
+  'decorative-items': PHOTO_URL + '1558618666-fcd25c85f82e?w=600&h=600&fit=crop',
+  default: PHOTO_URL + '1459411552864-8cd36dfb7436?w=600&h=600&fit=crop',
 };
 
 function getFallbackUrl(category) {

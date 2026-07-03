@@ -40,6 +40,17 @@ const PRODUCT_TYPE_BY_CATEGORY = {
   vases: 'VASE',
 };
 
+const CATEGORY_SLUG_TO_KEY = {
+  'pots-vases': 'vases',
+  'indoor-plants': 'plants',
+  'outdoor-plants': 'plants',
+  'flowers': 'flowers',
+};
+
+const PRODUCT_TYPE_TO_CATEGORY_KEY = Object.fromEntries(
+  Object.entries(PRODUCT_TYPE_BY_CATEGORY).map(([key, type]) => [type.toLowerCase(), key])
+);
+
 function stockFromStatus(stockStatus) {
   if (stockStatus === 'out_of_stock') return 0;
   if (stockStatus === 'low_stock') return 5;
@@ -50,7 +61,7 @@ function stockFromStatus(stockStatus) {
 function normalizeProduct(raw, stockMap = new Map(), recommendedIds = new Set()) {
   const stockEntry = stockMap.get(raw.id);
   const stock = stockEntry?.quantity ?? stockFromStatus(raw.stockStatus);
-  const category = raw.category?.slug || String(raw.productType || '').toLowerCase() || 'plants';
+  const category = CATEGORY_SLUG_TO_KEY[raw.category?.slug] || PRODUCT_TYPE_TO_CATEGORY_KEY[raw.productType?.toLowerCase()] || 'plants';
   return {
     id: raw.id,
     backendId: raw.id,

@@ -49,6 +49,8 @@ model User {
   notifications         Notification[]
   notificationPreference NotificationPreference?
   emailLogs             EmailLog[]
+  customerConsultations  Consultation[] @relation("CustomerConsultations")
+  gardenerConsultations  Consultation[] @relation("GardenerConsultations")
 
   @@map("users")
 }
@@ -909,4 +911,25 @@ model NotificationTemplate {
   @@index([name])
   @@index([active])
   @@map("notification_templates")
+}
+
+model Consultation {
+  id             String   @id @default(uuid()) @db.VarChar(36)
+  customerId     String   @db.VarChar(36)
+  gardenerId     String?  @db.VarChar(36)
+  purpose        String   @db.VarChar(500)
+  scheduledDate  DateTime @db.DateTime
+  status         String   @default("PENDING") @db.VarChar(20)
+  rejectedReason String?   @db.VarChar(500)
+  rescheduledDate DateTime? @db.DateTime
+  customer       User      @relation("CustomerConsultations", fields: [customerId], references: [id], onDelete: Cascade)
+  gardener       User?    @relation("GardenerConsultations", fields: [gardenerId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  @@index([customerId])
+  @@index([gardenerId])
+  @@index([status])
+  @@map("consultations")
 }
