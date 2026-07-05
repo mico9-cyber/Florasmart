@@ -2,6 +2,9 @@ import { BaseService } from './base.service.js';
 import { AppError } from '../utils/appError.js';
 import { getPrismaClient } from '../database/prisma.js';
 import { logAuditEvent } from '../utils/audit.js';
+import { NotificationService } from './notification.service.js';
+
+const notificationService = new NotificationService();
 
 export class ConsultationService extends BaseService {
   constructor(repository) {
@@ -60,6 +63,14 @@ export class ConsultationService extends BaseService {
       resourceType: 'Consultation',
     });
 
+    await notificationService.createNotification(
+      consultation.customerId,
+      'SYSTEM',
+      'Consultation Accepted',
+      `Your consultation scheduled for ${new Date(consultation.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} has been accepted by a gardener.`,
+      { consultationId, action: 'CONSULTATION_ACCEPTED' }
+    );
+
     return updated;
   }
 
@@ -85,6 +96,18 @@ export class ConsultationService extends BaseService {
       resourceType: 'Consultation',
       details: { reason },
     });
+
+    const rejectMessage = reason
+      ? `Your consultation scheduled for ${new Date(consultation.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} has been rejected. Reason: ${reason}`
+      : `Your consultation scheduled for ${new Date(consultation.scheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} has been rejected.`;
+
+    await notificationService.createNotification(
+      consultation.customerId,
+      'SYSTEM',
+      'Consultation Rejected',
+      rejectMessage,
+      { consultationId, action: 'CONSULTATION_REJECTED', reason }
+    );
 
     return updated;
   }
@@ -115,6 +138,19 @@ export class ConsultationService extends BaseService {
       resourceType: 'Consultation',
       details: { rescheduledDate: data.rescheduledDate, reason: data.reason },
     });
+
+    const newDate = new Date(data.rescheduledDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const rescheduleMessage = data.reason
+      ? `Your consultation has been rescheduled to ${newDate}. Reason: ${data.reason}`
+      : `Your consultation has been rescheduled to ${newDate}.`;
+
+    await notificationService.createNotification(
+      consultation.customerId,
+      'SYSTEM',
+      'Consultation Rescheduled',
+      rescheduleMessage,
+      { consultationId, action: 'CONSULTATION_RESCHEDULED', rescheduledDate: data.rescheduledDate, reason: data.reason }
+    );
 
     return updated;
   }

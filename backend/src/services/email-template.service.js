@@ -105,36 +105,6 @@ export function lowStockAlertEmail(stockItem) {
   };
 }
 
-export function loyaltyRewardEmail(user, reward, redemption) {
-  return {
-    subject: 'You earned a reward at FloraSmart!',
-    html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <h2 style="color:#4CAF50">Congratulations!</h2>
-      <p>Hi ${user.name},</p>
-      <p>You redeemed a reward: <strong>${reward.name}</strong></p>
-      ${redemption?.couponCode ? `<p>Use coupon code: <strong>${redemption.couponCode}</strong> on your next order.</p>` : ''}
-      <hr><small style="color:#888">FloraSmart - Your Plant & Flower Shop</small>
-    </div>`,
-    text: `Congratulations!\n\nHi ${user.name},\n\nYou redeemed a reward: ${reward.name}\n${redemption?.couponCode ? `\nUse coupon code: ${redemption.couponCode} on your next order.\n` : ''}\n\nFloraSmart`,
-  };
-}
-
-export function subscriptionEmail(user, subscription, plan, eventType) {
-  const isStarted = eventType === 'STARTED';
-  return {
-    subject: isStarted ? `Subscription Started - ${plan.name}` : `Subscription Cancelled - ${plan.name}`,
-    html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <h2 style="color:${isStarted ? '#4CAF50' : '#888'}">${isStarted ? 'Subscription Started!' : 'Subscription Cancelled'}</h2>
-      <p>Hi ${user.name},</p>
-      <p>Your <strong>${plan.name}</strong> subscription has been ${isStarted ? 'started' : 'cancelled'}.</p>
-      ${isStarted ? `<p><strong>Billing Cycle:</strong> ${plan.billingCycle}</p>` : ''}
-      ${subscription.cancelReason ? `<p>Reason: ${subscription.cancelReason}</p>` : ''}
-      <hr><small style="color:#888">FloraSmart - Your Plant & Flower Shop</small>
-    </div>`,
-    text: `${isStarted ? 'Subscription Started!' : 'Subscription Cancelled'}\n\nHi ${user.name},\n\nYour ${plan.name} subscription has been ${isStarted ? 'started' : 'cancelled'}.\n${isStarted ? `\nBilling Cycle: ${plan.billingCycle}\n` : ''}${subscription.cancelReason ? `\nReason: ${subscription.cancelReason}\n` : ''}\n\nFloraSmart`,
-  };
-}
-
 export function systemAnnouncementEmail(title, message) {
   return {
     subject: title,

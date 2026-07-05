@@ -13,7 +13,6 @@ export class ReportGenerator {
       case 'PRODUCTS': return this.productsReport(filters);
       case 'DELIVERY': return this.deliveryReport(filters);
       case 'CUSTOMERS': return this.customersReport(filters);
-      case 'LOYALTY': return this.loyaltyReport(filters);
       case 'GARDEN_PLANS': return this.gardenPlansReport(filters);
       case 'CHATBOT': return this.chatbotReport(filters);
       case 'RECOMMENDATIONS': return this.recommendationsReport(filters);
@@ -317,25 +316,6 @@ export class ReportGenerator {
       isVerified: u.isEmailVerified ? 'Yes' : 'No',
       totalOrders: countMap[u.id] || 0,
       createdAt: u.createdAt.toISOString(),
-    }));
-  }
-
-  async loyaltyReport() {
-    const accounts = await db().loyaltyAccount.findMany({
-      include: {
-        user: { select: { name: true, email: true } },
-        transactions: { orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
-        _count: { select: { transactions: true } },
-      },
-    });
-    return accounts.map(a => ({
-      customerName: a.user.name,
-      email: a.user.email,
-      pointsBalance: a.pointsBalance,
-      lifetimePoints: a.lifetimePoints,
-      tier: a.tier,
-      transactionCount: a._count.transactions,
-      lastTransactionDate: a.transactions[0]?.createdAt?.toISOString() || '',
     }));
   }
 

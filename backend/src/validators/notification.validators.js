@@ -1,7 +1,7 @@
 import { body, param, query } from 'express-validator';
 import { validateRequest } from '../middleware/validation.middleware.js';
 
-const validTypes = ['SYSTEM', 'AUTH', 'ORDER', 'DELIVERY', 'INVENTORY', 'LOYALTY', 'SUBSCRIPTION', 'GARDEN', 'CHATBOT', 'RECOMMENDATION', 'REPORT'];
+const validTypes = ['SYSTEM', 'AUTH', 'ORDER', 'DELIVERY', 'INVENTORY', 'GARDEN', 'CHATBOT', 'RECOMMENDATION', 'REPORT'];
 const validStatuses = ['PENDING', 'SENT', 'FAILED', 'READ'];
 const validChannels = ['IN_APP', 'EMAIL', 'SMS_PLACEHOLDER'];
 const validRoles = ['ADMIN', 'CUSTOMER', 'FLORIST', 'GARDENER'];
@@ -26,8 +26,6 @@ export const updatePreferencesValidation = [
   body('orderUpdates').optional().isBoolean().withMessage('orderUpdates must be boolean'),
   body('deliveryUpdates').optional().isBoolean().withMessage('deliveryUpdates must be boolean'),
   body('inventoryAlerts').optional().isBoolean().withMessage('inventoryAlerts must be boolean'),
-  body('loyaltyUpdates').optional().isBoolean().withMessage('loyaltyUpdates must be boolean'),
-  body('subscriptionUpdates').optional().isBoolean().withMessage('subscriptionUpdates must be boolean'),
   body('gardenReminders').optional().isBoolean().withMessage('gardenReminders must be boolean'),
   body('marketingEmails').optional().isBoolean().withMessage('marketingEmails must be boolean'),
   body('securityAlerts').optional().isBoolean().withMessage('securityAlerts must be boolean'),

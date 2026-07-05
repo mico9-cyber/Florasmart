@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 
-const PHOTO_URL = 'https://images.unsplash.com/photo-';
+const PEX = 'https://images.pexels.com/photos/';
+const pex = (id) => `${PEX}${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=600&h=600&fit=crop`;
 
 const FALLBACKS = {
-  plants: PHOTO_URL + '1459411552864-8cd36dfb7436?w=600&h=600&fit=crop',
-  flowers: PHOTO_URL + '1490750967868-88aa4f44baee?w=600&h=600&fit=crop',
-  vases: PHOTO_URL + '1578500494893-f760f0e48b2d?w=600&h=600&fit=crop',
-  seeds: PHOTO_URL + '1416879595382-4da1acebcd36?w=600&h=600&fit=crop',
-  tools: PHOTO_URL + '1592417817098-8fd3d9eb14a5?w=600&h=600&fit=crop',
-  fertilizers: PHOTO_URL + '1585336763698-24f8a0e4e8e3?w=600&h=600&fit=crop',
-  'pots-vases': PHOTO_URL + '1485955900006-10f4d324d411?w=600&h=600&fit=crop',
-  'garden-tools': PHOTO_URL + '1416879595382-4da1acebcd36?w=600&h=600&fit=crop',
-  'decorative-items': PHOTO_URL + '1558618666-fcd25c85f82e?w=600&h=600&fit=crop',
-  default: PHOTO_URL + '1459411552864-8cd36dfb7436?w=600&h=600&fit=crop',
+  plants: pex(10176334),
+  flowers: pex(1393437),
+  vases: pex(2543299),
+  seeds: pex(772571),
+  tools: pex(6764325),
+  fertilizers: pex(25974981),
+  'pots-vases': pex(1605255),
+  'garden-tools': pex(6764325),
+  'decorative-items': pex(1124960),
+  default: pex(10176334),
 };
 
 function getFallbackUrl(category) {

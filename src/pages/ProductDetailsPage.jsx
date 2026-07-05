@@ -74,6 +74,7 @@ export default function ProductDetailsPage() {
             <span style={styles.reviewsCount}>({product.reviews} customer reviews)</span>
           </div>
           <div style={styles.priceRow}><span style={styles.price}>{formatCurrency(product.price)}</span><span className={`badge ${product.stock > 0 ? 'badge-success' : 'badge-error'}`}>{product.stock > 0 ? 'In Stock' : 'Out of Stock'}</span></div>
+          {product.stock > 0 && product.stock <= 5 && <span style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>Only {product.stock} remaining — order soon!</span>}
           <p style={styles.desc}>{product.desc}</p>
           <div style={styles.divider}></div>
           {product.category === 'plants' && (
@@ -88,7 +89,7 @@ export default function ProductDetailsPage() {
             </div>
           )}
           <div style={styles.cartActions}>
-            <div style={styles.qtyControl}><button onClick={() => setQty(Math.max(1, qty - 1))} style={styles.qtyBtn}>-</button><span style={styles.qtyVal}>{qty}</span><button onClick={() => setQty(qty + 1)} style={styles.qtyBtn}>+</button></div>
+            <div style={styles.qtyControl}><button onClick={() => setQty(Math.max(1, qty - 1))} style={styles.qtyBtn}>-</button><span style={styles.qtyVal}>{qty}</span><button onClick={() => setQty(Math.min(product.stock, qty + 1))} style={styles.qtyBtn} disabled={qty >= product.stock}>+</button></div>
             <Button onClick={handleAddToCart} variant="primary" disabled={product.stock <= 0} icon={<ShoppingCart size={18} />} style={{ flex: 1, padding: '14px' }}>Add to Shopping Cart</Button>
           </div>
         </div>

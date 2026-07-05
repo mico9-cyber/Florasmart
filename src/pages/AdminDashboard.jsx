@@ -61,23 +61,6 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!adminAnalytics) {
-    return (
-      <div className="dashboard-content">
-        <div style={styles.headerRow}>
-          <div>
-            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Admin Console</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Manage global operations, security credentials, sales volumes, and system-wide assets.</p>
-          </div>
-        </div>
-        <div style={styles.statePanel}>
-          <ShieldAlert size={20} color="var(--warning)" style={{ marginRight: '8px' }} />
-          <span>Analytics data unavailable. Backend metrics cannot be loaded at this time.</span>
-        </div>
-      </div>
-    );
-  }
-
   if (totalRevenue === 0 && orders.length === 0) {
     return (
       <div className="dashboard-content">

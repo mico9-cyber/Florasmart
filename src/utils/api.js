@@ -179,30 +179,6 @@ export function trackDelivery(orderId, auth) {
   return request(`/deliveries/track/${orderId}`, {}, auth);
 }
 
-export function getLoyaltyAccount(auth) {
-  return request('/loyalty/me', {}, auth);
-}
-
-export function getLoyaltyTransactions(auth) {
-  return request('/loyalty/transactions', {}, auth);
-}
-
-export function getSubscriptionPlans() {
-  return rawRequest('/subscriptions/plans');
-}
-
-export function getMySubscriptions(auth) {
-  return request('/subscriptions/me', {}, auth);
-}
-
-export function subscribeToPlan(body, auth) {
-  return request('/subscriptions/subscribe', { method: 'POST', body: JSON.stringify(body) }, auth);
-}
-
-export function cancelSubscriptionApi(id, body, auth) {
-  return request(`/subscriptions/${id}/cancel`, { method: 'POST', body: JSON.stringify(body) }, auth);
-}
-
 export function getGardenPlans(auth) {
   return request('/garden-plans', {}, auth);
 }

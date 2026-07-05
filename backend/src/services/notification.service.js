@@ -100,7 +100,7 @@ export class NotificationService {
   }
 
   async updatePreferences(userId, data) {
-    const allowedKeys = ['emailEnabled', 'inAppEnabled', 'orderUpdates', 'deliveryUpdates', 'inventoryAlerts', 'loyaltyUpdates', 'subscriptionUpdates', 'gardenReminders', 'marketingEmails', 'securityAlerts'];
+    const allowedKeys = ['emailEnabled', 'inAppEnabled', 'orderUpdates', 'deliveryUpdates', 'inventoryAlerts', 'gardenReminders', 'marketingEmails', 'securityAlerts'];
     const filtered = {};
     for (const key of allowedKeys) {
       if (data[key] !== undefined) filtered[key] = Boolean(data[key]);

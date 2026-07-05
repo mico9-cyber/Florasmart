@@ -123,35 +123,6 @@ export default function GardenerDashboard() {
         </div>
 
         <div style={styles.sectionsGrid}>
-          {/* Garden Planner Grid Visual Mock */}
-          <div className="card" style={{ flex: 1.5, minWidth: '350px' }}>
-            <h3 style={styles.sectionTitle}>Sandbox Grid Alignment</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 16px' }}>
-              Map coordinates of the smart garden layout. Click "Planner" on sidebar to edit.
-            </p>
-            {occupiedCells.length === 0 ? (
-              <div style={styles.statePanel}>
-                <Sprout size={20} color="var(--text-muted)" style={{ marginRight: '8px' }} />
-                <span>No garden cells planted yet. Use the garden planner on the sidebar to populate the grid.</span>
-              </div>
-            ) : (
-            <div style={styles.miniGrid}>
-              {gardenLayout.slice(0, 32).map((cell, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    ...styles.miniCell,
-                    backgroundColor: cell ? 'rgba(132, 204, 22, 0.25)' : 'var(--bg-darker)',
-                    borderColor: cell ? 'var(--accent-lime)' : 'var(--border-green)'
-                  }}
-                  title={cell ? `${cell.name} planted on ${cell.datePlanted}` : 'Unplanted grid'}
-                >
-                  {cell ? cell.name[0] : ''}
-                </div>
-              ))}
-            </div>
-            )}
-          </div>
 
           {/* Cultivation Log Form */}
           <div className="card" style={{ flex: 1, minWidth: '300px' }}>
@@ -241,35 +212,5 @@ const styles = {
     fontWeight: '700',
     color: 'var(--text-white)',
   },
-  miniGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(8, 1fr)',
-    gap: '6px',
-    backgroundColor: 'var(--bg-darker)',
-    padding: '12px',
-    borderRadius: 'var(--radius-md)',
-    border: '1px solid var(--border-green)',
-  },
-  miniCell: {
-    aspectRatio: '1',
-    border: '1px solid var(--border-green)',
-    borderRadius: '4px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '10px',
-    fontWeight: '700',
-    color: 'var(--text-white)',
-  },
-  statePanel: {
-    padding: '18px',
-    borderRadius: 'var(--radius-sm)',
-    backgroundColor: 'var(--bg-darker)',
-    color: 'var(--text-muted)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    fontSize: '13px',
-  }
 };
 

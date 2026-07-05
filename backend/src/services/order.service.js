@@ -37,6 +37,7 @@ export class OrderService extends BaseService {
 
     if (query.status) where.status = query.status;
     if (query.paymentStatus) where.paymentStatus = query.paymentStatus;
+    if (query.deliveryStatus) where.delivery = { status: query.deliveryStatus };
     if (query.customerId && !isCustomer) where.userId = query.customerId;
 
     if (query.dateFrom || query.dateTo) {
@@ -49,6 +50,7 @@ export class OrderService extends BaseService {
       where.OR = [
         { orderNumber: { contains: query.q } },
         { shippingFullName: { contains: query.q } },
+        { user: { email: { contains: query.q } } },
       ];
     }
 
@@ -76,9 +78,16 @@ export class OrderService extends BaseService {
       currency: o.currency,
       deliveryMethod: o.deliveryMethod,
       paymentMethod: o.paymentMethod,
+      shippingFullName: o.shippingFullName,
+      shippingAddress: o.shippingAddress,
+      shippingCity: o.shippingCity,
+      shippingDistrict: o.shippingDistrict,
       customer: o.user ? { id: o.user.id, name: o.user.name, email: o.user.email } : null,
+      items: o.items.map((i) => ({ productName: i.productName, quantity: i.quantity })),
       itemCount: o.items.length,
       deliveryStatus: o.delivery?.status || null,
+      deliveryScheduledAt: o.delivery?.scheduledAt || null,
+      deliveryAssignedTo: o.delivery?.assignedTo?.name || null,
       createdAt: o.createdAt,
     }));
 

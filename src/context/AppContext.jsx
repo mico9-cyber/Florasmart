@@ -9,8 +9,6 @@ import { inventoryService } from '../services/inventoryService';
 import { cartService } from '../services/cartService';
 import { orderService } from '../services/orderService';
 import { deliveryService } from '../services/deliveryService';
-import { loyaltyService } from '../services/loyaltyService';
-import { subscriptionService } from '../services/subscriptionService';
 import { gardenPlanService } from '../services/gardenPlanService';
 import { recommendationService } from '../services/recommendationService';
 import { chatbotService } from '../services/chatbotService';
@@ -161,7 +159,7 @@ function expandRoleCountsToUsers(usersByRole = []) {
   return mapped;
 }
 
-function synthesizeAuditLogs({ user, orders, deliveries, subscriptions }) {
+function synthesizeAuditLogs({ user, orders, deliveries }) {
   const logs = [];
   if (user.loggedIn) {
     logs.push({
@@ -193,16 +191,6 @@ function synthesizeAuditLogs({ user, orders, deliveries, subscriptions }) {
       status: delivery.status === 'FAILED' ? 'Failure' : 'Success',
     });
   }
-  for (const sub of subscriptions.slice(0, 6)) {
-    logs.push({
-      id: `sub-${sub.id}`,
-      timestamp: new Date(sub.createdAt || Date.now()).toISOString().replace('T', ' ').substring(0, 19),
-      user: user.email || 'customer',
-      action: `Subscription ${sub.plan?.name || sub.id} ${String(sub.status || '').toLowerCase()}`,
-      ipAddress: 'API',
-      status: sub.status === 'CANCELLED' ? 'Failure' : 'Success',
-    });
-  }
   return logs.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));
 }
 
@@ -214,10 +202,7 @@ export const AppProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [loyalty, setLoyalty] = useState({ points: 0, tier: 'Bronze', pointsToNextTier: 0, isSubscribed: false, subscriptionPlan: '', subscriptionPrice: 0, nextBillingDate: '' });
   const [gardenLayout, setGardenLayout] = useState(Array(64).fill(null));
-  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
-  const [subscriptions, setSubscriptions] = useState([]);
   const [deliveries, setDeliveries] = useState([]);
   const [analytics, setAnalytics] = useState({ admin: null, florist: null, customer: null, recommendedProducts: [] });
   const [inventoryLocations, setInventoryLocations] = useState([]);
@@ -234,8 +219,6 @@ export const AppProvider = ({ children }) => {
       setUser(DEFAULT_USER);
       setCart([]);
       setOrders([]);
-      setSubscriptions([]);
-      setLoyalty({ points: 0, tier: 'Bronze', pointsToNextTier: 0, isSubscribed: false, subscriptionPlan: '', subscriptionPrice: 0, nextBillingDate: '' });
       setGardenLayout(Array(64).fill(null));
     };
     window.addEventListener('auth:logout', handleAuthLogout);
@@ -243,15 +226,13 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const refreshPublicData = async (currentUser = user) => {
-    const [categoryRes, productRes, plansRes] = await Promise.all([
+    const [categoryRes, productRes] = await Promise.all([
       categoryService.list(),
       productService.list('?limit=100'),
-      subscriptionService.plans(),
     ]);
 
     const categoryList = categoryRes?.data || [];
     setCategories(categoryList);
-    setSubscriptionPlans(plansRes?.data || []);
 
     let recommendedIds = new Set();
     if (currentUser.loggedIn) {
@@ -306,36 +287,18 @@ export const AppProvider = ({ children }) => {
     setProducts(normalizedProducts);
 
     if (currentUser.role === 'customer') {
-      const [cartRes, ordersRes, loyaltyRes, transactionRes, subscriptionsRes, customerAnalyticsRes] = await Promise.all([
+      const [cartRes, ordersRes, customerAnalyticsRes] = await Promise.all([
         cartService.getCart(),
         orderService.list(),
-        loyaltyService.me().catch(() => ({ data: null })),
-        loyaltyService.transactions().catch(() => ({ data: [] })),
-        subscriptionService.me().catch(() => ({ data: [] })),
         analyticsService.customerOverview().catch(() => ({ data: null })),
       ]);
 
       const orderSummaries = ordersRes?.data || [];
       const orderDetails = await Promise.all(orderSummaries.map((item) => orderService.getById(item.id).then((res) => res?.data).catch(() => null)));
       const normalizedOrders = orderSummaries.map((item, index) => normalizeOrderSummary(item, orderDetails[index])).filter(Boolean);
-      const activeSubs = subscriptionsRes?.data || [];
-      const activeSub = activeSubs.find((item) => item.status === 'ACTIVE');
-      const loyaltyAccount = loyaltyRes?.data;
 
       setCart(normalizeCart(cartRes?.data, normalizedProductMap));
       setOrders(normalizedOrders);
-      setSubscriptions(activeSubs);
-      setLoyalty({
-        points: loyaltyAccount?.pointsBalance || 0,
-        tier: loyaltyAccount?.tier || 'Bronze',
-        pointsToNextTier: 0,
-        nextReward: '',
-        isSubscribed: Boolean(activeSub),
-        subscriptionPlan: activeSub?.plan?.name || '',
-        subscriptionPrice: Number(activeSub?.plan?.price || 0),
-        nextBillingDate: activeSub?.currentPeriodEnd ? new Date(activeSub.currentPeriodEnd).toISOString().substring(0, 10) : '',
-        transactions: transactionRes?.data || [],
-      });
       setAnalytics((prev) => ({ ...prev, customer: customerAnalyticsRes?.data }));
 
       const defaultPlan = await ensureGardenPlan();
@@ -385,7 +348,6 @@ export const AppProvider = ({ children }) => {
       setCart([]);
       setOrders([]);
       setDeliveries([]);
-      setSubscriptions([]);
       setRegisteredUsers([]);
       setAuditLogs([]);
       refreshPublicData(user).catch(() => undefined);
@@ -395,8 +357,8 @@ export const AppProvider = ({ children }) => {
   }, [user.loggedIn, user.role, user.accessToken]);
 
   useEffect(() => {
-    setAuditLogs(synthesizeAuditLogs({ user, orders, deliveries, subscriptions }));
-  }, [user, orders, deliveries, subscriptions]);
+    setAuditLogs(synthesizeAuditLogs({ user, orders, deliveries }));
+  }, [user, orders, deliveries]);
 
   const addToCartHandler = async (product, quantity = 1) => {
     if (!user.loggedIn || user.role !== 'customer') {
@@ -516,8 +478,7 @@ export const AppProvider = ({ children }) => {
     setUser(DEFAULT_USER);
     setCart([]);
     setOrders([]);
-    setSubscriptions([]);
-    setLoyalty({ points: 0, tier: 'Bronze', pointsToNextTier: 0, isSubscribed: false, subscriptionPlan: '', subscriptionPrice: 0, nextBillingDate: '' });
+
     setGardenLayout(Array(64).fill(null));
   };
 
@@ -626,16 +587,16 @@ export const AppProvider = ({ children }) => {
     try {
       const result = await orderService.checkout({
         shippingFullName: orderDetails.fullName || user.name,
-        shippingPhone: user.phone || 'N/A',
+        shippingPhone: orderDetails.phone || user.phone || 'N/A',
         shippingAddress: orderDetails.address,
-        shippingCity: orderDetails.city || orderDetails.address,
+        shippingCity: orderDetails.city,
         shippingDistrict: orderDetails.zip || 'N/A',
         shippingNotes: '',
         deliveryMethod: orderDetails.deliveryMethod === 'Express Eco-Courier' ? 'EXPRESS' : 'STANDARD',
         paymentMethod: 'CARD',
       });
       await refreshPrivateData(user);
-      return { ok: true, orderId: result?.data?.orderNumber || result?.data?.id };
+      return { ok: true, orderId: result?.data?.order?.orderNumber || result?.data?.order?.id };
     } catch (err) {
       return { ok: false, error: err.message };
     }
@@ -645,21 +606,6 @@ export const AppProvider = ({ children }) => {
     const order = orders.find((item) => item.id === orderId || item.backendId === orderId);
     if (!order) return;
     await orderService.updateStatus(order.backendId, { status: DISPLAY_TO_BACKEND_ORDER_STATUS[newStatus] || newStatus });
-    await refreshPrivateData(user);
-  };
-
-  const updateSubscription = async (subscribe, planName = '', price = 0) => {
-    if (!user.loggedIn || user.role !== 'customer') return;
-    if (subscribe) {
-      const plan = subscriptionPlans.find((item) => item.name === planName) || subscriptionPlans.find((item) => Number(item.price) === Number(price));
-      if (!plan) throw new Error('Subscription plan not found in backend data.');
-      await subscriptionService.subscribe({ planId: plan.id, autoRenew: true });
-    } else {
-      const activeSub = subscriptions.find((item) => item.status === 'ACTIVE');
-      if (activeSub) {
-        await subscriptionService.cancel(activeSub.id, { reason: 'Cancelled from frontend dashboard' });
-      }
-    }
     await refreshPrivateData(user);
   };
 
@@ -710,12 +656,10 @@ export const AppProvider = ({ children }) => {
         cart,
         products,
         orders,
-        loyalty,
         auditLogs,
         gardenLayout,
         theme,
         analytics,
-        subscriptionPlans,
         deliveries,
         toggleTheme,
         setTheme,
@@ -736,7 +680,6 @@ export const AppProvider = ({ children }) => {
         deleteProduct,
         createOrder,
         updateOrderStatus,
-        updateSubscription,
         updateGardenCell,
         addAuditLog,
         recommendPlantsApi: (body) => recommendationService.plants(body),

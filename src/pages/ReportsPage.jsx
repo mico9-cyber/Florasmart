@@ -13,13 +13,13 @@ const REPORT_TYPES = [
   { value: 'SALES', label: 'Sales Report' },
   { value: 'INVENTORY', label: 'Inventory Report' },
   { value: 'ORDERS', label: 'Orders Report' },
-  { value: 'CUSTOMER', label: 'Customer Report' },
+  { value: 'CUSTOMERS', label: 'Customer Report' },
   { value: 'DELIVERY', label: 'Delivery Report' },
   { value: 'PRODUCTS', label: 'Products Report' },
-  { value: 'ANALYTICS', label: 'Full Analytics Report' },
   { value: 'LOYALTY', label: 'Loyalty Report' },
-  { value: 'SUBSCRIPTION', label: 'Subscription Report' },
-  { value: 'AUDIT', label: 'Audit Log Report' },
+  { value: 'GARDEN_PLANS', label: 'Garden Plans Report' },
+  { value: 'CHATBOT', label: 'Chatbot Report' },
+  { value: 'RECOMMENDATIONS', label: 'Recommendations Report' },
 ];
 
 const FORMATS = [
@@ -57,7 +57,7 @@ export default function ReportsPage() {
     setError('');
     try {
       const res = await reportService.jobs();
-      setJobs(res?.data || []);
+      setJobs(res?.data?.jobs || []);
     } catch {
       setError('Failed to load report jobs.');
       addToast('Failed to load report jobs.', 'error');
@@ -85,10 +85,12 @@ export default function ReportsPage() {
     setError('');
     try {
       await reportService.generate({
-        type: reportType,
+        reportType,
         format,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
+        filters: {
+          ...(dateFrom ? { dateFrom: new Date(dateFrom).toISOString() } : {}),
+          ...(dateTo ? { dateTo: new Date(dateTo).toISOString() } : {}),
+        },
       });
       setSuccess('Report generation started!');
       addToast('Report generation started!', 'success');

@@ -14,12 +14,13 @@ export const orderIdValidation = [
 export const listOrdersValidation = [
   query('status').optional().trim().isString(),
   query('paymentStatus').optional().trim().isString(),
+  query('deliveryStatus').optional().trim().isString(),
   query('customerId').optional().trim().isString(),
   query('dateFrom').optional().trim().isString(),
   query('dateTo').optional().trim().isString(),
   query('q').optional().trim().isString(),
   query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be between 1 and 100'),
+  query('limit').optional().isInt({ min: 1, max: 200 }).withMessage('limit must be between 1 and 200'),
   query('sort').optional().trim().isString(),
   validateRequest,
 ];

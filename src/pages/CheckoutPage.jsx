@@ -29,10 +29,41 @@ export default function CheckoutPage() {
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const shipping = deliveryMethod === 'Express Eco-Courier' ? 10000 : (subtotal > 40000 ? 0 : 5000);
   const tax = subtotal * 0.08;
-  const grandTotal = subtotal + shipping + tax;
+
+  const DISCOUNT_RULES = [
+    { productType: 'plant', label: 'Plants', minQuantity: 50, discountPercent: 5 },
+    { productType: 'flower', label: 'Flowers', minQuantity: 50, discountPercent: 5 },
+    { productType: 'vase', label: 'Vases', minQuantity: 20, discountPercent: 5 },
+  ];
+
+  const typeQuantities = {};
+  const typeSubtotals = {};
+  for (const item of cart) {
+    const product = products.find((p) => String(p.id) === String(item.id));
+    const type = (product?.productType || '').toLowerCase();
+    if (!type) continue;
+    typeQuantities[type] = (typeQuantities[type] || 0) + item.quantity;
+    typeSubtotals[type] = (typeSubtotals[type] || 0) + item.price * item.quantity;
+  }
+
+  let totalDiscount = 0;
+  const discountMessages = [];
+  for (const rule of DISCOUNT_RULES) {
+    const qty = typeQuantities[rule.productType] || 0;
+    if (qty >= rule.minQuantity) {
+      const categorySubtotal = typeSubtotals[rule.productType] || 0;
+      const discount = Math.round(categorySubtotal * rule.discountPercent / 100);
+      if (discount > 0) {
+        totalDiscount += discount;
+        discountMessages.push(`Buy ${rule.minQuantity}+ ${rule.label}: ${rule.discountPercent}% off — you saved ${formatCurrency(discount)}`);
+      }
+    }
+  }
+
+  const grandTotal = subtotal + shipping + tax - totalDiscount;
 
   const unavailableItem = cart.find((item) => {
-    const product = products.find((current) => current.id === item.id);
+    const product = products.find((current) => String(current.id) === String(item.id));
     return !product || product.stock < item.quantity;
   });
 
@@ -96,7 +127,7 @@ export default function CheckoutPage() {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
-    const result = await createOrder({ total: grandTotal, fullName, address, city, zip, deliveryMethod });
+    const result = await createOrder({ total: grandTotal, fullName, address, city, zip, deliveryMethod, phone });
     setSubmitting(false);
     if (!result.ok) {
       setOrderError(result.error);
@@ -174,8 +205,19 @@ export default function CheckoutPage() {
             <div style={styles.summaryRow}><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
             <div style={styles.summaryRow}><span>Eco-Shipping</span><span>{shipping === 0 ? 'FREE' : formatCurrency(shipping)}</span></div>
             <div style={styles.summaryRow}><span>Tax (8%)</span><span>{formatCurrency(tax)}</span></div>
+            {totalDiscount > 0 && (
+              <>
+                <div style={{ ...styles.summaryRow, color: 'var(--accent-lime)', fontWeight: '600' }}>
+                  <span>Quantity Discount</span>
+                  <span>-{formatCurrency(totalDiscount)}</span>
+                </div>
+                <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(132, 204, 22, 0.08)', border: '1px solid rgba(132, 204, 22, 0.3)', fontSize: '12px', color: 'var(--accent-lime)', marginBottom: '12px' }}>
+                  {discountMessages.map((msg, i) => <div key={i}>{msg}</div>)}
+                </div>
+              </>
+            )}
             <div style={styles.divider}></div>
-            <div style={{ ...styles.summaryRow, fontSize: '18px', fontWeight: '800', color: 'var(--text-white)' }}><span>Grand Total</span><span style={{ color: 'var(--accent-lime)' }}>{formatCurrency(grandTotal)}</span></div>
+            <div style={{ ...styles.summaryRow, fontSize: '18px', fontWeight: '800', color: 'var(--text-white)' }}><span>Grand Total</span><span style={{ color: totalDiscount > 0 ? 'var(--accent-lime)' : 'var(--text-white)' }}>{formatCurrency(grandTotal)}</span></div>
             <Button type="submit" variant="primary" style={styles.placeOrderBtn} disabled={submitting || cart.length === 0 || Boolean(unavailableItem)}>
               {submitting ? 'Placing Order...' : `Place Secure Order (${formatCurrency(grandTotal)})`}
             </Button>

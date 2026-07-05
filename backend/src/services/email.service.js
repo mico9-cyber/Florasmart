@@ -117,16 +117,6 @@ export async function sendLowStockAlertEmail(users, stockItems) {
   return results;
 }
 
-export async function sendLoyaltyRewardEmail(user, reward, redemption) {
-  const { subject, html, text } = emailTemplate.loyaltyRewardEmail(user, reward, redemption);
-  return sendMail(user.email, subject, html, text, { userId: user.id, templateName: 'LOYALTY_REWARD', rewardId: reward.id });
-}
-
-export async function sendSubscriptionEmail(user, subscription, plan, eventType) {
-  const { subject, html, text } = emailTemplate.subscriptionEmail(user, subscription, plan, eventType);
-  return sendMail(user.email, subject, html, text, { userId: user.id, templateName: eventType === 'STARTED' ? 'SUBSCRIPTION_STARTED' : 'SUBSCRIPTION_CANCELLED', subscriptionId: subscription.id });
-}
-
 export async function sendSystemAnnouncementEmail(users, title, message) {
   const { subject, html, text } = emailTemplate.systemAnnouncementEmail(title, message);
   const results = [];

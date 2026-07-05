@@ -3,6 +3,7 @@ import { AppError } from '../utils/appError.js';
 import { logAuditEvent } from '../utils/audit.js';
 import { generateOrderNumber } from '../utils/orderNumber.js';
 import { NotificationService } from './notification.service.js';
+import { QuantityDiscountService } from './quantity-discount.service.js';
 
 const DELIVERY_FEES = {
   PICKUP: 0,
@@ -17,6 +18,7 @@ export class CheckoutService {
     this.orderRepository = orderRepository;
     this.orderItemRepository = orderItemRepository;
     this.orderStatusRepo = orderStatusRepo;
+    this.notificationService = new NotificationService();
   }
 
   async checkout(userId, checkoutData) {
@@ -47,7 +49,10 @@ export class CheckoutService {
 
     const subtotal = cart.items.reduce((sum, i) => sum + Number(i.unitPrice) * i.quantity, 0);
     const deliveryFee = DELIVERY_FEES[checkoutData.deliveryMethod] || 0;
-    const discountAmount = 0;
+
+    const discountService = new QuantityDiscountService();
+    const { totalDiscount, appliedDiscounts } = discountService.calculate(cart.items);
+    const discountAmount = totalDiscount;
     const totalAmount = subtotal + deliveryFee - discountAmount;
     const orderNumber = await generateOrderNumber();
 
@@ -150,7 +155,7 @@ export class CheckoutService {
 
     try {
       const userData = { id: userId, name: cart.user?.name || 'Customer', email: '' };
-      notif.sendNotification(userId, 'ORDER', 'Order Confirmed', `Your order ${order.orderNumber} has been placed successfully.`, { orderId: order.id, orderNumber: order.orderNumber });
+      this.notificationService.sendNotification(userId, 'ORDER', 'Order Confirmed', `Your order ${order.orderNumber} has been placed successfully.`, { orderId: order.id, orderNumber: order.orderNumber });
     } catch {
     }
 
@@ -163,6 +168,7 @@ export class CheckoutService {
       deliveryFee: Number(order.deliveryFee),
       discountAmount: Number(order.discountAmount),
       totalAmount: Number(order.totalAmount),
+      discountBreakdown: appliedDiscounts,
       currency: order.currency,
       items: order.items.map((i) => ({
         productName: i.productName,

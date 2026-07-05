@@ -19,10 +19,10 @@ const router = Router();
 
 router.use(authenticate);
 
-router.post('/plants', requireRoles('CUSTOMER', 'GARDENER', 'ADMIN'), plantRecommendationValidation, recommendPlants);
+router.post('/plants', requireRoles('CUSTOMER', 'ADMIN'), plantRecommendationValidation, recommendPlants);
 router.post('/vase-match', requireRoles('CUSTOMER', 'FLORIST', 'ADMIN'), vaseMatchValidation, vaseMatch);
-router.post('/garden-plan', requireRoles('CUSTOMER', 'GARDENER', 'ADMIN'), gardenPlanRecommendationValidation, recommendGardenPlan);
-router.get('/products', requireRoles('CUSTOMER', 'GARDENER', 'FLORIST', 'ADMIN'), productRecommendationValidation, recommendProducts);
-router.get('/history', requireRoles('CUSTOMER', 'GARDENER', 'FLORIST', 'ADMIN'), getRecommendationHistory);
+router.post('/garden-plan', requireRoles('CUSTOMER', 'ADMIN'), gardenPlanRecommendationValidation, recommendGardenPlan);
+router.get('/products', requireRoles('CUSTOMER', 'FLORIST', 'ADMIN'), productRecommendationValidation, recommendProducts);
+router.get('/history', requireRoles('CUSTOMER', 'FLORIST', 'ADMIN'), getRecommendationHistory);
 
 export default router;

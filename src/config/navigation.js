@@ -1,4 +1,4 @@
-import { LayoutDashboard, Home, ShoppingBag, ShoppingCart, ClipboardList, Sparkles, User, Grid, Package, BarChart3, FileText, Calendar } from 'lucide-react';
+import { LayoutDashboard, Home, ShoppingBag, ShoppingCart, ClipboardList, Sparkles, User, Package, BarChart3, FileText, Calendar, MessageSquare } from 'lucide-react';
 
 export const ROLE_NAV_ITEMS = {
   CUSTOMER: [
@@ -8,6 +8,7 @@ export const ROLE_NAV_ITEMS = {
     { to: '/order-tracking', label: 'My Orders', icon: ClipboardList },
     { to: '/book-consultation', label: 'Book Consultation', icon: Calendar },
     { to: '/recommendations', label: 'AI Advisor', icon: Sparkles },
+    { to: '/chatbot', label: 'Care Bot', icon: MessageSquare },
     { to: '/profile', label: 'Profile', icon: User },
   ],
 
@@ -21,8 +22,6 @@ export const ROLE_NAV_ITEMS = {
   GARDENER: [
     { to: '/gardener-dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/manage-consultations', label: 'Consultations', icon: Calendar },
-    { to: '/garden-planner', label: 'Garden Planner', icon: Grid },
-    { to: '/recommendations', label: 'AI Advisor', icon: Sparkles },
     { to: '/profile', label: 'Profile', icon: User },
   ],
 
@@ -30,6 +29,7 @@ export const ROLE_NAV_ITEMS = {
     { to: '/admin-dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/catalog', label: 'Products', icon: ShoppingBag },
     { to: '/order-tracking', label: 'Orders', icon: ClipboardList },
+    { to: '/inventory', label: 'Inventory', icon: Package },
     { to: '/analytics', label: 'Analytics', icon: BarChart3 },
     { to: '/reports', label: 'Reports', icon: FileText },
   ],

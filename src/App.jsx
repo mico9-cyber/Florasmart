@@ -33,7 +33,6 @@ import DeliveryPage from './pages/DeliveryPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ReportsPage from './pages/ReportsPage';
 import NotificationsPage from './pages/NotificationsPage';
-import LoyaltyPage from './pages/LoyaltyPage';
 import SecurityPage from './pages/SecurityPage';
 import ProfilePage from './pages/ProfilePage';
 import BookConsultationPage from './pages/BookConsultationPage';
@@ -101,9 +100,9 @@ function AppLayout() {
             <Route path="/gardener-dashboard" element={<ProtectedRoute allowedRoles={["gardener"]}><GardenerDashboard /></ProtectedRoute>} />
             <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
 
-            <Route path="/recommendations" element={<ProtectedRoute allowedRoles={["customer", "gardener", "admin"]}><PlantRecommendationPage /></ProtectedRoute>} />
+            <Route path="/recommendations" element={<ProtectedRoute allowedRoles={["customer", "admin"]}><PlantRecommendationPage /></ProtectedRoute>} />
             <Route path="/vase-matching" element={<ProtectedRoute allowedRoles={["customer", "florist", "admin"]}><VaseMatchingPage /></ProtectedRoute>} />
-            <Route path="/garden-planner" element={<ProtectedRoute allowedRoles={["customer", "gardener", "admin"]}><GardenPlannerPage /></ProtectedRoute>} />
+            <Route path="/garden-planner" element={<ProtectedRoute allowedRoles={["customer", "admin"]}><GardenPlannerPage /></ProtectedRoute>} />
             <Route path="/chatbot" element={<ProtectedRoute allowedRoles={["customer", "gardener", "admin"]}><ChatbotPage /></ProtectedRoute>} />
 
             <Route path="/catalog" element={<ProductCatalogPage />} />
@@ -117,7 +116,6 @@ function AppLayout() {
             <Route path="/analytics" element={<ProtectedRoute allowedRoles={["florist", "admin"]}><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute allowedRoles={["admin", "florist"]}><ReportsPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
-            <Route path="/loyalty" element={<ProtectedRoute allowedRoles={["customer", "admin"]}><LoyaltyPage /></ProtectedRoute>} />
             <Route path="/security" element={<ProtectedRoute allowedRoles={["admin"]}><SecurityPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 

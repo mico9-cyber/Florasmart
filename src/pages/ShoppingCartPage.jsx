@@ -14,8 +14,12 @@ export default function ShoppingCartPage() {
   const addToast = useToast();
   const [loading, setLoading] = useState(false);
 
-  const handleUpdateQty = (id, qty) => {
+  const handleUpdateQty = (id, qty, maxStock) => {
     if (qty < 1) return;
+    if (maxStock !== undefined && qty > maxStock) {
+      addToast(`Only ${maxStock} units available.`, 'warning');
+      return;
+    }
     setLoading(true);
     updateCartQuantity(id, qty);
     setLoading(false);
@@ -53,21 +57,38 @@ export default function ShoppingCartPage() {
         <div style={styles.layout}>
           {/* Cart Items List */}
           <div style={styles.itemsCol}>
-            {cart.map((item) => (
+              {cart.map((item) => {
+                const maxStock = item.stock ?? Infinity;
+                return (
               <div key={item.id} className="card" style={styles.itemCard}>
                 <ImageWithFallback src={item.image} alt={item.name} category={item.category} style={{ width: '56px', height: '56px', borderRadius: 'var(--radius-sm)' }} />
                 <div style={styles.itemMeta}>
                   <span style={styles.itemCategory}>{item.category.toUpperCase()}</span>
                   <h4 style={styles.itemName}>{item.name}</h4>
                   <span style={styles.itemPrice}>{formatCurrency(item.price)} each</span>
+                  {item.stock !== undefined && item.stock <= 5 && (
+                    <span style={{ color: item.stock <= 0 ? 'var(--error)' : 'var(--warning)', fontSize: '12px', fontWeight: 600, display: 'block', marginTop: '4px' }}>
+                      {item.stock <= 0 ? 'Out of Stock' : `Only ${item.stock} remaining`}
+                    </span>
+                  )}
                 </div>
 
                 {/* Qty Adjustment */}
                 <div style={styles.qtyControl}>
-                  <button onClick={() => handleUpdateQty(item.id, item.quantity - 1)} style={styles.qtyBtn}>-</button>
+                  <button onClick={() => handleUpdateQty(item.id, item.quantity - 1, maxStock)} style={styles.qtyBtn}>-</button>
                   <span style={styles.qtyVal}>{item.quantity}</span>
-                  <button onClick={() => handleUpdateQty(item.id, item.quantity + 1)} style={styles.qtyBtn}>+</button>
+                  <button onClick={() => handleUpdateQty(item.id, item.quantity + 1, maxStock)} style={styles.qtyBtn} disabled={item.quantity >= maxStock}>+</button>
                 </div>
+                {item.quantity >= maxStock - 2 && item.quantity < maxStock && maxStock < Infinity && (
+                  <span style={{ color: 'var(--warning)', fontSize: '11px', textAlign: 'right', width: '100%', marginTop: '-8px' }}>
+                    Approaching stock limit ({maxStock} available)
+                  </span>
+                )}
+                {item.quantity >= maxStock && maxStock < Infinity && (
+                  <span style={{ color: 'var(--error)', fontSize: '11px', textAlign: 'right', width: '100%', marginTop: '-8px' }}>
+                    Maximum available quantity reached
+                  </span>
+                )}
 
                 {/* Total Price */}
                 <div style={styles.totalBlock}>
@@ -80,7 +101,7 @@ export default function ShoppingCartPage() {
                   <Trash2 size={18} />
                 </button>
               </div>
-            ))}
+            );})}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
               <Link to="/catalog" style={styles.continueLink}>

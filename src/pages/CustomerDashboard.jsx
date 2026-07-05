@@ -6,14 +6,14 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import DashboardCard from '../components/DashboardCard';
 import Button from '../components/Button';
 import {
-  ShoppingBag, Grid, Award, ArrowRight, Heart, Sparkles, Flower2,
-  MessageSquare, ClipboardList, User, Leaf, Package, RefreshCw
+  ShoppingBag, ArrowRight, Sparkles,
+  MessageSquare, ClipboardList, User, Leaf, Package
 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatCurrency';
 import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function CustomerDashboard() {
-  const { user, orders, loyalty, products, gardenLayout } = useContext(AppContext);
+  const { user, orders, products } = useContext(AppContext);
   const navigate = useNavigate();
   const addToast = useToast();
   const [loading] = useState(false);
@@ -21,15 +21,13 @@ export default function CustomerDashboard() {
   const recommendedItems = products.filter(p => p.isAIRecommended).slice(0, 4);
   const recentOrders = orders.slice(0, 3);
   const activeOrders = orders.filter(o => o.status !== 'Delivered');
-  const plannedPlants = gardenLayout.filter(cell => cell !== null).length;
 
   const features = [
     { to: '/catalog', icon: ShoppingBag, title: 'Browse Catalog', desc: 'Explore our full collection of plants, flowers, and vases.' },
     { to: '/recommendations', icon: Sparkles, title: 'AI Advisor', desc: 'Get smart plant recommendations tailored to your space.' },
-    { to: '/vase-matching', icon: Flower2, title: 'Vase Match', desc: 'Find the perfect vase for any flower arrangement.' },
-    { to: '/garden-planner', icon: Grid, title: 'Garden Planner', desc: 'Design and visualize your dream greenhouse layout.' },
+
     { to: '/chatbot', icon: MessageSquare, title: 'Care Bot', desc: 'Ask Flora about plant care, watering, and troubleshooting.' },
-    { to: '/loyalty', icon: Heart, title: 'Loyalty', desc: 'Track your points, tier, and subscription rewards.' },
+
     { to: '/order-tracking', icon: ClipboardList, title: 'Orders', desc: 'View order history, track deliveries, and reorder.' },
     { to: '/profile', icon: User, title: 'Profile', desc: 'Manage your account, settings, and preferences.' },
   ];
@@ -54,13 +52,7 @@ export default function CustomerDashboard() {
             Here are your smart garden recommendations and recent activity.
           </p>
         </div>
-        <div style={styles.welcomeBadge}>
-          <Award size={28} color="var(--btn-yellow)" />
-          <div>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Loyalty Tier</span>
-            <h4 style={{ margin: 0, color: 'var(--btn-yellow)', fontSize: '16px' }}>{loyalty.tier}</h4>
-          </div>
-        </div>
+
       </div>
 
       {/* Stats Row */}
@@ -71,18 +63,8 @@ export default function CustomerDashboard() {
           icon={<Package size={20} color="var(--accent-lime)" />}
           description="Orders currently in progress"
         />
-        <DashboardCard
-          title="Garden Plants"
-          value={`${plannedPlants} Plants`}
-          icon={<Grid size={20} color="var(--accent-lime)" />}
-          description="Cells planned in your garden"
-        />
-        <DashboardCard
-          title="Loyalty Points"
-          value={`${loyalty.points} pts`}
-          icon={<Heart size={20} color="var(--accent-lime)" />}
-          description={`${loyalty.pointsToNextTier} pts to next reward`}
-        />
+
+
         <DashboardCard
           title="Plant Collection"
           value={products.length}
@@ -170,45 +152,7 @@ export default function CustomerDashboard() {
         )}
       </div>
 
-      {/* D. Garden Planner Preview */}
-      <div style={styles.sectionWrapper}>
-        <div style={styles.sectionHeader}>
-          <h3 style={styles.sectionTitle}>Garden Planner</h3>
-          <Link to="/garden-planner" style={styles.sectionLink}>
-            Open Garden Planner <ArrowRight size={14} />
-          </Link>
-        </div>
-        {plannedPlants > 0 ? (
-          <div style={styles.gardenPreview}>
-            <div style={styles.gardenIcon}>
-              <Grid size={32} color="var(--accent-lime)" />
-            </div>
-            <div style={styles.gardenInfo}>
-              <h4 style={{ color: 'var(--text-white)', margin: 0, fontSize: '16px' }}>
-                Your Garden Plan
-              </h4>
-              <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '14px' }}>
-                You have <strong style={{ color: 'var(--accent-lime)' }}>{plannedPlants} plants</strong> planned across your 8x8 greenhouse grid.
-              </p>
-              <Button variant="primary" style={{ marginTop: '12px' }} onClick={() => navigate('/garden-planner')}>
-                <Grid size={16} /> Open Garden Planner
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div style={styles.emptyState}>
-            <Grid size={40} color="var(--text-muted)" />
-            <p style={{ color: 'var(--text-muted)', margin: '12px 0 16px', maxWidth: '400px' }}>
-              Your greenhouse grid is empty! Start planning your dream garden layout.
-            </p>
-            <Button variant="lime" onClick={() => navigate('/garden-planner')}>
-              <Grid size={16} /> Start Planning
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* E. Available System Features */}
+      {/* D. Available System Features */}
       <div style={styles.sectionWrapper}>
         <div style={styles.sectionHeader}>
           <h3 style={styles.sectionTitle}>Explore FloraSmart</h3>

@@ -15,7 +15,7 @@ export class OrderRepository extends BaseRepository {
         items: true,
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 5 },
         user: { select: { id: true, name: true, email: true } },
-        delivery: true,
+        delivery: { include: { assignedTo: { select: { id: true, name: true } } } },
       },
     });
   }

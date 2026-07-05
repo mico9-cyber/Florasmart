@@ -31,7 +31,6 @@ export default function Footer() {
               <Link to="/recommendations" style={styles.link}>AI Care Advisor</Link>
               <Link to="/vase-matching" style={styles.link}>Vase STEM Matcher</Link>
               <Link to="/garden-planner" style={styles.link}>3D Garden Planner</Link>
-              <Link to="/loyalty" style={styles.link}>Loyalty Program</Link>
             </div>
           </div>
 

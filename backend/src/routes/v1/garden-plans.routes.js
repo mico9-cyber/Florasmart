@@ -36,7 +36,7 @@ import {
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRoles('CUSTOMER', 'GARDENER', 'ADMIN', 'FLORIST'));
+router.use(requireRoles('CUSTOMER', 'ADMIN', 'FLORIST'));
 
 router.get('/', listPlans);
 router.post('/', createPlanValidation, createPlan);
