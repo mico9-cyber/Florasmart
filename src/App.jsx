@@ -38,6 +38,7 @@ import ProfilePage from './pages/ProfilePage';
 import BookConsultationPage from './pages/BookConsultationPage';
 import ManageConsultationsPage from './pages/ManageConsultationsPage';
 import LegalPage from './pages/LegalPage';
+import AdminUserManagement from './pages/AdminUserManagement';
 
 import './App.css';
 
@@ -95,10 +96,10 @@ function AppLayout() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/legal" element={<LegalPage />} />
 
-            <Route path="/customer-dashboard" element={<ProtectedRoute allowedRoles={["customer"]}><CustomerDashboard /></ProtectedRoute>} />
-            <Route path="/florist-dashboard" element={<ProtectedRoute allowedRoles={["florist"]}><FloristDashboard /></ProtectedRoute>} />
-            <Route path="/gardener-dashboard" element={<ProtectedRoute allowedRoles={["gardener"]}><GardenerDashboard /></ProtectedRoute>} />
-            <Route path="/admin-dashboard" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/customer-dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
+            <Route path="/florist-dashboard" element={<ProtectedRoute><FloristDashboard /></ProtectedRoute>} />
+            <Route path="/gardener-dashboard" element={<ProtectedRoute><GardenerDashboard /></ProtectedRoute>} />
+            <Route path="/admin-dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
 
             <Route path="/recommendations" element={<ProtectedRoute allowedRoles={["customer", "admin"]}><PlantRecommendationPage /></ProtectedRoute>} />
             <Route path="/vase-matching" element={<ProtectedRoute allowedRoles={["customer", "florist", "admin"]}><VaseMatchingPage /></ProtectedRoute>} />
@@ -117,6 +118,7 @@ function AppLayout() {
             <Route path="/reports" element={<ProtectedRoute allowedRoles={["admin", "florist"]}><ReportsPage /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/security" element={<ProtectedRoute allowedRoles={["admin"]}><SecurityPage /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUserManagement /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 
             <Route path="/book-consultation" element={<ProtectedRoute allowedRoles={["customer"]}><BookConsultationPage /></ProtectedRoute>} />

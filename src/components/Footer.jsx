@@ -1,8 +1,12 @@
-﻿import React from 'react';
+﻿import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, Globe, Mail, Phone, MapPin } from 'lucide-react';
+import { AppContext } from '../context/AppData';
+import { Leaf, Mail, Phone, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Footer() {
+  const { t } = useTranslation();
+  const { user } = useContext(AppContext);
   return (
     <footer style={styles.footer}>
       <div className="container">
@@ -14,41 +18,43 @@ export default function Footer() {
               <span style={styles.logoText}>FloraSmart</span>
             </div>
             <p style={styles.tagline}>
-              Empowering gardeners and florists with AI-driven plant care, vase matching, and ecological garden planning.
+              {t('app.tagline')}
             </p>
             <div style={styles.socials}>
-              <a href="#" style={styles.socialLink} title="FloraSmart Web"><Globe size={18} /></a>
-              <a href="#" style={styles.socialLink} title="Contact Email"><Mail size={18} /></a>
-              <a href="#" style={styles.socialLink} title="Support Hotline"><Phone size={18} /></a>
+              <a href="mailto:hello@florasmart.com" style={styles.socialLink} title="Contact Email"><Mail size={18} /></a>
+              <a href="tel:+15557526800" style={styles.socialLink} title="Support Hotline"><Phone size={18} /></a>
             </div>
           </div>
 
           {/* Column 2: Quick Links */}
           <div style={styles.col}>
-            <h4 style={styles.heading}>Explore</h4>
+            <h4 style={styles.heading}>{t('footer.explore')}</h4>
             <div style={styles.links}>
-              <Link to="/catalog" style={styles.link}>Product Catalog</Link>
-              <Link to="/recommendations" style={styles.link}>AI Care Advisor</Link>
-              <Link to="/vase-matching" style={styles.link}>Vase STEM Matcher</Link>
-              <Link to="/garden-planner" style={styles.link}>3D Garden Planner</Link>
+              {user.loggedIn && user.role === 'gardener' ? (
+                <Link to="/manage-consultations" style={styles.link}>{t('footer.consultations')}</Link>
+              ) : (
+                <>
+                  <Link to="/catalog" style={styles.link}>{t('footer.productCatalog')}</Link>
+                  <Link to="/recommendations" style={styles.link}>{t('footer.aiCareAdvisor')}</Link>
+                </>
+              )}
             </div>
           </div>
 
           {/* Column 3: Dashboards */}
           <div style={styles.col}>
-            <h4 style={styles.heading}>Workspaces</h4>
+            <h4 style={styles.heading}>{t('footer.workspaces')}</h4>
             <div style={styles.links}>
-              <Link to="/customer-dashboard" style={styles.link}>Customer Portal</Link>
-              <Link to="/florist-dashboard" style={styles.link}>Florist Studio</Link>
-              <Link to="/gardener-dashboard" style={styles.link}>Gardener Sandbox</Link>
-              <Link to="/admin-dashboard" style={styles.link}>Control Center</Link>
-              <Link to="/security" style={styles.link}>Security & Auditing</Link>
+              <Link to="/customer-dashboard" style={styles.link}>{t('footer.customer')}</Link>
+              <Link to="/florist-dashboard" style={styles.link}>{t('footer.florist')}</Link>
+              <Link to="/gardener-dashboard" style={styles.link}>{t('footer.gardener')}</Link>
+              <Link to="/admin-dashboard" style={styles.link}>{t('footer.admin')}</Link>
             </div>
           </div>
 
           {/* Column 4: Contact */}
           <div style={styles.col}>
-            <h4 style={styles.heading}>Get in Touch</h4>
+            <h4 style={styles.heading}>{t('footer.getInTouch')}</h4>
             <div style={styles.contactList}>
               <div style={styles.contactItem}>
                 <MapPin size={16} color="var(--accent-lime)" />
@@ -56,11 +62,11 @@ export default function Footer() {
               </div>
               <div style={styles.contactItem}>
                 <Phone size={16} color="var(--accent-lime)" />
-                <span style={styles.contactText}>+1 (555) 752-6800</span>
+                <a href="tel:+15557526800" style={styles.contactText}>+1 (555) 752-6800</a>
               </div>
               <div style={styles.contactItem}>
                 <Mail size={16} color="var(--accent-lime)" />
-                <span style={styles.contactText}>hello@florasmart.com</span>
+                <a href="mailto:hello@florasmart.com" style={styles.contactText}>hello@florasmart.com</a>
               </div>
             </div>
           </div>
@@ -69,11 +75,10 @@ export default function Footer() {
         <div style={styles.divider}></div>
 
         <div style={styles.bottomBar}>
-          <p>© 2026 FloraSmart Systems Inc. All rights reserved.</p>
+          <p>{t('footer.allRights', { year: 2026 })}</p>
           <div style={styles.bottomLinks}>
-            <a href="#" style={styles.bottomLink}>Privacy Policy</a>
-            <a href="#" style={styles.bottomLink}>Terms of Service</a>
-            <a href="#" style={styles.bottomLink}>SLA Guarantee</a>
+            <Link to="/legal#privacy-policy" style={styles.bottomLink}>{t('legal.privacyPolicy')}</Link>
+            <Link to="/legal#terms-of-service" style={styles.bottomLink}>{t('legal.termsOfService')}</Link>
           </div>
         </div>
       </div>
@@ -150,6 +155,7 @@ const styles = {
   link: {
     fontSize: '14px',
     color: 'var(--text-muted)',
+    textDecoration: 'none',
     transition: 'var(--transition)',
   },
   contactList: {
@@ -165,6 +171,7 @@ const styles = {
   contactText: {
     fontSize: '14px',
     color: 'var(--text-muted)',
+    textDecoration: 'none',
   },
   divider: {
     height: '1px',
@@ -187,6 +194,7 @@ const styles = {
   },
   bottomLink: {
     color: 'var(--text-muted)',
+    textDecoration: 'none',
   }
 };
 

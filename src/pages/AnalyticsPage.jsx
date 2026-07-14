@@ -8,8 +8,10 @@ import { DollarSign, BarChart3, TrendingUp, Sparkles, FileText, Download, BarCha
 import Button from '../components/Button';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/formatCurrency';
+import { useTranslation } from 'react-i18next';
 
 export default function AnalyticsPage() {
+  const { t } = useTranslation();
   const { analytics, user } = useContext(AppContext);
 
   const activeAnalytics = user?.role === 'admin' ? analytics.admin
@@ -20,8 +22,8 @@ export default function AnalyticsPage() {
     const header = (
       <div style={styles.headerRow}>
         <div>
-          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Horticultural Sales Analytics</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Perform revenue inspections, catalog conversions, and average order value (AOV) updates.</p>
+          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('analyticsPage.title')}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>{t('analyticsPage.subtitle')}</p>
         </div>
       </div>
     );
@@ -30,9 +32,9 @@ export default function AnalyticsPage() {
         {header}
         <div className="card" style={{ textAlign: 'center', padding: '64px 24px' }}>
           <BarChart size={48} color="var(--border-green)" />
-          <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>Analytics data unavailable</h4>
+          <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>{t('analyticsPage.dataUnavailable')}</h4>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', maxWidth: '400px', margin: '8px auto 0' }}>
-            {user?.role ? `The analytics backend for ${user.role} has not returned data yet.` : 'Sign in to view analytics.'}
+            {user?.role ? t('analyticsPage.analyticsNotReady', { role: user.role }) : t('analyticsPage.signInToView')}
           </p>
         </div>
       </div>
@@ -56,7 +58,7 @@ export default function AnalyticsPage() {
     `${p.views || p.impressions || 0} views`,
     `${p.conversionRate || p.addToCartRate || 0}%`,
     `${p.sales || p.orders || p.unitsSold || 0} units`,
-    (Number(p.conversionRate) > 15 || p.status === 'high') ? 'High Conversion' : 'Nominal',
+    (Number(p.conversionRate) > 15 || p.status === 'high') ? t('analyticsPage.highConversion') : t('analyticsPage.nominal'),
   ]) : [];
 
   const handleExportPDF = () => {
@@ -77,49 +79,49 @@ export default function AnalyticsPage() {
     <div className="dashboard-content">
         <div style={styles.headerRow}>
           <div>
-            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Horticultural Sales Analytics</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Perform revenue inspections, catalog conversions, and average order value (AOV) updates.</p>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('analyticsPage.title')}</h2>
+            <p style={{ color: 'var(--text-muted)' }}>{t('analyticsPage.subtitle')}</p>
           </div>
           <div style={styles.actionButtons}>
             <Button variant="secondary" onClick={handleExportPDF} icon={<FileText size={16} />}>
-              Export PDF
+              {t('analyticsPage.exportPdf')}
             </Button>
             <Button variant="secondary" onClick={handleExportExcel} icon={<Download size={16} />}>
-              Export Sheets
+              {t('analyticsPage.exportSheets')}
             </Button>
           </div>
         </div>
 
         <div className="grid-cols-4" style={{ margin: '32px 0' }}>
           <DashboardCard
-            title="Total Net Revenue"
+            title={t('analyticsPage.totalNetRevenue')}
             value={formatCurrency(revenue)}
             icon={<DollarSign size={20} color="var(--accent-lime)" />}
-            description="All florist e-commerce nodes"
+            description={t('analyticsPage.allFloristEcommerceNodes')}
             trend="+12.4% MoM"
             trendType="positive"
           />
           <DashboardCard
-            title="Conversion Rate"
+            title={t('analyticsPage.conversionRate')}
             value={typeof conversionRate === 'number' ? `${conversionRate}%` : conversionRate}
             icon={<TrendingUp size={20} color="var(--accent-lime)" />}
-            description="Visits converting to checkout"
+            description={t('analyticsPage.visitsConvertingToCheckout')}
             trend="+0.6% weekly"
             trendType="positive"
           />
           <DashboardCard
-            title="Catalog Impressions"
+            title={t('analyticsPage.catalogImpressions')}
             value={typeof impressions === 'number' ? `${impressions.toLocaleString()} views` : impressions}
             icon={<BarChart3 size={20} color="var(--accent-lime)" />}
-            description="Specimen page details queried"
+            description={t('analyticsPage.specimenPageDetailsQueried')}
             trend="+8.2% views"
             trendType="positive"
           />
           <DashboardCard
-            title="Avg Order Value"
+            title={t('analyticsPage.avgOrderValue')}
             value={formatCurrency(aov)}
             icon={<Sparkles size={20} color="var(--accent-lime)" />}
-            description="Mean e-commerce basket size"
+            description={t('analyticsPage.meanEcommerceBasketSize')}
             trend="Stable AOV"
             trendType="neutral"
           />
@@ -128,7 +130,7 @@ export default function AnalyticsPage() {
         <div style={styles.chartsGrid}>
           <div style={{ flex: 1, minWidth: '350px' }}>
             <ChartCard
-              title="Weekly Gross Revenue Volume (RWF)"
+              title={t('analyticsPage.weeklyGrossRevenueVolume')}
               type="line"
               data={salesData}
               labels={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
@@ -138,7 +140,7 @@ export default function AnalyticsPage() {
 
           <div style={{ flex: 1, minWidth: '350px' }}>
             <ChartCard
-              title="E-Commerce Conversions & Checkout Completions"
+              title={t('analyticsPage.ecommerceConversions')}
               type="bar"
               data={ordersData}
               labels={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
@@ -148,16 +150,16 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="card" style={{ marginTop: '32px' }}>
-          <h3 style={styles.sectionTitle}>Conversion Performance Summary</h3>
+          <h3 style={styles.sectionTitle}>{t('analyticsPage.conversionPerformanceSummary')}</h3>
           <div className="table-container" style={{ marginTop: '16px' }}>
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Product Category</th>
-                  <th>Impressions</th>
-                  <th>Add To Cart Ratio</th>
-                  <th>Order Completions</th>
-                  <th>Conversion Status</th>
+                  <th>{t('analyticsPage.productCategory')}</th>
+                  <th>{t('analyticsPage.impressions')}</th>
+                  <th>{t('analyticsPage.addToCartRatio')}</th>
+                  <th>{t('analyticsPage.orderCompletions')}</th>
+                  <th>{t('analyticsPage.conversionStatus')}</th>
                 </tr>
               </thead>
               <tbody>

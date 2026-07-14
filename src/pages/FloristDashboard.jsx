@@ -11,8 +11,10 @@ import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
 import ImageWithFallback from '../components/ImageWithFallback';
+import { useTranslation } from 'react-i18next';
 
 export default function FloristDashboard() {
+  const { t } = useTranslation();
   const { orders, products, updateOrderStatus, updateProductStock } = useContext(AppContext);
   const addToast = useToast();
   const [loading, setLoading] = useState(true);
@@ -37,9 +39,9 @@ export default function FloristDashboard() {
     if (selectedOrder) {
       try {
         updateOrderStatus(selectedOrder.id, newStatus);
-        addToast(`Order ${selectedOrder.id} status updated to "${newStatus}"`, 'success');
+        addToast(t('floristDashboard.toast.orderStatusUpdated', { orderId: selectedOrder.id, status: newStatus }), 'success');
       } catch {
-        addToast('Failed to update order status', 'error');
+        addToast(t('floristDashboard.toast.failedToUpdateStatus'), 'error');
       }
       setModalOpen(false);
       setSelectedOrder(null);
@@ -48,7 +50,7 @@ export default function FloristDashboard() {
 
   const handleRestock = (item) => {
     updateProductStock(item.id, item.stock + 10);
-    addToast(`${item.name} restocked by 10 units`, 'success');
+    addToast(t('floristDashboard.toast.restocked', { name: item.name }), 'success');
   };
 
   const handleExportPDF = () => {
@@ -56,7 +58,7 @@ export default function FloristDashboard() {
       { heading: 'Arrangement Queue', lines: orders.map((order) => order.id + ' | ' + order.status + ' | ' + order.address) },
       { heading: 'Floral Inventory', lines: floralInventory.map((item) => item.name + ' | ' + item.stock + ' left') },
     ]);
-    addToast('Florist orders report exported as PDF', 'success');
+    addToast(t('floristDashboard.toast.reportExportedPdf'), 'success');
   };
 
   const handleExportExcel = () => {
@@ -64,13 +66,13 @@ export default function FloristDashboard() {
       ['Order ID', 'Items', 'Destination', 'Status'],
       ...orders.map((order) => [order.id, order.items.map((item) => item.name + ' x' + item.quantity).join('; '), order.address, order.status]),
     ]);
-    addToast('Florist orders exported as CSV', 'success');
+    addToast(t('floristDashboard.toast.ordersExportedCsv'), 'success');
   };
 
   if (loading) {
     return (
       <div className="dashboard-content">
-        <LoadingSpinner text="Loading florist dashboard..." />
+        <LoadingSpinner text={t('floristDashboard.loading')} />
       </div>
     );
   }
@@ -80,15 +82,15 @@ export default function FloristDashboard() {
         {/* Title Header with Export Action buttons */}
         <div style={styles.headerRow}>
           <div>
-            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Florist Studio Dashboard</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Manage bouquet custom arrangements, vase matching diagnostics, and floral deliveries.</p>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('floristDashboard.title')}</h2>
+            <p style={{ color: 'var(--text-muted)' }}>{t('floristDashboard.subtitle')}</p>
           </div>
           <div style={styles.actionButtons}>
             <Button variant="secondary" onClick={handleExportPDF} icon={<FileText size={16} />}>
-              Export PDF
+              {t('floristDashboard.exportPdf')}
             </Button>
             <Button variant="secondary" onClick={handleExportExcel} icon={<Download size={16} />}>
-              Export Excel
+              {t('floristDashboard.exportExcel')}
             </Button>
           </div>
         </div>
@@ -96,26 +98,26 @@ export default function FloristDashboard() {
         {/* Dashboard statistics */}
         <div className="grid-cols-3" style={{ margin: '32px 0' }}>
           <DashboardCard
-            title="Arrangements Pending"
+            title={t('floristDashboard.arrangementsPending')}
             value={orders.filter(o => o.status === 'Preparing Arrangement' || o.status === 'Order Placed').length}
             icon={<Clock size={20} color="var(--accent-lime)" />}
-            description="Awaiting hand-tied construction"
+            description={t('floristDashboard.awaitingHandTiedConstruction')}
             trend="+2 New"
             trendType="warning"
           />
           <DashboardCard
-            title="Floral Stems Handled"
+            title={t('floristDashboard.floralStemsHandled')}
             value={`${orders.reduce((sum, o) => sum + o.items.reduce((s, i) => s + i.quantity, 0), 0)} Stems`}
             icon={<Flower2 size={20} color="var(--accent-lime)" />}
-            description="Processed across all orders"
+            description={t('floristDashboard.processedAcrossAllOrders')}
             trend="+12% vs yday"
             trendType="positive"
           />
           <DashboardCard
-            title="Low-Stock warnings"
+            title={t('floristDashboard.lowStockWarnings')}
             value={floralInventory.filter(p => p.stock < 10).length}
             icon={<AlertTriangle size={20} color="var(--warning)" />}
-            description="Items below reorder limit"
+            description={t('floristDashboard.itemsBelowReorderLimit')}
             trend="Needs Reorder"
             trendType="negative"
           />
@@ -124,22 +126,22 @@ export default function FloristDashboard() {
         <div style={styles.sectionsGrid}>
           {/* Active Orders Workspace */}
           <div className="card" style={{ flex: 1.5, minWidth: '350px' }}>
-            <h3 style={styles.sectionTitle}>Floral Arrangement Queue</h3>
+            <h3 style={styles.sectionTitle}>{t('floristDashboard.floralArrangementQueue')}</h3>
             <div className="table-container" style={{ marginTop: '16px' }}>
               {orders.length === 0 ? (
                 <div style={styles.statePanel}>
                   <AlertTriangle size={20} color="var(--text-muted)" style={{ marginRight: '8px' }} />
-                  <span>No floral orders yet. Orders will appear here once placed.</span>
+                  <span>{t('floristDashboard.noFloralOrdersYet')}</span>
                 </div>
               ) : (
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Order ID</th>
-                    <th>Stems Requested</th>
-                    <th>Destination</th>
-                    <th>Order Status</th>
-                    <th>Modify Status</th>
+                    <th>{t('floristDashboard.orderId')}</th>
+                    <th>{t('floristDashboard.stemsRequested')}</th>
+                    <th>{t('floristDashboard.destination')}</th>
+                    <th>{t('floristDashboard.orderStatus')}</th>
+                    <th>{t('floristDashboard.modifyStatus')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -164,7 +166,7 @@ export default function FloristDashboard() {
                           style={{ padding: '6px 12px', fontSize: '12px' }}
                           onClick={() => handleOpenStatusModal(order)}
                         >
-                          Update Status
+                          {t('floristDashboard.updateStatus')}
                         </Button>
                       </td>
                     </tr>
@@ -177,11 +179,11 @@ export default function FloristDashboard() {
 
           {/* Floral Stock Monitor */}
           <div className="card" style={{ flex: 1, minWidth: '300px' }}>
-            <h3 style={styles.sectionTitle}>Flower & Vase Inventory</h3>
+            <h3 style={styles.sectionTitle}>{t('floristDashboard.flowerVaseInventory')}</h3>
             <div style={styles.inventoryList}>
               {floralInventory.length === 0 ? (
                 <div style={styles.statePanel}>
-                  <span>No floral inventory items available.</span>
+                  <span>{t('floristDashboard.noFloralInventoryItems')}</span>
                 </div>
               ) : (
               floralInventory.map((item) => (
@@ -201,9 +203,9 @@ export default function FloristDashboard() {
                     <button
                       onClick={() => handleRestock(item)}
                       style={styles.quickRestock}
-                      title="Quickly restock +10 units"
+                      title={t('floristDashboard.quicklyRestockTooltip')}
                     >
-                      + Restock
+                      {t('floristDashboard.restock')}
                     </button>
                   </div>
                 </div>
@@ -216,7 +218,7 @@ export default function FloristDashboard() {
         {/* Arrangement Revenue chart */}
         <div style={{ marginTop: '32px' }}>
           <ChartCard
-            title="Custom Florist Arrangements Assembled (Daily Output)"
+            title={t('floristDashboard.customFloristArrangementsChart')}
             type="bar"
             data={[12, 19, 15, 22, 28, 30, 18]}
             labels={['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']}
@@ -228,27 +230,27 @@ export default function FloristDashboard() {
         <Modal
           isOpen={modalOpen}
           onClose={() => setModalOpen(false)}
-          title={`Update Order Status: ${selectedOrder?.id}`}
+          title={t('floristDashboard.updateOrderStatusTitle', { orderId: selectedOrder?.id })}
         >
           <FormInput
-            label="Order Status"
+            label={t('floristDashboard.orderStatusLabel')}
             id="order-status-select"
             type="select"
             value={newStatus}
             onChange={(e) => setNewStatus(e.target.value)}
             options={[
-              { value: 'Order Placed', label: 'Order Placed (Awaiting Review)' },
-              { value: 'Preparing Arrangement', label: 'Preparing Arrangement (In Florist Studio)' },
-              { value: 'Out for Delivery', label: 'Out for Delivery (Loaded on vehicle)' },
-              { value: 'Delivered', label: 'Delivered (Handed to recipient)' }
+              { value: 'Order Placed', label: t('floristDashboard.orderPlacedAwaitingReview') },
+              { value: 'Preparing Arrangement', label: t('floristDashboard.preparingArrangementInStudio') },
+              { value: 'Out for Delivery', label: t('floristDashboard.outForDeliveryLoaded') },
+              { value: 'Delivered', label: t('floristDashboard.deliveredHandedToRecipient') }
             ]}
           />
           <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
             <Button variant="secondary" onClick={() => setModalOpen(false)} style={{ flex: 1 }}>
-              Cancel
+              {t('floristDashboard.cancel')}
             </Button>
             <Button variant="lime" onClick={handleUpdateStatus} style={{ flex: 1 }}>
-              Confirm Change
+              {t('floristDashboard.confirmChange')}
             </Button>
           </div>
         </Modal>

@@ -1,11 +1,13 @@
 ﻿import React, { useContext, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppContext } from '../context/AppData';
 import { getNavItemsForRole, normalizeRole, ROLE_LABELS } from '../config/navigation';
 import { User, Leaf, X } from 'lucide-react';
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user } = useContext(AppContext);
+  const { t } = useTranslation();
   const location = useLocation();
   const role = normalizeRole(user.role);
   const links = getNavItemsForRole(role);
@@ -64,7 +66,7 @@ export default function Sidebar({ isOpen, onClose }) {
                 onClick={onClose}
               >
                 <Icon size={18} />
-                <span>{link.label}</span>
+                <span>{t(link.labelKey)}</span>
               </NavLink>
             );
           })}
@@ -77,7 +79,7 @@ export default function Sidebar({ isOpen, onClose }) {
             </div>
             <div style={styles.profileInfo}>
               <span style={styles.profileName}>{user.name || user.email}</span>
-              <span style={styles.profileRole}>{ROLE_LABELS[role] || role}</span>
+              <span style={styles.profileRole}>{t(`roles.${role.toLowerCase()}`)}</span>
             </div>
           </NavLink>
         </div>

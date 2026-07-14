@@ -1,5 +1,6 @@
-﻿import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+﻿import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppContext } from '../context/AppData';
 import { useToast } from '../context/ToastContext';
 import { UserPlus, ShieldAlert } from 'lucide-react';
@@ -7,23 +8,35 @@ import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import { validatePassword } from '../utils/passwordValidation';
+import { writeJson } from '../utils/storage';
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const { handleRegister } = useContext(AppContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const addToast = useToast();
 
-  // Form Fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeToTerms, setAgreeToTerms] = useState(false);
 
-  // Validation States
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
-  const [passwordValid, setPasswordValid] = useState(false);
+  const [_passwordValid, setPasswordValid] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('consent') === 'true') {
+      setAgreeToTerms(true);
+    }
+  }, [location.search]);
 
   const validateField = (name, value) => {
     let error = '';
@@ -32,15 +45,18 @@ export default function RegisterPage() {
         if (!value.trim()) error = 'Full name is required.';
         break;
       case 'email':
-        if (!value) error = 'Email address is required.';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Enter a valid email address.';
+        if (!value) {
+          error = 'Email address is required.';
+        } else if (!isValidEmail(value)) {
+          error = 'Invalid email address';
+        }
         break;
       case 'password':
         if (!value) error = 'Password is required.';
         else if (!validatePassword(value).valid) error = 'Password does not meet all requirements.';
         break;
       case 'confirmPassword':
-        if (!value) error = 'Please confirm your password.';
+        if (!value) error = 'Please re-write password';
         else if (value !== password) error = 'Passwords do not match.';
         break;
     }
@@ -56,13 +72,16 @@ export default function RegisterPage() {
     const tempErrors = {};
 
     if (!name.trim()) tempErrors.name = 'Full name is required.';
-    if (!email) tempErrors.email = 'Email address is required.';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) tempErrors.email = 'Enter a valid email address.';
+    if (!email) {
+      tempErrors.email = 'Email address is required.';
+    } else if (!isValidEmail(email)) {
+      tempErrors.email = 'Invalid email address';
+    }
     if (!password) tempErrors.password = 'Password is required.';
     else if (!validatePassword(password).valid) tempErrors.password = 'Password does not meet all requirements.';
-    if (!confirmPassword) tempErrors.confirmPassword = 'Please confirm your password.';
+    if (!confirmPassword) tempErrors.confirmPassword = 'Please re-write password';
     else if (password !== confirmPassword) tempErrors.confirmPassword = 'Passwords do not match.';
-    if (!agreeToTerms) tempErrors.terms = 'You must agree to the Privacy Policy & Terms of Service.';
+    if (!agreeToTerms) tempErrors.terms = 'You must agree to the Privacy Policy & Terms of Service before registering.';
 
     setFieldErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -73,8 +92,9 @@ export default function RegisterPage() {
     if (!validate()) return;
 
     try {
-      const result = await handleRegister(email, password, name, 'customer');
+      const result = await handleRegister(email, password, name);
       if (result.ok) {
+        writeJson('flora_legal_consent', true);
         addToast('Registration successful! Check your email for OTP.', 'success');
         navigate('/verify-otp', { replace: true });
       } else {
@@ -92,8 +112,8 @@ export default function RegisterPage() {
           <div style={styles.iconContainer}>
             <UserPlus size={24} color="var(--accent-lime)" />
           </div>
-          <h2 style={styles.title}>Join FloraSmart</h2>
-          <p style={styles.subtitle}>Unlock AI-driven botanicals, planners, and logistics tools.</p>
+          <h2 style={styles.title}>{t('auth.createAccount')}</h2>
+          <p style={styles.subtitle}>{t('auth.registerSubtitle')}</p>
         </div>
 
         {submitError && (
@@ -105,7 +125,7 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <FormInput
-            label="Full Name"
+            label={t('auth.fullName')}
             id="name"
             placeholder="e.g. Darrly Garden"
             value={name}
@@ -118,12 +138,12 @@ export default function RegisterPage() {
           />
 
           <FormInput
-            label="Email Address"
+            label={t('auth.emailLabel')}
             id="email"
             type="email"
             placeholder="e.g. darrly@florasmart.com"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email) validateField('email', e.target.value); }}
+            onChange={(e) => { setEmail(e.target.value); if (fieldErrors.email || isValidEmail(e.target.value)) validateField('email', e.target.value); }}
             onBlur={handleBlur('email')}
             error={fieldErrors.email}
             ariaInvalid={!!fieldErrors.email}
@@ -134,12 +154,12 @@ export default function RegisterPage() {
           <div style={styles.pwdRow}>
             <div style={{ flex: 1 }}>
               <FormInput
-                label="Password"
+                label={t('auth.passwordLabel')}
                 id="password"
                 type="password"
                 placeholder="Enter password"
                 value={password}
-                onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) validateField('password', e.target.value); }}
+                onChange={(e) => { setPassword(e.target.value); if (fieldErrors.password) validateField('password', e.target.value); if (confirmPassword) validateField('confirmPassword', confirmPassword); }}
                 onBlur={handleBlur('password')}
                 error={fieldErrors.password}
                 ariaInvalid={!!fieldErrors.password}
@@ -149,12 +169,12 @@ export default function RegisterPage() {
             </div>
             <div style={{ flex: 1 }}>
               <FormInput
-                label="Confirm Password"
+                label={t('auth.confirmPassword')}
                 id="confirmPassword"
                 type="password"
                 placeholder="Re-enter password"
                 value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); if (fieldErrors.confirmPassword) validateField('confirmPassword', e.target.value); }}
+                onChange={(e) => { setConfirmPassword(e.target.value); validateField('confirmPassword', e.target.value); }}
                 onBlur={handleBlur('confirmPassword')}
                 error={fieldErrors.confirmPassword}
                 ariaInvalid={!!fieldErrors.confirmPassword}
@@ -167,21 +187,21 @@ export default function RegisterPage() {
           <div style={styles.termsRow}>
             <label style={styles.termsLabel}>
               <input type="checkbox" required style={{ marginRight: '8px' }} checked={agreeToTerms} onChange={(e) => setAgreeToTerms(e.target.checked)} />
-              I agree to the <Link to="/legal" style={styles.termsLink}>Privacy Policy & Terms of Service</Link>
+              {t('auth.iAgreeTo')} <Link to="/legal" style={styles.termsLink}>{t('auth.privacyPolicy')} {t('auth.and')} {t('auth.termsOfService')}</Link>
             </label>
             {fieldErrors.terms && <span style={styles.fieldError}>{fieldErrors.terms}</span>}
           </div>
 
           <PasswordStrengthIndicator password={password} onValidationChange={setPasswordValid} />
 
-          <Button type="submit" variant="primary" style={styles.submitBtn} disabled={!agreeToTerms || (password.length > 0 && !passwordValid)}>
-            Register Account
+          <Button type="submit" variant="primary" style={styles.submitBtn}>
+            {t('auth.createAccount')}
           </Button>
         </form>
 
         <div style={styles.footer}>
-          <span style={styles.footerText}>Already have an account?</span>
-          <Link to="/login" style={styles.loginLink}>Sign In</Link>
+          <span style={styles.footerText}>{t('auth.alreadyHaveAccount')}</span>
+          <Link to="/login" style={styles.loginLink}>{t('auth.signInHere')}</Link>
         </div>
       </div>
     </div>
@@ -283,6 +303,3 @@ const styles = {
     fontWeight: '700',
   }
 };
-
-
-

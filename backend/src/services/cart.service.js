@@ -15,7 +15,14 @@ export class CartService extends BaseService {
       cart = await this.repository.create({ userId, status: 'ACTIVE' });
       cart = await this.repository.findActiveByUserId(userId);
     }
-    return this._enrichCart(cart);
+    return this._getAndEnrichCart(userId);
+  }
+
+  async _getAndEnrichCart(userId) {
+    const cart = await this.repository.findActiveByUserId(userId);
+    const productIds = (cart?.items || []).map((i) => i.productId).filter(Boolean);
+    const stockMap = await this._fetchStockMap(productIds);
+    return this._enrichCart(cart, stockMap);
   }
 
   async addItem(userId, productId, quantity) {
@@ -64,7 +71,7 @@ export class CartService extends BaseService {
     }
 
     await logAuditEvent(prisma, { action: 'cart_item_added', userId, productId, quantity });
-    return this._enrichCart(await this.repository.findActiveByUserId(userId));
+    return this._getAndEnrichCart(userId);
   }
 
   async updateItem(userId, itemId, quantity) {
@@ -92,7 +99,7 @@ export class CartService extends BaseService {
 
     await this.cartItemRepository.update(itemId, { quantity });
     await logAuditEvent(prisma, { action: 'cart_item_updated', userId, itemId, quantity });
-    return this._enrichCart(await this.repository.findActiveByUserId(userId));
+    return this._getAndEnrichCart(userId);
   }
 
   async removeItem(userId, itemId) {
@@ -107,7 +114,7 @@ export class CartService extends BaseService {
 
     await this.cartItemRepository.delete(itemId);
     await logAuditEvent(getPrismaClient(), { action: 'cart_item_removed', userId, itemId });
-    return this._enrichCart(await this.repository.findActiveByUserId(userId));
+    return this._getAndEnrichCart(userId);
   }
 
   async clearCart(userId) {
@@ -120,25 +127,30 @@ export class CartService extends BaseService {
     return this._enrichCart(await this.repository.findActiveByUserId(userId));
   }
 
-  _enrichCart(cart) {
+  _enrichCart(cart, stockMap = new Map()) {
     if (!cart) {
       return { id: null, items: [], subtotal: 0, itemCount: 0, currency: 'RWF' };
     }
-    const items = (cart.items || []).map((item) => ({
-      id: item.id,
-      productId: item.productId,
-      product: item.product ? {
-        id: item.product.id,
-        name: item.product.name,
-        slug: item.product.slug,
-        sku: item.product.sku,
-        imageUrl: item.product.imageUrl,
-        stockStatus: item.product.stockStatus,
-      } : null,
-      quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
-      currency: item.currency,
-    }));
+    const items = (cart.items || []).map((item) => {
+      const stockLevel = stockMap.get(item.productId);
+      const available = stockLevel ? (stockLevel.quantity - stockLevel.reservedQuantity) : 0;
+      return {
+        id: item.id,
+        productId: item.productId,
+        product: item.product ? {
+          id: item.product.id,
+          name: item.product.name,
+          slug: item.product.slug,
+          sku: item.product.sku,
+          imageUrl: item.product.imageUrl,
+          stockStatus: item.product.stockStatus,
+        } : null,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        currency: item.currency,
+        availableStock: Math.max(0, available),
+      };
+    });
     const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
     return {
       id: cart.id,
@@ -147,5 +159,16 @@ export class CartService extends BaseService {
       itemCount: items.length,
       currency: 'RWF',
     };
+  }
+
+  async _fetchStockMap(productIds) {
+    if (!productIds.length) return new Map();
+    const prisma = getPrismaClient();
+    const stockLevels = await prisma.stockLevel.findMany({
+      where: { productId: { in: productIds }, location: { active: true, deletedAt: null } },
+      orderBy: { quantity: 'desc' },
+      distinct: ['productId'],
+    });
+    return new Map(stockLevels.map((sl) => [sl.productId, sl]));
   }
 }

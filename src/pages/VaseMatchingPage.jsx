@@ -6,6 +6,7 @@ import ImageWithFallback from '../components/ImageWithFallback';
 import { AppContext } from '../context/AppData';
 import { recommendationService } from '../services/recommendationService';
 import { formatCurrency } from '../utils/formatCurrency';
+import { useTranslation } from 'react-i18next';
 
 function resolveObject(payload) {
   if (payload?.data && !Array.isArray(payload.data)) return payload.data;
@@ -13,6 +14,7 @@ function resolveObject(payload) {
 }
 
 export default function VaseMatchingPage() {
+  const { t } = useTranslation();
   const { products } = useContext(AppContext);
 
   const bouquetOptions = useMemo(() => {
@@ -20,8 +22,8 @@ export default function VaseMatchingPage() {
       .filter((item) => item.category === 'flowers')
       .map((item) => ({ value: item.backendId || item.id, label: item.name }));
     return backendFlowers.length > 0
-      ? [{ value: '', label: 'No bouquet selected' }, ...backendFlowers]
-      : [{ value: '', label: 'No bouquet selected' }];
+      ? [{ value: '', label: t('vaseMatchingPage.noBouquetSelected') }, ...backendFlowers]
+      : [{ value: '', label: t('vaseMatchingPage.noBouquetSelected') }];
   }, [products]);
 
   const [selectedBouquet, setSelectedBouquet] = useState('');
@@ -36,7 +38,7 @@ export default function VaseMatchingPage() {
   const handleMatch = async (e) => {
     e.preventDefault();
     if (!vaseHeight || !vaseDiameter) {
-      setValidationErr('Vase height and opening diameter measurements are required.');
+      setValidationErr(t('vaseMatchingPage.validation.dimensionsRequired'));
       return;
     }
     setValidationErr('');
@@ -52,7 +54,7 @@ export default function VaseMatchingPage() {
       }));
       setResult(payload);
     } catch (err) {
-      setError(err.message || 'Failed to calculate vase match.');
+      setError(err.message || t('vaseMatchingPage.toast.failedToCalculate'));
       setResult(null);
     } finally {
       setCalculating(false);
@@ -65,9 +67,9 @@ export default function VaseMatchingPage() {
         <div style={styles.iconContainer}>
           <Flower size={28} color="var(--accent-lime)" />
         </div>
-        <h1 style={styles.title}>AI Vase & Arrangement Calibration</h1>
+        <h1 style={styles.title}>{t('vaseMatchingPage.title')}</h1>
         <p style={styles.subtitle}>
-          Use the backend fit engine to compare bouquet stem length, vase height, and opening width.
+          {t('vaseMatchingPage.subtitle')}
         </p>
       </div>
 
@@ -80,9 +82,9 @@ export default function VaseMatchingPage() {
 
       <div style={styles.layout}>
         <div className="card" style={styles.formCard}>
-          <h3 style={styles.sectionTitle}>Input Specifications</h3>
+          <h3 style={styles.sectionTitle}>{t('vaseMatchingPage.inputSpecifications')}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 20px' }}>
-            Submit bouquet and vase dimensions to the real backend vase-matching endpoint.
+            {t('vaseMatchingPage.submitDimensionsHint')}
           </p>
 
           {validationErr && (
@@ -94,7 +96,7 @@ export default function VaseMatchingPage() {
 
           <form onSubmit={handleMatch}>
             <FormInput
-              label="Selected Bouquet Arrangement"
+              label={t('vaseMatchingPage.selectedBouquetArrangement')}
               id="bouquet"
               type="select"
               value={selectedBouquet}
@@ -105,9 +107,9 @@ export default function VaseMatchingPage() {
             <div style={styles.dimensionsRow}>
               <div style={{ flex: 1 }}>
                 <FormInput
-                  label="Vase Height (cm)"
+                  label={t('vaseMatchingPage.vaseHeightCm')}
                   id="vase-height"
-                  placeholder="e.g. 25"
+                  placeholder={t('vaseMatchingPage.vaseHeightPlaceholder')}
                   value={vaseHeight}
                   onChange={(e) => setVaseHeight(e.target.value)}
                   required
@@ -115,9 +117,9 @@ export default function VaseMatchingPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <FormInput
-                  label="Opening Width (cm)"
+                  label={t('vaseMatchingPage.openingWidthCm')}
                   id="vase-diameter"
-                  placeholder="e.g. 10"
+                  placeholder={t('vaseMatchingPage.openingWidthPlaceholder')}
                   value={vaseDiameter}
                   onChange={(e) => setVaseDiameter(e.target.value)}
                   required
@@ -126,17 +128,17 @@ export default function VaseMatchingPage() {
             </div>
 
             <FormInput
-              label="Vase Structural Silhouette"
+              label={t('vaseMatchingPage.vaseStructuralSilhouette')}
               id="vase-shape"
               type="select"
               value={vaseShape}
               onChange={(e) => setVaseShape(e.target.value)}
               options={[
-                { value: 'CYLINDER', label: 'Cylinder' },
-                { value: 'FLARED', label: 'Flared' },
-                { value: 'ROUND', label: 'Round' },
-                { value: 'BUD', label: 'Bud' },
-                { value: 'SQUARE', label: 'Square' }
+                { value: 'CYLINDER', label: t('vaseMatchingPage.cylinder') },
+                { value: 'FLARED', label: t('vaseMatchingPage.flared') },
+                { value: 'ROUND', label: t('vaseMatchingPage.round') },
+                { value: 'BUD', label: t('vaseMatchingPage.bud') },
+                { value: 'SQUARE', label: t('vaseMatchingPage.square') }
               ]}
             />
 
@@ -144,10 +146,10 @@ export default function VaseMatchingPage() {
               {calculating ? (
                 <>
                   <RefreshCw size={16} className="pulse-light" />
-                  <span>Calibrating arrangement...</span>
+                  <span>{t('vaseMatchingPage.calibratingArrangement')}</span>
                 </>
               ) : (
-                'Compute Fit Diagnostics'
+                t('vaseMatchingPage.computeFitDiagnostics')
               )}
             </Button>
           </form>
@@ -158,9 +160,9 @@ export default function VaseMatchingPage() {
             <div className="card" style={styles.resultsCard}>
               <div style={styles.resultsHeader}>
                 <div>
-                  <h3 style={{ color: 'var(--text-white)' }}>Fit Score: <span style={{ color: result.fitScore >= 80 ? 'var(--success)' : result.fitScore >= 60 ? 'var(--warning)' : 'var(--error)' }}>{result.fitScore}%</span></h3>
+                  <h3 style={{ color: 'var(--text-white)' }}>{t('vaseMatchingPage.fitScoreLabel', { score: result.fitScore })}</h3>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    Height Ratio: <strong>{result.heightRatio}x</strong> stem length
+                    {t('vaseMatchingPage.heightRatioLabel', { ratio: result.heightRatio })}
                   </span>
                 </div>
                 <div style={{
@@ -191,25 +193,25 @@ export default function VaseMatchingPage() {
                 </svg>
                 <div style={styles.overlayHelp}>
                   <Ruler size={14} color="var(--accent-lime)" />
-                  <span>Visual Balance: {result.visualBalance}</span>
+                  <span>{t('vaseMatchingPage.visualBalanceLabel', { balance: result.visualBalance })}</span>
                 </div>
               </div>
 
               <div style={styles.adviceBox}>
                 <Sparkles size={16} color="var(--accent-lime)" />
                 <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5' }}>
-                  <strong>Backend Match Summary:</strong> Stem length {result.stemLengthCm}cm, vase height {result.vaseHeightCm}cm, opening width {result.openingWidthCm || vaseDiameter}cm.
+                  <strong>{t('vaseMatchingPage.backendMatchSummary')}</strong> {t('vaseMatchingPage.matchSummaryDetail', { stemLength: result.stemLengthCm, vaseHeight: result.vaseHeightCm, openingWidth: result.openingWidthCm || vaseDiameter })}
                 </p>
               </div>
 
               {(result.warnings || []).length > 0 && (
                 <div style={styles.warningBox}>
-                  <strong>Warnings:</strong> {result.warnings.join(' • ')}
+                  <strong>{t('vaseMatchingPage.warningsLabel')}</strong> {result.warnings.join(' • ')}
                 </div>
               )}
 
               <div style={styles.recommendSection}>
-                <h4 style={{ color: 'var(--text-white)', margin: 0 }}>Recommended Vases</h4>
+                <h4 style={{ color: 'var(--text-white)', margin: 0 }}>{t('vaseMatchingPage.recommendedVases')}</h4>
                 <div style={styles.productGrid}>
                   {(result.recommendedVases || []).map((item) => (
                     <div key={item.id} style={styles.productCard}>
@@ -224,7 +226,7 @@ export default function VaseMatchingPage() {
               </div>
 
               <div style={styles.recommendSection}>
-                <h4 style={{ color: 'var(--text-white)', margin: 0 }}>Recommended Arrangements</h4>
+                <h4 style={{ color: 'var(--text-white)', margin: 0 }}>{t('vaseMatchingPage.recommendedArrangements')}</h4>
                 <div style={styles.productGrid}>
                   {(result.recommendedArrangements || []).map((item) => (
                     <div key={item.id} style={styles.productCard}>
@@ -242,7 +244,7 @@ export default function VaseMatchingPage() {
             <div className="card" style={styles.emptyCard}>
               <Info size={48} color="var(--border-green)" />
               <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>
-                Run the backend calibration scanner to load real fit diagnostics.
+                {t('vaseMatchingPage.runCalibrationHint')}
               </h4>
             </div>
           )}

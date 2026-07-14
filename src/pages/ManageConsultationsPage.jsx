@@ -4,8 +4,10 @@ import { consultationService } from '../services/consultationService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import { ClipboardCheck, Clock, User, Mail, Calendar, Check, X, RefreshCw, CalendarClock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ManageConsultationsPage() {
+  const { t } = useTranslation();
   const addToast = useToast();
 
   const [activeTab, setActiveTab] = useState('pending');
@@ -32,7 +34,7 @@ export default function ManageConsultationsPage() {
       setPendingConsultations(pendingRes?.data || []);
       setMyConsultations(myRes?.data || []);
     } catch {
-      addToast('Failed to load consultations.', 'error');
+      addToast(t('manageConsultations.toast.failedToLoad'), 'error');
     } finally {
       setLoading(false);
     }
@@ -41,39 +43,39 @@ export default function ManageConsultationsPage() {
   const handleAccept = async (id) => {
     try {
       await consultationService.accept(id);
-      addToast('Consultation accepted!', 'success');
+      addToast(t('manageConsultations.toast.accepted'), 'success');
       loadConsultations();
     } catch (err) {
-      addToast(err.message || 'Failed to accept consultation.', 'error');
+      addToast(err.message || t('manageConsultations.toast.failedToAccept'), 'error');
     }
   };
 
   const handleReject = async (id) => {
     try {
       await consultationService.reject(id, rejectReason);
-      addToast('Consultation rejected.', 'success');
+      addToast(t('manageConsultations.toast.rejected'), 'success');
       setRejectingId(null);
       setRejectReason('');
       loadConsultations();
     } catch (err) {
-      addToast(err.message || 'Failed to reject consultation.', 'error');
+      addToast(err.message || t('manageConsultations.toast.failedToReject'), 'error');
     }
   };
 
   const handleReschedule = async (id) => {
     if (!rescheduleDate) {
-      addToast('Please select a new date.', 'error');
+      addToast(t('manageConsultations.toast.selectNewDate'), 'error');
       return;
     }
     try {
       await consultationService.reschedule(id, rescheduleDate, rescheduleReason);
-      addToast('Consultation rescheduled. Customer will be notified.', 'success');
+      addToast(t('manageConsultations.toast.rescheduled'), 'success');
       setReschedulingId(null);
       setRescheduleDate('');
       setRescheduleReason('');
       loadConsultations();
     } catch (err) {
-      addToast(err.message || 'Failed to reschedule consultation.', 'error');
+      addToast(err.message || t('manageConsultations.toast.failedToReschedule'), 'error');
     }
   };
 
@@ -88,11 +90,11 @@ export default function ManageConsultationsPage() {
       <div style={styles.header}>
         <div style={styles.titleRow}>
           <div>
-            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Manage Consultations</h2>
-            <p style={{ color: 'var(--text-muted)' }}>View and respond to customer consultation requests.</p>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('consultation.manage.title')}</h2>
+            <p style={{ color: 'var(--text-muted)' }}>{t('manageConsultations.subtitle')}</p>
           </div>
           <Button onClick={loadConsultations} variant="secondary" style={{ padding: '10px 16px' }}>
-            <RefreshCw size={16} /> Refresh
+            <RefreshCw size={16} /> {t('manageConsultations.refresh')}
           </Button>
         </div>
       </div>
@@ -103,27 +105,27 @@ export default function ManageConsultationsPage() {
           onClick={() => setActiveTab('pending')}
           style={{ ...styles.tab, borderColor: activeTab === 'pending' ? 'var(--accent-lime)' : 'var(--border-green)', backgroundColor: activeTab === 'pending' ? 'rgba(132, 204, 22, 0.05)' : 'var(--bg-card)', color: activeTab === 'pending' ? 'var(--accent-lime)' : 'var(--text-muted)' }}
         >
-          <Clock size={16} /> Pending ({pendingConsultations.length})
+          <Clock size={16} /> {t('manageConsultations.pendingTab', { count: pendingConsultations.length })}
         </button>
         <button
           onClick={() => setActiveTab('my')}
           style={{ ...styles.tab, borderColor: activeTab === 'my' ? 'var(--accent-lime)' : 'var(--border-green)', backgroundColor: activeTab === 'my' ? 'rgba(132, 204, 22, 0.05)' : 'var(--bg-card)', color: activeTab === 'my' ? 'var(--accent-lime)' : 'var(--text-muted)' }}
         >
-          <ClipboardCheck size={16} /> My Consultations ({myConsultations.length})
+          <ClipboardCheck size={16} /> {t('manageConsultations.myConsultationsTab', { count: myConsultations.length })}
         </button>
       </div>
 
       {/* Consultations List */}
       {loading ? (
-        <LoadingSpinner text="Loading consultations..." />
+        <LoadingSpinner text={t('manageConsultations.loadingConsultations')} />
       ) : displayConsultations.length === 0 ? (
         <div className="card" style={styles.emptyCard}>
           <ClipboardCheck size={48} color="var(--border-green)" />
           <h4 style={{ color: 'var(--text-white)', marginTop: '16px' }}>
-            {activeTab === 'pending' ? 'No pending consultations' : 'No assigned consultations yet'}
+            {activeTab === 'pending' ? t('manageConsultations.noPendingConsultations') : t('manageConsultations.noAssignedConsultations')}
           </h4>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginTop: '6px' }}>
-            {activeTab === 'pending' ? 'Check back later for new requests.' : 'Accept pending consultations to see them here.'}
+            {activeTab === 'pending' ? t('manageConsultations.checkBackLater') : t('manageConsultations.acceptToSeeHere')}
           </p>
         </div>
       ) : (
@@ -136,7 +138,7 @@ export default function ManageConsultationsPage() {
                   <User size={20} color="var(--accent-lime)" />
                 </div>
                 <div>
-                  <h4 style={styles.customerName}>{appt.customer?.name || 'Customer'}</h4>
+                  <h4 style={styles.customerName}>{appt.customer?.name || t('manageConsultations.customerLabel')}</h4>
                   <p style={styles.customerEmail}>
                     <Mail size={12} /> {appt.customer?.email || 'N/A'}
                   </p>
@@ -148,31 +150,31 @@ export default function ManageConsultationsPage() {
               {/* Consultation Details */}
               <div style={styles.detailRow}>
                 <Calendar size={14} color="var(--text-muted)" />
-                <span style={styles.detailLabel}>Scheduled:</span>
+                <span style={styles.detailLabel}>{t('manageConsultations.scheduledLabel')}</span>
                 <span style={styles.detailValue}>{formatDate(appt.scheduledDate)}</span>
               </div>
 
               {appt.rescheduledDate && (
                 <div style={styles.detailRow}>
                   <CalendarClock size={14} color="var(--accent-lime)" />
-                  <span style={styles.detailLabel}>Rescheduled to:</span>
+                  <span style={styles.detailLabel}>{t('manageConsultations.rescheduledToLabel')}</span>
                   <span style={{ ...styles.detailValue, color: 'var(--accent-lime)' }}>{formatDate(appt.rescheduledDate)}</span>
                 </div>
               )}
 
               <div style={styles.detailRow}>
-                <span style={styles.detailLabel}>Purpose:</span>
+                <span style={styles.detailLabel}>{t('manageConsultations.purposeLabel')}</span>
               </div>
               <p style={styles.purposeText}>{appt.purpose}</p>
 
               {appt.status !== 'PENDING' && (
                 <div style={{ ...styles.statusBadge, backgroundColor: statusColor(appt.status) }}>
-                  {statusLabel(appt.status)}
+                  {statusLabel(appt.status, t)}
                 </div>
               )}
 
               {appt.rejectedReason && (
-                <p style={styles.rejectionReason}>Reason: {appt.rejectedReason}</p>
+                <p style={styles.rejectionReason}>{t('bookConsultation.reasonLabel')} {appt.rejectedReason}</p>
               )}
 
               {/* Actions - only for PENDING consultations */}
@@ -180,28 +182,28 @@ export default function ManageConsultationsPage() {
                 <div style={styles.actions}>
                   {reschedulingId === appt.id ? (
                     <div style={styles.rescheduleForm}>
-                      <label style={styles.fieldLabel}>New Date & Time</label>
+                      <label style={styles.fieldLabel}>{t('manageConsultations.newDateTimeLabel')}</label>
                       <input
                         type="datetime-local"
                         value={rescheduleDate}
                         onChange={(e) => setRescheduleDate(e.target.value)}
                         style={styles.dateInput}
                       />
-                      <label style={styles.fieldLabel}>Reason (optional)</label>
+                      <label style={styles.fieldLabel}>{t('manageConsultations.reasonOptionalLabel')}</label>
                       <input
                         type="text"
                         value={rescheduleReason}
                         onChange={(e) => setRescheduleReason(e.target.value)}
-                        placeholder="e.g. Fully booked that day"
+                        placeholder={t('manageConsultations.reasonPlaceholder')}
                         style={styles.rejectInput}
                       />
                       <div style={styles.rejectActions}>
                         <Button onClick={() => handleReschedule(appt.id)} style={{ padding: '8px 12px', fontSize: '12px' }}>
-                          <CalendarClock size={14} /> Send Reschedule
+                          <CalendarClock size={14} /> {t('manageConsultations.sendReschedule')}
                         </Button>
-                        <button onClick={() => { setReschedulingId(null); setRescheduleDate(''); setRescheduleReason(''); }} style={styles.cancelBtn}>
-                          Cancel
-                        </button>
+                          <button onClick={() => { setReschedulingId(null); setRescheduleDate(''); setRescheduleReason(''); }} style={styles.cancelBtn}>
+                            {t('manageConsultations.cancel')}
+                          </button>
                       </div>
                     </div>
                   ) : rejectingId === appt.id ? (
@@ -210,28 +212,28 @@ export default function ManageConsultationsPage() {
                         type="text"
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="Reason for rejection (optional)"
+                        placeholder={t('manageConsultations.rejectReasonPlaceholder')}
                         style={styles.rejectInput}
                       />
                       <div style={styles.rejectActions}>
                         <Button onClick={() => handleReject(appt.id)} variant="secondary" style={{ padding: '8px 12px', fontSize: '12px' }}>
-                          Confirm Reject
+                          {t('manageConsultations.confirmReject')}
                         </Button>
                         <button onClick={() => { setRejectingId(null); setRejectReason(''); }} style={styles.cancelBtn}>
-                          Cancel
+                          {t('manageConsultations.cancel')}
                         </button>
                       </div>
                     </div>
                   ) : (
                     <>
                       <Button onClick={() => handleAccept(appt.id)} style={{ ...styles.actionBtn, backgroundColor: 'var(--success)' }}>
-                        <Check size={14} /> Accept
+                        <Check size={14} /> {t('manageConsultations.accept')}
                       </Button>
                       <button onClick={() => setReschedulingId(appt.id)} style={{ ...styles.actionBtn, backgroundColor: 'var(--accent-lime)', color: 'var(--bg-darker)' }}>
-                        <CalendarClock size={14} /> Reschedule
+                        <CalendarClock size={14} /> {t('manageConsultations.reschedule')}
                       </button>
                       <button onClick={() => setRejectingId(appt.id)} style={{ ...styles.actionBtn, backgroundColor: 'var(--error)' }}>
-                        <X size={14} /> Reject
+                        <X size={14} /> {t('manageConsultations.reject')}
                       </button>
                     </>
                   )}
@@ -253,8 +255,8 @@ function statusColor(status) {
   return 'var(--text-muted)';
 }
 
-function statusLabel(status) {
-  if (status === 'RESCHEDULED') return 'Rescheduled';
+function statusLabel(status, t) {
+  if (status === 'RESCHEDULED') return t ? t('bookConsultation.rescheduled') : 'Rescheduled';
   return status;
 }
 

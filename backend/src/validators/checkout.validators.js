@@ -2,7 +2,7 @@ import { body } from 'express-validator';
 import { validateRequest } from '../middleware/validation.middleware.js';
 
 const validDeliveryMethods = ['STANDARD', 'EXPRESS', 'PICKUP'];
-const validPaymentMethods = ['CASH_ON_DELIVERY', 'MOBILE_MONEY', 'CARD', 'TEST_PAYMENT'];
+const validPaymentMethods = ['CASH_ON_DELIVERY', 'MOBILE_MONEY', 'CARD', 'AIRTEL_MONEY', 'TEST_PAYMENT'];
 
 export const checkoutValidation = [
   body('shippingFullName').trim().notEmpty().withMessage('shippingFullName is required'),

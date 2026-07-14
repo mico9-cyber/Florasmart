@@ -1,8 +1,10 @@
 ﻿import React from 'react';
 import { Sun, Droplet, AlertTriangle, Check, Sprout } from 'lucide-react';
 import ImageWithFallback from './ImageWithFallback';
+import { useTranslation } from 'react-i18next';
 
 export default function PlantCard({ plant, onSelect, isSelected }) {
+  const { t } = useTranslation();
   return (
     <div
       className="card"

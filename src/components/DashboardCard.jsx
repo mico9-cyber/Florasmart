@@ -17,7 +17,7 @@ export default function DashboardCard({ title, value, icon, trend, trendType = '
           {trend && (
             <span style={{
               ...styles.trend,
-              color: trendType === 'positive' ? 'var(--success)' : trendType === 'negative' ? 'var(--error)' : 'var(--warning)'
+              color: trendType === 'positive' ? 'var(--success)' : trendType === 'negative' ? 'var(--error)' : 'var(--text-muted)'
             }}>
               {trend}
             </span>

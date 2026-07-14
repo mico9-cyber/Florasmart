@@ -5,9 +5,10 @@ import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import ImageWithFallback from '../components/ImageWithFallback';
 import { useToast } from '../context/ToastContext';
-import { Sparkles, AlertCircle, ShoppingCart, Sun, Droplet, ShieldCheck, ShieldAlert, Eye, RefreshCw, History } from 'lucide-react';
+import { Sparkles, AlertCircle, ShoppingCart, Sun, Droplet, ShieldCheck, ShieldAlert, Eye, RefreshCw, History, MessageSquare } from 'lucide-react';
 import { formatCurrency } from '../utils/formatCurrency';
 import { recommendationService } from '../services/recommendationService';
+import { useTranslation } from 'react-i18next';
 
 function resolveObject(payload) {
   if (payload?.data && !Array.isArray(payload.data)) return payload.data;
@@ -24,6 +25,7 @@ export default function PlantRecommendationPage() {
   const { addToCart } = useContext(AppContext);
   const addToast = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [sunlight, setSunlight] = useState('');
   const [water, setWater] = useState('');
@@ -66,7 +68,7 @@ export default function PlantRecommendationPage() {
     if (!purpose) missing.push('Purpose');
 
     if (missing.length > 0) {
-      setValidationErr(`Please select: ${missing.join(', ')}.`);
+      setValidationErr(t('plantRecommendation.validation.selectCriteria', { criteria: missing.join(', ') }));
       return;
     }
 
@@ -110,9 +112,9 @@ export default function PlantRecommendationPage() {
     };
     const result = await addToCart(plant, 1);
     if (result.ok) {
-      addToast(`${recommendation.product.name} added to cart.`, 'success');
+      addToast(t('plantRecommendation.toast.addedToCart', { name: recommendation.product.name }), 'success');
     } else {
-      addToast(result.error || `Could not add ${recommendation.product.name} to cart.`, 'error');
+      addToast(result.error || t('plantRecommendation.toast.failedToAddToCart', { name: recommendation.product.name }), 'error');
     }
   };
 
@@ -129,7 +131,7 @@ export default function PlantRecommendationPage() {
       }, 1);
       if (result.ok) added += 1;
     }
-    addToast(`Added ${added} of ${matchedPlants.length} matched plants to your shopping cart.`, 'success');
+    addToast(t('plantRecommendation.toast.addedAllToCart', { added, total: matchedPlants.length }), 'success');
   };
 
   return (
@@ -138,9 +140,9 @@ export default function PlantRecommendationPage() {
         <div style={styles.iconContainer}>
           <Sparkles size={28} color="var(--accent-lime)" />
         </div>
-        <h1 style={styles.title}>AI Botanical Suitability Advisor</h1>
+        <h1 style={styles.title}>{t('plantRecommendation.title')}</h1>
         <p style={styles.subtitle}>
-          Run the backend recommendation engine against your light, care, and household conditions.
+          {t('plantRecommendation.subtitle')}
         </p>
       </div>
 
@@ -148,9 +150,9 @@ export default function PlantRecommendationPage() {
 
       <div style={styles.layout}>
         <div className="card" style={styles.scannerCard}>
-          <h3 style={styles.sectionTitle}>Suitability Diagnostics</h3>
+          <h3 style={styles.sectionTitle}>{t('plantRecommendation.suitabilityDiagnostics')}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 20px' }}>
-            Submit these criteria to the real backend recommendation engine.
+            {t('plantRecommendation.submitCriteriaHint')}
           </p>
 
           {validationErr && (
@@ -162,91 +164,91 @@ export default function PlantRecommendationPage() {
 
           <form onSubmit={handleScan}>
             <FormInput
-              label="Sunlight Exposure Levels"
+              label={t('plantRecommendation.sunlightExposureLevels')}
               id="sunlight"
               type="select"
               value={sunlight}
               onChange={(e) => setSunlight(e.target.value)}
               options={[
-                { value: '', label: 'Select lighting...' },
-                { value: 'full sun', label: 'Full Sun' },
-                { value: 'bright indirect light', label: 'Bright Indirect Light' },
-                { value: 'partial shade', label: 'Partial Shade' },
-                { value: 'low light', label: 'Low Light' },
+                { value: '', label: t('plantRecommendation.selectLighting') },
+                { value: 'full sun', label: t('plantRecommendation.fullSun') },
+                { value: 'bright indirect light', label: t('plantRecommendation.brightIndirectLight') },
+                { value: 'partial shade', label: t('plantRecommendation.partialShade') },
+                { value: 'low light', label: t('plantRecommendation.lowLight') },
               ]}
               required
             />
 
             <FormInput
-              label="Watering Dedication"
+              label={t('plantRecommendation.wateringDedication')}
               id="water"
               type="select"
               value={water}
               onChange={(e) => setWater(e.target.value)}
               options={[
-                { value: '', label: 'Select watering schedule...' },
-                { value: 'low', label: 'Low' },
-                { value: 'moderate', label: 'Moderate' },
-                { value: 'high', label: 'High' },
+                { value: '', label: t('plantRecommendation.selectWateringSchedule') },
+                { value: 'low', label: t('plantRecommendation.low') },
+                { value: 'moderate', label: t('plantRecommendation.moderate') },
+                { value: 'high', label: t('plantRecommendation.high') },
               ]}
               required
             />
 
             <FormInput
-              label="Household Pet Safety"
+              label={t('plantRecommendation.householdPetSafety')}
               id="hasPets"
               type="select"
               value={hasPets}
               onChange={(e) => setHasPets(e.target.value)}
               options={[
-                { value: '', label: 'Are pets present?' },
-                { value: 'yes', label: 'Yes, show only pet-safe options' },
-                { value: 'no', label: 'No, all plants are eligible' },
+                { value: '', label: t('plantRecommendation.arePetsPresent') },
+                { value: 'yes', label: t('plantRecommendation.yesShowPetSafe') },
+                { value: 'no', label: t('plantRecommendation.noAllPlantsEligible') },
               ]}
               required
             />
 
             <FormInput
-              label="Growth Strategy Purpose"
+              label={t('plantRecommendation.growthStrategyPurpose')}
               id="purpose"
               type="select"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
               options={[
-                { value: '', label: 'Select primary goal...' },
-                { value: 'air purification', label: 'Air Purification' },
-                { value: 'indoor beauty', label: 'Indoor Beauty' },
-                { value: 'flowering decoration', label: 'Flowering Decoration' },
-                { value: 'low maintenance', label: 'Low Maintenance' },
-                { value: 'outdoor garden', label: 'Outdoor Garden' },
+                { value: '', label: t('plantRecommendation.selectPrimaryGoal') },
+                { value: 'air purification', label: t('plantRecommendation.airPurification') },
+                { value: 'indoor beauty', label: t('plantRecommendation.indoorBeauty') },
+                { value: 'flowering decoration', label: t('plantRecommendation.floweringDecoration') },
+                { value: 'low maintenance', label: t('plantRecommendation.lowMaintenance') },
+                { value: 'outdoor garden', label: t('plantRecommendation.outdoorGarden') },
               ]}
               required
             />
 
             <FormInput
-              label="Experience Level"
+              label={t('plantRecommendation.experienceLevel')}
               id="experience"
               type="select"
               value={experienceLevel}
               onChange={(e) => setExperienceLevel(e.target.value)}
               options={[
-                { value: '', label: 'Optional' },
-                { value: 'beginner', label: 'Beginner' },
-                { value: 'intermediate', label: 'Intermediate' },
-                { value: 'expert', label: 'Expert' },
+                { value: '', label: t('plantRecommendation.optional') },
+                { value: 'beginner', label: t('plantRecommendation.beginner') },
+                { value: 'intermediate', label: t('plantRecommendation.intermediate') },
+                { value: 'expert', label: t('plantRecommendation.expert') },
               ]}
             />
 
             <FormInput
-              label="Space Type"
+              label={t('plantRecommendation.spaceType')}
               id="space-type"
               value={spaceType}
               onChange={(e) => setSpaceType(e.target.value)}
-              placeholder="Optional, e.g. balcony garden"
+              placeholder={t('plantRecommendation.spaceTypePlaceholder')}
             />
 
             <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>
-              {loading ? <><RefreshCw size={16} className="pulse-light" /><span>Processing backend matches...</span></> : 'Process Matching Matrices'}
+              {loading ? <><RefreshCw size={16} className="pulse-light" /><span>{t('plantRecommendation.processingBackendMatches')}</span></> : t('plantRecommendation.processMatchingMatrices')}
             </Button>
           </form>
         </div>
@@ -257,15 +259,15 @@ export default function PlantRecommendationPage() {
               <div style={styles.resultsHeader}>
                 <div>
                   <h3 style={{ margin: 0, color: 'var(--text-white)' }}>
-                    {requestMeta?.matchesFound || matchedPlants.length} Matches Found
+                    {t('plantRecommendation.matchesFound', { count: requestMeta?.matchesFound || matchedPlants.length })}
                   </h3>
                   <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {requestMeta?.requestId ? `Backend request ${requestMeta.requestId}` : 'Live backend recommendations'}
+                    {requestMeta?.requestId ? t('plantRecommendation.backendRequest', { requestId: requestMeta.requestId }) : t('plantRecommendation.liveBackendRecommendations')}
                   </p>
                 </div>
                 {matchedPlants.length > 1 && (
                   <Button onClick={handleAddAllToCart} variant="secondary" icon={<ShoppingCart size={16} />}>
-                    Add All to Cart
+                    {t('plantRecommendation.addAllToCart')}
                   </Button>
                 )}
               </div>
@@ -295,12 +297,12 @@ export default function PlantRecommendationPage() {
                       <div style={styles.resultDetails}>
                         <div style={styles.detailItem}>
                           <Sun size={13} color="var(--btn-yellow)" />
-                          <span style={styles.detailLabel}>Sunlight:</span>
+                          <span style={styles.detailLabel}>{t('plantRecommendation.sunlightLabel')}</span>
                           <span style={styles.detailValue}>{recommendation.product.lightRequirement || 'N/A'}</span>
                         </div>
                         <div style={styles.detailItem}>
                           <Droplet size={13} color="#38BDF8" />
-                          <span style={styles.detailLabel}>Watering:</span>
+                          <span style={styles.detailLabel}>{t('plantRecommendation.wateringLabel')}</span>
                           <span style={styles.detailValue}>{recommendation.product.waterRequirement || 'N/A'}</span>
                         </div>
                         <div style={styles.detailItem}>
@@ -309,19 +311,19 @@ export default function PlantRecommendationPage() {
                           ) : (
                             <ShieldCheck size={13} color="var(--success)" />
                           )}
-                          <span style={styles.detailLabel}>Score:</span>
+                          <span style={styles.detailLabel}>{t('plantRecommendation.scoreLabel')}</span>
                           <span style={styles.detailValue}>{recommendation.score}</span>
                         </div>
                       </div>
 
                       <div style={styles.reasonBlock}>
-                        <strong>Why it matched:</strong> {(recommendation.reasons || []).join(' • ') || 'General suitability'}
+                        <strong>{t('plantRecommendation.whyItMatched')}</strong> {(recommendation.reasons || []).join(' • ') || t('plantRecommendation.generalSuitability')}
                       </div>
                       {(recommendation.careNotes || []).length > 0 && (
-                        <div style={styles.reasonBlock}><strong>Care notes:</strong> {recommendation.careNotes.join(' • ')}</div>
+                        <div style={styles.reasonBlock}>                        <strong>{t('plantRecommendation.careNotesLabel')}</strong> {recommendation.careNotes.join(' • ')}</div>
                       )}
                       {(recommendation.warnings || []).length > 0 && (
-                        <div style={{ ...styles.reasonBlock, borderColor: 'rgba(245, 158, 11, 0.35)' }}><strong>Warnings:</strong> {recommendation.warnings.join(' • ')}</div>
+                        <div style={{ ...styles.reasonBlock, borderColor: 'rgba(245, 158, 11, 0.35)' }}>                        <strong>{t('plantRecommendation.warningsLabel')}</strong> {recommendation.warnings.join(' • ')}</div>
                       )}
 
                       <div style={styles.resultActions}>
@@ -331,7 +333,7 @@ export default function PlantRecommendationPage() {
                           onClick={() => navigate(`/catalog/${recommendation.product.id}`)}
                           style={{ flex: 1, fontSize: '13px', padding: '8px 12px' }}
                         >
-                          Details
+                          {t('plantRecommendation.details')}
                         </Button>
                         <Button
                           variant="lime"
@@ -339,7 +341,15 @@ export default function PlantRecommendationPage() {
                           onClick={() => handleAddToCart(recommendation)}
                           style={{ flex: 1, fontSize: '13px', padding: '8px 12px' }}
                         >
-                          Add to Cart
+                          {t('shop.addToCart')}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          icon={<MessageSquare size={14} />}
+                          onClick={() => navigate(`/chatbot?q=How do I care for my ${encodeURIComponent(recommendation.product.name)}`) }
+                          style={{ flex: 1, fontSize: '13px', padding: '8px 12px' }}
+                        >
+                          {t('plantRecommendation.askCareBot')}
                         </Button>
                       </div>
                     </div>
@@ -348,9 +358,9 @@ export default function PlantRecommendationPage() {
               ) : (
                 <div className="card" style={styles.noMatchesCard}>
                   <AlertCircle size={36} color="var(--warning)" />
-                  <h4 style={{ color: 'var(--text-white)', margin: '12px 0 4px' }}>No plants found</h4>
+                  <h4 style={{ color: 'var(--text-white)', margin: '12px 0 4px' }}>{t('plantRecommendation.noPlantsFound')}</h4>
                   <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '300px', margin: '0 auto' }}>
-                    The backend did not return any recommendation rows for this criteria set.
+                    {t('plantRecommendation.noResultsBackend')}
                   </p>
                 </div>
               )}
@@ -359,7 +369,7 @@ export default function PlantRecommendationPage() {
             <div className="card" style={styles.emptyResults}>
               <Sparkles size={48} color="var(--border-green)" />
               <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>
-                Fill out the questionnaire to call the backend recommendation engine.
+                {t('plantRecommendation.fillQuestionnaireHint')}
               </h4>
             </div>
           )}
@@ -367,29 +377,29 @@ export default function PlantRecommendationPage() {
           <div className="card" style={{ marginTop: '24px', padding: '20px' }}>
             <div style={styles.historyHeader}>
               <div>
-                <h3 style={{ margin: 0, color: 'var(--text-white)' }}>Recommendation History</h3>
-                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '13px' }}>Recent backend recommendation requests</p>
+                <h3 style={{ margin: 0, color: 'var(--text-white)' }}>{t('plantRecommendation.recommendationHistory')}</h3>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '13px' }}>{t('plantRecommendation.recentBackendRequests')}</p>
               </div>
               <Button variant="secondary" onClick={loadHistory} icon={<History size={16} />}>
-                Refresh
+                {t('plantRecommendation.refresh')}
               </Button>
             </div>
             {historyLoading ? (
-              <div style={styles.historyEmpty}>Loading recommendation history...</div>
+              <div style={styles.historyEmpty}>{t('plantRecommendation.loadingHistory')}</div>
             ) : history.length > 0 ? (
               <div style={styles.historyList}>
                 {history.map((item) => (
                   <div key={item.id} style={styles.historyItem}>
                     <div>
                       <div style={{ color: 'var(--text-white)', fontWeight: 700 }}>{String(item.type || '').replace(/_/g, ' ')}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : 'Unknown time'}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : t('plantRecommendation.unknownTime')}</div>
                     </div>
-                    <div style={{ color: 'var(--accent-lime)', fontSize: '12px' }}>{(item.results || []).length} results</div>
+                    <div style={{ color: 'var(--accent-lime)', fontSize: '12px' }}>{t('plantRecommendation.resultsCount', { count: (item.results || []).length })}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={styles.historyEmpty}>No recommendation history yet.</div>
+              <div style={styles.historyEmpty}>{t('plantRecommendation.noHistoryYet')}</div>
             )}
           </div>
         </div>

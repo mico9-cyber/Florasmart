@@ -1,12 +1,14 @@
 ﻿import React, { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppContext } from '../context/AppData';
 import { notificationService } from '../services/notificationService';
-import { ShoppingCart, Leaf, User, Award, LogOut, LogIn, UserPlus, Menu, Sun, Moon, Bell } from 'lucide-react';
+import { ShoppingCart, Leaf, User, Award, LogOut, LogIn, UserPlus, Menu, Sun, Moon, Bell, Globe } from 'lucide-react';
 import { normalizeRole, getDashboardRoute } from '../config/navigation';
 
 export default function Navbar({ onToggleSidebar }) {
   const { user, cart, handleLogout, theme, toggleTheme } = useContext(AppContext);
+  const { i18n, t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const role = normalizeRole(user.role);
@@ -15,6 +17,11 @@ export default function Navbar({ onToggleSidebar }) {
   const dashboardPath = getDashboardRoute(role);
   const [notifCount, setNotifCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const switchLang = (lng) => {
+    i18n.changeLanguage(lng);
+    localStorage.setItem('flora_lang', lng);
+  };
 
   useEffect(() => {
     if (!isLoggedIn) { setNotifCount(0); return; }
@@ -100,6 +107,19 @@ export default function Navbar({ onToggleSidebar }) {
           </button>
 
           <div className={`nav-actions ${menuOpen ? 'nav-actions--open' : ''}`} style={styles.actions}>
+            <div style={styles.langSwitcher}>
+              <button
+                onClick={() => switchLang('en')}
+                style={{ ...styles.langBtn, ...(i18n.language === 'en' ? styles.langBtnActive : {}) }}
+                title="English"
+              >EN</button>
+              <button
+                onClick={() => switchLang('rw')}
+                style={{ ...styles.langBtn, ...(i18n.language === 'rw' ? styles.langBtnActive : {}) }}
+                title="Kinyarwanda"
+              >RW</button>
+            </div>
+
             <button
               onClick={toggleTheme}
               style={styles.iconBtn}
@@ -110,12 +130,12 @@ export default function Navbar({ onToggleSidebar }) {
 
             {isLoggedIn && (
               <>
-                <Link to={dashboardPath} style={styles.dashboardLink} title="Dashboard">
+                <Link to={dashboardPath} style={styles.dashboardLink} title={t('nav.dashboard')}>
                   <Award size={16} />
-                  <span className="desktop-only">Dashboard</span>
+                  <span className="desktop-only">{t('nav.dashboard')}</span>
                 </Link>
 
-                <Link to="/notifications" style={styles.iconBtn} title="Notifications">
+                <Link to="/notifications" style={styles.iconBtn} title={t('nav.notifications')}>
                   <Bell size={18} />
                   {notifCount > 0 && (
                     <span style={styles.cartBadge}>{notifCount > 99 ? '99+' : notifCount}</span>
@@ -123,7 +143,7 @@ export default function Navbar({ onToggleSidebar }) {
                 </Link>
 
                 {role === 'CUSTOMER' && (
-                  <Link to="/cart" style={styles.iconBtn} title="Cart">
+                  <Link to="/cart" style={styles.iconBtn} title={t('nav.cart')}>
                     <ShoppingCart size={20} color="var(--text-light)" />
                     {cartCount > 0 && (
                       <span style={styles.cartBadge}>{cartCount}</span>
@@ -131,11 +151,11 @@ export default function Navbar({ onToggleSidebar }) {
                   </Link>
                 )}
 
-                <Link to="/profile" style={styles.iconBtn} title="Profile">
+                <Link to="/profile" style={styles.iconBtn} title={t('nav.profile')}>
                   <User size={18} />
                 </Link>
 
-                <button onClick={handleLogoutClick} style={styles.iconBtn} title="Logout">
+                <button onClick={handleLogoutClick} style={styles.iconBtn} title={t('nav.logout')}>
                   <LogOut size={18} />
                 </button>
               </>
@@ -145,11 +165,11 @@ export default function Navbar({ onToggleSidebar }) {
               <>
                 <Link to="/login" style={styles.loginBtn}>
                   <LogIn size={16} />
-                  <span className="desktop-only">Login</span>
+                  <span className="desktop-only">{t('nav.login')}</span>
                 </Link>
                 <Link to="/register" style={styles.registerBtn}>
                   <UserPlus size={16} />
-                  <span className="desktop-only">Register</span>
+                  <span className="desktop-only">{t('nav.register')}</span>
                 </Link>
               </>
             )}
@@ -272,5 +292,27 @@ const styles = {
     fontSize: '13px',
     fontWeight: '600',
     transition: 'var(--transition)',
+  },
+  langSwitcher: {
+    display: 'flex',
+    alignItems: 'center',
+    border: '1px solid var(--icon-btn-border)',
+    borderRadius: '6px',
+    overflow: 'hidden',
+  },
+  langBtn: {
+    padding: '4px 8px',
+    fontSize: '11px',
+    fontWeight: '700',
+    border: 'none',
+    background: 'transparent',
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    transition: 'var(--transition)',
+    letterSpacing: '0.5px',
+  },
+  langBtnActive: {
+    backgroundColor: 'var(--accent-lime)',
+    color: 'var(--bg-darker)',
   },
 };

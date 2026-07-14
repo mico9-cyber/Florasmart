@@ -355,14 +355,40 @@ model Order {
   user            User             @relation(fields: [userId], references: [id])
   items           OrderItem[]
   statusHistory   OrderStatusHistory[]
-  delivery        Delivery?
+            delivery        Delivery?
+            payments        Payment[]
 
   @@index([orderNumber])
   @@index([userId])
   @@index([status])
-  @@index([paymentStatus])
+          @@index([paymentStatus])
   @@index([createdAt])
   @@map("orders")
+}
+
+model Payment {
+  id              String    @id @default(uuid()) @db.VarChar(36)
+  transactionId   String    @unique @db.VarChar(100)
+  orderId         String?   @db.VarChar(36)
+  customerPhone   String    @db.VarChar(30)
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String    @default("RWF") @db.VarChar(3)
+  paymentMethod   String    @default("AIRTEL_MONEY") @db.VarChar(30)
+  status          String    @default("PENDING") @db.VarChar(20)
+  airtelReference String?   @db.VarChar(100)
+  airtelMessage   String?   @db.VarChar(500)
+  checkoutData    Json?
+  callbackData    Json?
+  initiatedAt     DateTime  @default(now())
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  order           Order?    @relation(fields: [orderId], references: [id])
+
+  @@index([transactionId])
+  @@index([orderId])
+  @@index([status])
+  @@map("payments")
 }
 
 model Delivery {

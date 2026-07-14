@@ -7,8 +7,10 @@ import FormInput from '../components/FormInput';
 import { Truck, MapPin, Navigation, FileText, Download } from 'lucide-react';
 import Modal from '../components/Modal';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
+import { useTranslation } from 'react-i18next';
 
 export default function DeliveryPage() {
+  const { t } = useTranslation();
   const { orders, updateOrderStatus } = useContext(AppContext);
   
   // Selected Order logic
@@ -48,15 +50,15 @@ export default function DeliveryPage() {
         {/* Header Row */}
         <div style={styles.headerRow}>
           <div>
-            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Delivery & Logistics Panel</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Monitor courier dispatch queues, route coordinates, and update delivery completions.</p>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('deliveryPage.title')}</h2>
+            <p style={{ color: 'var(--text-muted)' }}>{t('deliveryPage.subtitle')}</p>
           </div>
           <div style={styles.actionButtons}>
             <Button variant="secondary" onClick={handleExportPDF} icon={<FileText size={16} />}>
-              Export Logistics PDF
+              {t('deliveryPage.exportLogisticsPdf')}
             </Button>
             <Button variant="secondary" onClick={handleExportExcel} icon={<Download size={16} />}>
-              Export Routes Sheet
+              {t('deliveryPage.exportRoutesSheet')}
             </Button>
           </div>
         </div>
@@ -64,38 +66,38 @@ export default function DeliveryPage() {
         {/* Vital logs statistics */}
         <div className="grid-cols-3" style={{ margin: '32px 0' }}>
           <DashboardCard
-            title="Total Deliveries"
+            title={t('deliveryPage.totalDeliveries')}
             value={orders.length}
             icon={<Truck size={20} color="var(--accent-lime)" />}
-            description="Historical logistics entries"
+            description={t('deliveryPage.historicalLogisticsEntries')}
           />
           <DashboardCard
-            title="Out for Delivery"
+            title={t('deliveryPage.outForDelivery')}
             value={orders.filter(o => o.status === 'Out for Delivery').length}
             icon={<Navigation size={20} color="var(--accent-lime)" />}
-            description="Active vehicles on street routes"
+            description={t('deliveryPage.activeVehiclesOnStreetRoutes')}
           />
           <DashboardCard
-            title="Completed Shipments"
+            title={t('deliveryPage.completedShipments')}
             value={orders.filter(o => o.status === 'Delivered').length}
             icon={<MapPin size={20} color="var(--accent-lime)" />}
-            description="Delivered to doorstep coordinates"
+            description={t('deliveryPage.deliveredToDoorstepCoordinates')}
           />
         </div>
 
         <div style={styles.sectionsGrid}>
           {/* Active Deliveries Ledger */}
           <div className="card" style={{ flex: 1.5, minWidth: '350px' }}>
-            <h3 style={styles.sectionTitle}>Logistics Dispatch Queue</h3>
+            <h3 style={styles.sectionTitle}>{t('deliveryPage.logisticsDispatchQueue')}</h3>
             <div className="table-container" style={{ marginTop: '16px' }}>
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Order ID</th>
-                    <th>Destination Coordinates</th>
-                    <th>Courier Method</th>
-                    <th>Shipment Status</th>
-                    <th>Logistics Control</th>
+                    <th>{t('deliveryPage.orderId')}</th>
+                    <th>{t('deliveryPage.destinationCoordinates')}</th>
+                    <th>{t('deliveryPage.courierMethod')}</th>
+                    <th>{t('deliveryPage.shipmentStatus')}</th>
+                    <th>{t('deliveryPage.logisticsControl')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -118,7 +120,7 @@ export default function DeliveryPage() {
                           style={{ padding: '6px 12px', fontSize: '12px' }}
                           onClick={() => handleOpenStatusModal(order)}
                         >
-                          Modify Stage
+                          {t('deliveryPage.modifyStage')}
                         </Button>
                       </td>
                     </tr>
@@ -130,9 +132,9 @@ export default function DeliveryPage() {
 
           {/* Interactive Routing Blueprint Graphics */}
           <div className="card" style={{ flex: 1, minWidth: '300px' }}>
-            <h3 style={styles.sectionTitle}>Global Route Trace</h3>
+            <h3 style={styles.sectionTitle}>{t('deliveryPage.globalRouteTrace')}</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 16px' }}>
-              Real-time green EV dispatch routes map coordinates.
+              {t('deliveryPage.realTimeRouteMap')}
             </p>
             <div style={styles.mapArea}>
               <svg viewBox="0 0 200 180" style={styles.mapSvg}>
@@ -148,7 +150,7 @@ export default function DeliveryPage() {
                 {/* Warehouse Location node */}
                 <circle cx="100" cy="90" r="8" fill="var(--accent-lime)" />
                 <text x="100" y="80" fill="var(--text-white)" fontSize="8" fontWeight="bold" textAnchor="middle">
-                  HQ GreenHouse
+                  {t('deliveryPage.hqGreenHouse')}
                 </text>
 
                 {/* Delivery coordinates nodes */}
@@ -163,7 +165,7 @@ export default function DeliveryPage() {
               </svg>
               <div style={styles.mapMeta}>
                 <Navigation size={12} color="var(--accent-lime)" />
-                <span>EV Dispatch Route Active</span>
+                <span>{t('deliveryPage.evDispatchRouteActive')}</span>
               </div>
             </div>
           </div>

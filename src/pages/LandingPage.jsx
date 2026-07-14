@@ -1,9 +1,11 @@
 ﻿import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Sparkles, Sprout, Flower2, ShieldCheck, Mail, CheckCircle2 } from 'lucide-react';
 import Button from '../components/Button';
 
 export default function LandingPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -66,15 +68,15 @@ export default function LandingPage() {
         <div className="container lp-hero-container" style={styles.heroContainer}>
           <div className="lp-hero-text" style={styles.heroText}>
             <h1 className="lp-hero-title" style={styles.heroTitle}>
-              Grow Smarter, <br />
-              <span style={{ color: 'var(--accent-lime)' }}>Bloom Brighter.</span>
+              {t('landing.heroTitle1')} <br />
+              <span style={{ color: 'var(--accent-lime)' }}>{t('landing.heroTitle2')}</span>
             </h1>
             <div className="lp-hero-actions" style={styles.heroActions}>
               <Button onClick={() => navigate('/register')} variant="primary" icon={<ArrowRight size={18} />}>
-                Get Started Free
+                {t('landing.getStarted')}
               </Button>
-              <Button onClick={() => navigate('/catalog')} variant="secondary">
-                Browse Shop
+              <Button onClick={() => navigate('/login')} variant="secondary">
+                {t('landing.browseShop')}
               </Button>
             </div>
           </div>
@@ -89,8 +91,8 @@ export default function LandingPage() {
             <div className="lp-hero-floating pulse-light" style={styles.heroFloatingCard}>
               <Sprout size={24} color="var(--accent-lime)" />
               <div>
-                <h4 style={{ margin: 0, fontSize: '14px' }}>AI Recommended</h4>
-                <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)' }}>Peace Lily: Match Found</p>
+                <h4 style={{ margin: 0, fontSize: '14px' }}>{t('landing.aiRecommended')}</h4>
+                <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)' }}>{t('landing.matchFound')}</p>
               </div>
             </div>
           </div>
@@ -102,19 +104,19 @@ export default function LandingPage() {
         <div className="container lp-stats-container" style={styles.statsContainer}>
           <div style={styles.statItem}>
             <h3 className="lp-stat-number" style={styles.statNumber}>99.4%</h3>
-            <span style={styles.statLabel}>AI Matching Accuracy</span>
+            <span style={styles.statLabel}>{t('landing.statsAccuracy')}</span>
           </div>
           <div style={styles.statItem}>
             <h3 className="lp-stat-number" style={styles.statNumber}>15K+</h3>
-            <span style={styles.statLabel}>Gardens Guided</span>
+            <span style={styles.statLabel}>{t('landing.statsGardens')}</span>
           </div>
           <div style={styles.statItem}>
             <h3 className="lp-stat-number" style={styles.statNumber}>250+</h3>
-            <span style={styles.statLabel}>Stems & Vases Calibrated</span>
+            <span style={styles.statLabel}>{t('landing.statsStems')}</span>
           </div>
           <div style={styles.statItem}>
             <h3 className="lp-stat-number" style={styles.statNumber}>24/7</h3>
-            <span style={styles.statLabel}>Autonomous Care Diagnostics</span>
+            <span style={styles.statLabel}>{t('landing.statsCare')}</span>
           </div>
         </div>
       </section>
@@ -122,9 +124,9 @@ export default function LandingPage() {
       {/* Feature Section with Green/White Contrast */}
       <section className="lp-features-section" style={styles.featuresSection}>
         <div className="container">
-          <h2 className="lp-section-title" style={styles.sectionTitle}>Smart Garden Core Systems</h2>
+          <h2 className="lp-section-title" style={styles.sectionTitle}>{t('landing.featuresTitle')}</h2>
           <p style={styles.sectionSubtitle}>
-            Our unified platform is tailored for customers, professional florists, garden planners, and store managers.
+            {t('landing.featuresSubtitle')}
           </p>
 
           <div className="grid-cols-3" style={{ marginTop: '48px' }}>
@@ -132,12 +134,12 @@ export default function LandingPage() {
               <div style={styles.featureIconContainer}>
                 <Sparkles size={24} color="var(--accent-lime)" />
               </div>
-              <h3 style={styles.featureTitle}>AI Recommendation Engine</h3>
+              <h3 style={styles.featureTitle}>{t('landing.feature1Title')}</h3>
               <p style={styles.featureText}>
-                Analyze your environment's sunlight, watering capacities, and safety profile to receive customized, toxicity-vetted plant matches.
+                {t('landing.feature1Text')}
               </p>
               <Link to="/recommendations" style={styles.featureLink}>
-                Learn More <ArrowRight size={14} />
+                {t('landing.feature1Link')} <ArrowRight size={14} />
               </Link>
             </div>
 
@@ -145,12 +147,12 @@ export default function LandingPage() {
               <div style={styles.featureIconContainer}>
                 <Flower2 size={24} color="var(--accent-lime)" />
               </div>
-              <h3 style={styles.featureTitle}>Vase & Floral Matcher</h3>
+              <h3 style={styles.featureTitle}>{t('landing.feature2Title')}</h3>
               <p style={styles.featureText}>
-                Select bouquets and input vase sizes. Our system calculates structural fits and matching arrangements to keep flowers fresh.
+                {t('landing.feature2Text')}
               </p>
               <Link to="/vase-matching" style={styles.featureLink}>
-                Learn More <ArrowRight size={14} />
+                {t('landing.feature2Link')} <ArrowRight size={14} />
               </Link>
             </div>
 
@@ -158,12 +160,12 @@ export default function LandingPage() {
               <div style={styles.featureIconContainer}>
                 <Sprout size={24} color="var(--accent-lime)" />
               </div>
-              <h3 style={styles.featureTitle}>3D Garden Grid Planner</h3>
+              <h3 style={styles.featureTitle}>{t('landing.feature3Title')}</h3>
               <p style={styles.featureText}>
-                Plan your landscaping layouts interactively. Map coordinates, track planting records, and monitor growth metrics in real-time.
+                {t('landing.feature3Text')}
               </p>
               <Link to="/garden-planner" style={styles.featureLink}>
-                Learn More <ArrowRight size={14} />
+                {t('landing.feature3Link')} <ArrowRight size={14} />
               </Link>
             </div>
           </div>
@@ -174,40 +176,40 @@ export default function LandingPage() {
       <section className="lp-contrast-section" style={styles.whiteContrastSection}>
         <div className="container lp-contrast-container" style={styles.contrastContainer}>
           <div style={styles.contrastTextCol}>
-            <h2 className="lp-contrast-title" style={styles.contrastTitle}>Designed for Both Enthusiasts and Experts</h2>
+            <h2 className="lp-contrast-title" style={styles.contrastTitle}>{t('landing.contrastTitle')}</h2>
             <p style={styles.contrastText}>
-              Whether you are looking to purchase your first houseplant, build custom floral displays for events, manage physical inventory in greenhouses, or track delivery vehicles out on the road, FloraSmart provides dedicated dashboard workspaces for every role.
+              {t('landing.contrastText')}
             </p>
             <div className="lp-role-grid" style={styles.roleGrid}>
               <div style={styles.roleItem}>
                 <CheckCircle2 size={18} color="var(--accent-lime)" />
-                <span>Florist Order Handlers</span>
+                <span>{t('landing.role1')}</span>
               </div>
               <div style={styles.roleItem}>
                 <CheckCircle2 size={18} color="var(--accent-lime)" />
-                <span>Landscaping Gardeners</span>
+                <span>{t('landing.role2')}</span>
               </div>
               <div style={styles.roleItem}>
                 <CheckCircle2 size={18} color="var(--accent-lime)" />
-                <span>Global Store Administrators</span>
+                <span>{t('landing.role3')}</span>
               </div>
               <div style={styles.roleItem}>
                 <CheckCircle2 size={18} color="var(--accent-lime)" />
-                <span>E-commerce Customers</span>
+                <span>{t('landing.role4')}</span>
               </div>
             </div>
             <div style={{ marginTop: '24px' }}>
               <Button onClick={() => navigate('/login')} variant="lime">
-                Access Dashboard
+                {t('landing.accessDashboard')}
               </Button>
             </div>
           </div>
           <div className="lp-contrast-card" style={styles.contrastImageCol}>
             <div style={styles.contrastCard}>
               <ShieldCheck size={48} color="var(--accent-lime)" />
-              <h3 style={{ margin: '16px 0 8px', color: 'var(--text-white)' }}>Enterprise Grade Security</h3>
+              <h3 style={{ margin: '16px 0 8px', color: 'var(--text-white)' }}>{t('landing.securityTitle')}</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.5' }}>
-                All role permissions are governed by role-based access controls (RBAC) and monitored through real-time security audit trails.
+                {t('landing.securityText')}
               </p>
             </div>
           </div>
@@ -218,22 +220,22 @@ export default function LandingPage() {
       <section className="lp-newsletter-section" style={styles.newsletterSection}>
         <div className="container" style={styles.newsletterContainer}>
           <div style={{ maxWidth: '600px', margin: '0 auto', textAlign: 'center' }}>
-            <h2 className="lp-newsletter-title" style={styles.newsletterTitle}>Get Botanical Insights in Your Inbox</h2>
+            <h2 className="lp-newsletter-title" style={styles.newsletterTitle}>{t('landing.newsletterTitle')}</h2>
             <p style={styles.newsletterSubtitle}>
-              Subscribe to receive weekly care sheets, early access florist drops, and intelligence updates on plant health.
+              {t('landing.newsletterSubtitle')}
             </p>
 
             {success ? (
               <div style={styles.successContainer}>
                 <CheckCircle2 size={24} color="var(--success)" />
-                <span>Success! You have been subscribed to our mailing list.</span>
+                <span>{t('landing.subscribeSuccess')}</span>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="lp-newsletter-form" style={styles.form}>
                 <div style={{ flex: 1 }}>
                   <input
                     type="email"
-                    placeholder="Enter your email address"
+                    placeholder={t('landing.emailPlaceholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     style={{
@@ -245,7 +247,7 @@ export default function LandingPage() {
                 </div>
                 <button type="submit" className="btn btn-primary" style={styles.subscribeBtn}>
                   <Mail size={16} />
-                  <span>Subscribe</span>
+                  <span>{t('landing.subscribe')}</span>
                 </button>
               </form>
             )}

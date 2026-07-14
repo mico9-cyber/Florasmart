@@ -159,7 +159,7 @@ const styles = {
     textTransform: 'uppercase',
   },
   pulsePoint: {
-    animation: 'pulsePointGlow 2s infinite',
+    animation: 'pulse-glow 2s infinite ease-in-out',
   }
 };
 

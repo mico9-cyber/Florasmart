@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const PEX = 'https://images.pexels.com/photos/';
 const pex = (id) => `${PEX}${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=600&h=600&fit=crop`;
@@ -16,15 +17,16 @@ const FALLBACKS = {
   default: pex(10176334),
 };
 
-function getFallbackUrl(category) {
+function getFallbackUrl(category, t) {
   return FALLBACKS[category] || FALLBACKS.default;
 }
 
 export default function ImageWithFallback({ src, alt, category, style, imgStyle, fallbackSrc }) {
+  const { t } = useTranslation();
   const [useFallback, setUseFallback] = useState(false);
   const [fallbackFailed, setFallbackFailed] = useState(false);
 
-  const currentSrc = useFallback ? (fallbackSrc || getFallbackUrl(category)) : src;
+  const currentSrc = useFallback ? (fallbackSrc || getFallbackUrl(category, t)) : src;
 
   if (!src || (useFallback && fallbackFailed)) {
     return (

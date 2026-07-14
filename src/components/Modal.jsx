@@ -1,7 +1,9 @@
 ﻿import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Modal({ isOpen, onClose, title, children }) {
+  const { t } = useTranslation();
   // Prevent body scrolling when modal is open
   useEffect(() => {
     if (isOpen) {

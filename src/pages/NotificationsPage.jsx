@@ -6,15 +6,16 @@ import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import { useToast } from '../context/ToastContext';
 import { Bell, CheckCheck, CheckCircle2, Trash2, Settings, RefreshCw, AlertCircle, Mail, MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-function formatTime(d) {
+function formatTime(d, t) {
   if (!d) return '';
   const date = new Date(d);
   const now = new Date();
   const diff = now - date;
-  if (diff < 60000) return 'Just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  if (diff < 60000) return t('notificationsPage.justNow');
+  if (diff < 3600000) return t('notificationsPage.minutesAgo', { minutes: Math.floor(diff / 60000) });
+  if (diff < 86400000) return t('notificationsPage.hoursAgo', { hours: Math.floor(diff / 3600000) });
   return date.toLocaleDateString();
 }
 
@@ -26,6 +27,7 @@ function channelIcon(channel) {
 export default function NotificationsPage() {
   const { user } = useContext(AppContext);
   const addToast = useToast();
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,7 +51,7 @@ export default function NotificationsPage() {
         : payload?.notifications || [];
       setNotifications(items);
     } catch {
-      setError('Failed to load notifications.');
+      setError(t('notificationsPage.toast.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -80,9 +82,9 @@ export default function NotificationsPage() {
     try {
       await notificationService.markRead(id);
       setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, readAt: new Date().toISOString() } : n));
-      addToast('Notification marked as read.', 'success');
+      addToast(t('notificationsPage.toast.markedAsRead'), 'success');
     } catch {
-      addToast('Failed to mark notification as read.', 'error');
+      addToast(t('notificationsPage.toast.failedToMarkRead'), 'error');
     }
   };
 
@@ -90,9 +92,9 @@ export default function NotificationsPage() {
     try {
       await notificationService.markAllRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
-      addToast('All notifications marked as read.', 'success');
+      addToast(t('notificationsPage.toast.allMarkedRead'), 'success');
     } catch {
-      addToast('Failed to mark all notifications as read.', 'error');
+      addToast(t('notificationsPage.toast.failedToMarkAllRead'), 'error');
     }
   };
 
@@ -100,9 +102,9 @@ export default function NotificationsPage() {
     try {
       await notificationService.updatePreferences(preferences);
       setPrefModal(false);
-      addToast('Notification preferences saved.', 'success');
+      addToast(t('notificationsPage.toast.preferencesSaved'), 'success');
     } catch {
-      addToast('Failed to save notification preferences.', 'error');
+      addToast(t('notificationsPage.toast.failedToSavePreferences'), 'error');
     }
   };
 
@@ -114,9 +116,9 @@ export default function NotificationsPage() {
       setAnnounceTitle('');
       setAnnounceBody('');
       setAnnounceModal(false);
-      addToast('Announcement sent successfully.', 'success');
+      addToast(t('notificationsPage.toast.announcementSent'), 'success');
     } catch {
-      addToast('Failed to send announcement.', 'error');
+      addToast(t('notificationsPage.toast.failedToSendAnnouncement'), 'error');
     } finally {
       setSending(false);
     }
@@ -132,29 +134,29 @@ export default function NotificationsPage() {
     <div className="dashboard-content">
       <div style={styles.header}>
         <div>
-          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Notifications</h2>
-          <p style={{ color: 'var(--text-muted)' }}>{unread > 0 ? `${unread} unread notifications` : 'All caught up'}</p>
+          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('notifications.title')}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>{unread > 0 ? t('notificationsPage.unreadCount', { count: unread }) : t('notificationsPage.allCaughtUp')}</p>
         </div>
         <div style={styles.actions}>
           {unread > 0 && (
             <Button variant="secondary" onClick={handleMarkAllRead} style={{ padding: '6px 12px', fontSize: '13px' }}>
-              <CheckCheck size={16} /> Mark All Read
+              <CheckCheck size={16} /> {t('notificationsPage.markAllRead')}
             </Button>
           )}
           <Button variant="secondary" onClick={loadNotifications} style={{ padding: '6px 12px', fontSize: '13px' }}>
-            <RefreshCw size={16} /> Refresh
+            <RefreshCw size={16} /> {t('notificationsPage.refresh')}
           </Button>
           <Button variant="secondary" onClick={() => { loadPreferences(); setPrefModal(true); }} style={{ padding: '6px 12px', fontSize: '13px' }}>
-            <Settings size={16} /> Preferences
+            <Settings size={16} /> {t('notificationsPage.preferences')}
           </Button>
           {user?.role === 'admin' && (
             <Button variant="lime" onClick={() => setAnnounceModal(true)} style={{ padding: '6px 12px', fontSize: '13px' }}>
-              <Bell size={16} /> Announce
+              <Bell size={16} /> {t('notificationsPage.announce')}
             </Button>
           )}
           {user?.role === 'admin' && (
             <Button variant="secondary" onClick={() => { loadEmailLogs(); setShowEmailLogs(true); }} style={{ padding: '6px 12px', fontSize: '13px' }}>
-              <Mail size={16} /> Email Logs
+              <Mail size={16} /> {t('notificationsPage.emailLogs')}
             </Button>
           )}
         </div>
@@ -168,11 +170,11 @@ export default function NotificationsPage() {
       )}
 
       {loading ? (
-        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '48px' }}>Loading notifications...</p>
+        <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '48px' }}>{t('notificationsPage.loadingNotifications')}</p>
       ) : notifications.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
           <Bell size={48} color="var(--border-green)" />
-          <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>No notifications yet</h4>
+          <h4 style={{ color: 'var(--text-muted)', marginTop: '16px' }}>{t('notificationsPage.noNotificationsYet')}</h4>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -193,7 +195,7 @@ export default function NotificationsPage() {
                   {!n.readAt && <span style={styles.unreadDot} />}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{formatTime(n.createdAt)}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{formatTime(n.createdAt, t)}</span>
                   {!n.readAt && (
                     <button onClick={() => handleMarkRead(n.id)} style={styles.markReadBtn} title="Mark as read">
                       <CheckCircle2 size={16} />
@@ -209,7 +211,7 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      <Modal isOpen={prefModal} onClose={() => setPrefModal(false)} title="Notification Preferences">
+      <Modal isOpen={prefModal} onClose={() => setPrefModal(false)} title={t('notificationsPage.preferencesTitle')}>
         {preferences ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {Object.entries(preferences).filter(([k]) => k !== 'id' && k !== 'userId' && k !== 'createdAt' && k !== 'updatedAt').map(([key, val]) => (
@@ -223,41 +225,41 @@ export default function NotificationsPage() {
                 {key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
               </label>
             ))}
-            <Button variant="lime" onClick={handleSavePreferences} style={{ marginTop: '12px' }}>Save Preferences</Button>
+            <Button variant="lime" onClick={handleSavePreferences} style={{ marginTop: '12px' }}>{t('notificationsPage.savePreferences')}</Button>
           </div>
         ) : (
-          <p style={{ color: 'var(--text-muted)' }}>Loading preferences...</p>
+          <p style={{ color: 'var(--text-muted)' }}>{t('notificationsPage.loadingPreferences')}</p>
         )}
       </Modal>
 
-      <Modal isOpen={announceModal} onClose={() => setAnnounceModal(false)} title="Send Announcement">
+      <Modal isOpen={announceModal} onClose={() => setAnnounceModal(false)} title={t('notificationsPage.sendAnnouncementTitle')}>
         <form onSubmit={handleSendAnnouncement}>
           <FormInput
-            label="Title"
+            label={t('notificationsPage.titleLabel')}
             id="announce-title"
-            placeholder="Announcement title"
+            placeholder={t('notificationsPage.announcementTitlePlaceholder')}
             value={announceTitle}
             onChange={(e) => setAnnounceTitle(e.target.value)}
             required
           />
           <FormInput
-            label="Message"
+            label={t('notificationsPage.messageLabel')}
             id="announce-body"
             type="textarea"
-            placeholder="Announcement content"
+            placeholder={t('notificationsPage.announcementContentPlaceholder')}
             value={announceBody}
             onChange={(e) => setAnnounceBody(e.target.value)}
             required
           />
           <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={sending}>
-            {sending ? 'Sending...' : 'Send Announcement'}
+            {sending ? t('common.sending') : t('notificationsPage.sendAnnouncement')}
           </Button>
         </form>
       </Modal>
 
-      <Modal isOpen={showEmailLogs} onClose={() => setShowEmailLogs(false)} title="Email Logs">
+      <Modal isOpen={showEmailLogs} onClose={() => setShowEmailLogs(false)} title={t('notificationsPage.emailLogsTitle')}>
         {emailLogs.length === 0 ? (
-          <p style={{ color: 'var(--text-muted)' }}>No email logs.</p>
+          <p style={{ color: 'var(--text-muted)' }}>{t('notificationsPage.noEmailLogs')}</p>
         ) : (
           <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
             {emailLogs.map((log) => (

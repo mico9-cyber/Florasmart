@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
 import { ShieldCheck, Mail, RefreshCw, AlertCircle } from 'lucide-react';
 import Button from '../components/Button';
+import { useTranslation } from 'react-i18next';
 
 export default function OtpVerificationPage() {
+  const { t } = useTranslation();
   const { pendingRegistration, handleVerifyOtp, handleResendOtp } = useContext(AppContext);
   const navigate = useNavigate();
 

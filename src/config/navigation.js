@@ -1,37 +1,38 @@
-import { LayoutDashboard, Home, ShoppingBag, ShoppingCart, ClipboardList, Sparkles, User, Package, BarChart3, FileText, Calendar, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Home, ShoppingBag, ShoppingCart, ClipboardList, Sparkles, User, Package, BarChart3, FileText, Calendar, MessageSquare, Users } from 'lucide-react';
 
 export const ROLE_NAV_ITEMS = {
   CUSTOMER: [
-    { to: '/customer-dashboard', label: 'Dashboard', icon: Home },
-    { to: '/catalog', label: 'Shop', icon: ShoppingBag },
-    { to: '/cart', label: 'Cart', icon: ShoppingCart },
-    { to: '/order-tracking', label: 'My Orders', icon: ClipboardList },
-    { to: '/book-consultation', label: 'Book Consultation', icon: Calendar },
-    { to: '/recommendations', label: 'AI Advisor', icon: Sparkles },
-    { to: '/chatbot', label: 'Care Bot', icon: MessageSquare },
-    { to: '/profile', label: 'Profile', icon: User },
+    { to: '/customer-dashboard', label: 'Dashboard', labelKey: 'nav.dashboard', icon: Home },
+    { to: '/catalog', label: 'Shop', labelKey: 'nav.shop', icon: ShoppingBag },
+    { to: '/cart', label: 'Cart', labelKey: 'nav.cart', icon: ShoppingCart },
+    { to: '/order-tracking', label: 'My Orders', labelKey: 'nav.myOrders', icon: ClipboardList },
+    { to: '/book-consultation', label: 'Book Consultation', labelKey: 'nav.bookConsultation', icon: Calendar },
+    { to: '/recommendations', label: 'AI Advisor', labelKey: 'nav.aiAdvisor', icon: Sparkles },
+    { to: '/chatbot', label: 'Care Bot', labelKey: 'nav.careBot', icon: MessageSquare },
+    { to: '/profile', label: 'Profile', labelKey: 'nav.profile', icon: User },
   ],
 
   FLORIST: [
-    { to: '/florist-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/catalog', label: 'Products', icon: ShoppingBag },
-    { to: '/order-tracking', label: 'Orders', icon: ClipboardList },
-    { to: '/inventory', label: 'Inventory', icon: Package },
+    { to: '/florist-dashboard', label: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+    { to: '/catalog', label: 'Products', labelKey: 'nav.products', icon: ShoppingBag },
+    { to: '/order-tracking', label: 'Orders', labelKey: 'nav.orders', icon: ClipboardList },
+    { to: '/inventory', label: 'Inventory', labelKey: 'nav.inventory', icon: Package },
   ],
 
   GARDENER: [
-    { to: '/gardener-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/manage-consultations', label: 'Consultations', icon: Calendar },
-    { to: '/profile', label: 'Profile', icon: User },
+    { to: '/gardener-dashboard', label: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+    { to: '/manage-consultations', label: 'Consultations', labelKey: 'nav.consultations', icon: Calendar },
+    { to: '/profile', label: 'Profile', labelKey: 'nav.profile', icon: User },
   ],
 
   ADMIN: [
-    { to: '/admin-dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/catalog', label: 'Products', icon: ShoppingBag },
-    { to: '/order-tracking', label: 'Orders', icon: ClipboardList },
-    { to: '/inventory', label: 'Inventory', icon: Package },
-    { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { to: '/reports', label: 'Reports', icon: FileText },
+    { to: '/admin-dashboard', label: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard },
+    { to: '/catalog', label: 'Products', labelKey: 'nav.products', icon: ShoppingBag },
+    { to: '/order-tracking', label: 'Orders', labelKey: 'nav.orders', icon: ClipboardList },
+    { to: '/inventory', label: 'Inventory', labelKey: 'nav.inventory', icon: Package },
+    { to: '/admin/users', label: 'Staff Accounts', labelKey: 'nav.staffAccounts', icon: Users },
+    { to: '/analytics', label: 'Analytics', labelKey: 'nav.analytics', icon: BarChart3 },
+    { to: '/reports', label: 'Reports', labelKey: 'nav.reports', icon: FileText },
   ],
 };
 

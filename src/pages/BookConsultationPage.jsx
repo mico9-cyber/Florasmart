@@ -5,8 +5,10 @@ import { consultationService } from '../services/consultationService';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Button from '../components/Button';
 import { Calendar, Send, Clock, CalendarClock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function BookConsultationPage() {
+  const { t } = useTranslation();
   const { user } = useContext(AppContext);
   const addToast = useToast();
 
@@ -34,13 +36,13 @@ export default function BookConsultationPage() {
 
   const validate = () => {
     const tempErrors = {};
-    if (!purpose.trim()) tempErrors.purpose = 'Purpose is required.';
+    if (!purpose.trim()) tempErrors.purpose = t('bookConsultation.validation.purposeRequired');
     if (!scheduledDate) {
-      tempErrors.scheduledDate = 'Schedule date is required.';
+      tempErrors.scheduledDate = t('bookConsultation.validation.dateRequired');
     } else {
       const selected = new Date(scheduledDate);
       const now = new Date();
-      if (selected <= now) tempErrors.scheduledDate = 'Date must be in the future.';
+      if (selected <= now) tempErrors.scheduledDate = t('bookConsultation.validation.dateMustBeFuture');
     }
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -53,12 +55,12 @@ export default function BookConsultationPage() {
     setLoading(true);
     try {
       await consultationService.book({ purpose: purpose.trim(), scheduledDate });
-      addToast('Consultation booked successfully!', 'success');
+      addToast(t('bookConsultation.toast.bookedSuccessfully'), 'success');
       setPurpose('');
       setScheduledDate('');
       loadConsultations();
     } catch (err) {
-      addToast(err.message || 'Failed to book consultation.', 'error');
+      addToast(err.message || t('bookConsultation.toast.failedToBook'), 'error');
     } finally {
       setLoading(false);
     }
@@ -71,8 +73,8 @@ export default function BookConsultationPage() {
   return (
     <div className="dashboard-content">
       <div style={styles.header}>
-        <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Book a Consultation</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Schedule a consultation with one of our gardening experts.</p>
+        <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('consultation.book.title')}</h2>
+        <p style={{ color: 'var(--text-muted)' }}>{t('bookConsultation.subtitle')}</p>
       </div>
 
       <div style={styles.layout}>
@@ -80,16 +82,16 @@ export default function BookConsultationPage() {
         <div className="card" style={{ flex: 1, minWidth: '340px', alignSelf: 'flex-start' }}>
           <div style={styles.sectionHeader}>
             <Calendar size={20} color="var(--accent-lime)" />
-            <h3 style={styles.sectionTitle}>New Consultation</h3>
+            <h3 style={styles.sectionTitle}>{t('bookConsultation.newConsultation')}</h3>
           </div>
 
           <form onSubmit={handleSubmit} style={styles.form}>
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>Purpose</label>
+              <label style={styles.label}>{t('bookConsultation.purposeLabel')}</label>
               <textarea
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                placeholder="Describe the purpose of your consultation..."
+                placeholder={t('bookConsultation.purposePlaceholder')}
                 rows={4}
                 style={{ ...styles.textarea, borderColor: errors.purpose ? 'var(--error)' : 'var(--border-green)' }}
               />
@@ -97,7 +99,7 @@ export default function BookConsultationPage() {
             </div>
 
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>Schedule Date & Time</label>
+              <label style={styles.label}>{t('bookConsultation.scheduleDateTime')}</label>
               <input
                 type="datetime-local"
                 value={scheduledDate}
@@ -108,7 +110,7 @@ export default function BookConsultationPage() {
             </div>
 
             <Button type="submit" disabled={loading} style={styles.submitBtn}>
-              {loading ? 'Booking...' : 'Book Consultation'}
+              {loading ? t('bookConsultation.booking') : t('bookConsultation.bookConsultation')}
               {!loading && <Send size={16} />}
             </Button>
           </form>
@@ -118,20 +120,20 @@ export default function BookConsultationPage() {
         <div className="card" style={{ flex: 1.5, minWidth: '380px', alignSelf: 'flex-start' }}>
           <div style={styles.sectionHeader}>
             <Clock size={20} color="var(--accent-lime)" />
-            <h3 style={styles.sectionTitle}>My Consultations</h3>
+            <h3 style={styles.sectionTitle}>{t('bookConsultation.myConsultations')}</h3>
           </div>
 
           {loadingConsultations ? (
-            <LoadingSpinner text="Loading consultations..." />
+            <LoadingSpinner text={t('bookConsultation.loadingConsultations')} />
           ) : myConsultations.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>No consultations yet.</p>
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '32px' }}>{t('dashboard.gardener.noConsultations')}</p>
           ) : (
             <div style={styles.consultationsList}>
               {myConsultations.map((appt) => (
                 <div key={appt.id} style={styles.consultationCard}>
                   <div style={styles.consultationHeader}>
                     <span style={{ ...styles.statusBadge, backgroundColor: statusColor(appt.status) }}>
-                      {statusLabel(appt.status)}
+                      {statusLabel(appt.status, t)}
                     </span>
                     <span style={styles.consultationDate}>{formatDate(appt.scheduledDate)}</span>
                   </div>
@@ -140,15 +142,15 @@ export default function BookConsultationPage() {
                   {appt.rescheduledDate && (
                     <div style={styles.rescheduleNotice}>
                       <CalendarClock size={14} color="var(--accent-lime)" />
-                      <span>Gardener suggested: <strong>{formatDate(appt.rescheduledDate)}</strong></span>
+                      <span>{t('bookConsultation.gardenerSuggested')} <strong>{formatDate(appt.rescheduledDate)}</strong></span>
                     </div>
                   )}
 
                   {appt.gardener && (
-                    <p style={styles.gardenerInfo}>Gardener: {appt.gardener.name} ({appt.gardener.email})</p>
+                    <p style={styles.gardenerInfo}>{t('bookConsultation.gardenerLabel')} {appt.gardener.name} ({appt.gardener.email})</p>
                   )}
                   {appt.rejectedReason && (
-                    <p style={styles.rejectionReason}>Reason: {appt.rejectedReason}</p>
+                    <p style={styles.rejectionReason}>{t('bookConsultation.reasonLabel')} {appt.rejectedReason}</p>
                   )}
                 </div>
               ))}
@@ -168,8 +170,8 @@ function statusColor(status) {
   return 'var(--text-muted)';
 }
 
-function statusLabel(status) {
-  if (status === 'RESCHEDULED') return 'Rescheduled';
+function statusLabel(status, t) {
+  if (status === 'RESCHEDULED') return t ? t('bookConsultation.rescheduled') : 'Rescheduled';
   return status;
 }
 

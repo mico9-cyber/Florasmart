@@ -8,6 +8,7 @@ import { Trash2, Plus, FileText, Download, Edit3, RefreshCw, AlertTriangle, Pack
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
 import { formatCurrency } from '../utils/formatCurrency';
 import { inventoryService } from '../services/inventoryService';
+import { useTranslation } from 'react-i18next';
 
 const CATEGORY_SLUG_TO_KEY = {
   'pots-vases': 'vases',
@@ -53,6 +54,7 @@ function formatStatus(status) {
 export default function InventoryPage() {
   const { updateProductStock, addProduct, updateProduct, deleteProduct } = useContext(AppContext);
   const addToast = useToast();
+  const { t } = useTranslation();
 
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState('');
@@ -134,18 +136,18 @@ export default function InventoryPage() {
     let error = '';
     switch (name) {
       case 'name':
-        if (!value.trim()) error = 'Product name is required.';
+        if (!value.trim()) error = t('inventoryPage.validation.nameRequired');
         break;
       case 'price':
-        if (!value) error = 'Price is required.';
-        else if (isNaN(Number(value)) || Number(value) <= 0) error = 'Price must be greater than 0.';
+        if (!value) error = t('inventoryPage.validation.priceRequired');
+        else if (isNaN(Number(value)) || Number(value) <= 0) error = t('inventoryPage.validation.priceGreaterThanZero');
         break;
       case 'stock':
-        if (!value) error = 'Stock quantity is required.';
-        else if (isNaN(Number(value)) || Number(value) < 0) error = 'Stock must be 0 or more.';
+        if (!value) error = t('inventoryPage.validation.stockRequired');
+        else if (isNaN(Number(value)) || Number(value) < 0) error = t('inventoryPage.validation.stockNonNegative');
         break;
       case 'category':
-        if (!value) error = 'Category is required.';
+        if (!value) error = t('inventoryPage.validation.categoryRequired');
         break;
     }
     setFieldErrors(prev => ({ ...prev, [name]: error }));
@@ -160,10 +162,10 @@ export default function InventoryPage() {
     setError('');
     try {
       await updateProductStock(id, newStock);
-      addToast('Stock adjusted successfully', 'success');
+      addToast(t('inventoryPage.toast.stockAdjusted'), 'success');
       await loadInventoryData(true);
     } catch (err) {
-      addToast(err.message || 'Failed to adjust stock.', 'error');
+      addToast(err.message || t('inventoryPage.toast.failedToAdjustStock'), 'error');
     }
   };
 
@@ -178,15 +180,15 @@ export default function InventoryPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this item from inventory?')) return;
+    if (!window.confirm(t('inventoryPage.confirmDelete'))) return;
     setError('');
     try {
       await deleteProduct(id);
       if (editingId === id) resetForm();
-      addToast('Product deleted successfully', 'success');
+      addToast(t('inventoryPage.toast.productDeleted'), 'success');
       await loadInventoryData(true);
     } catch (err) {
-      addToast(err.message || 'Failed to delete product.', 'error');
+      addToast(err.message || t('inventoryPage.toast.failedToDeleteProduct'), 'error');
     }
   };
 
@@ -213,15 +215,15 @@ export default function InventoryPage() {
     try {
       if (editingId) {
         await updateProduct(editingId, productDetails);
-        addToast('Product updated successfully', 'success');
+        addToast(t('inventoryPage.toast.productUpdated'), 'success');
       } else {
         await addProduct(productDetails);
-        addToast('Product saved successfully', 'success');
+        addToast(t('inventoryPage.toast.productSaved'), 'success');
       }
       resetForm();
       await loadInventoryData(true);
     } catch (err) {
-      addToast(err.message || 'Failed to save product.', 'error');
+      addToast(err.message || t('inventoryPage.toast.failedToSaveProduct'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -232,7 +234,7 @@ export default function InventoryPage() {
       { heading: 'Inventory Summary', lines: inventoryProducts.map((item) => item.name + ' | ' + item.category + ' | ' + formatCurrency(item.price) + ' | ' + item.stock + ' units | ' + item.locationName) },
       { heading: 'Low Stock Alerts', lines: lowStockRows.map((row) => (row.product?.name || 'Product') + ' | ' + (row.location?.name || 'Unassigned') + ' | ' + (row.availableQuantity ?? row.quantity ?? 0) + ' available') },
     ]);
-    addToast('Inventory report exported as PDF', 'success');
+    addToast(t('inventoryPage.toast.reportExportedPdf'), 'success');
   };
 
   const handleExportExcel = () => {
@@ -240,25 +242,25 @@ export default function InventoryPage() {
       ['ID', 'Name', 'Category', 'Price', 'Stock', 'Available', 'Reserved', 'Status', 'Location'],
       ...inventoryProducts.map((item) => [item.id, item.name, item.category, item.price, item.stock, item.availableQuantity, item.reservedQuantity, item.status, item.locationName]),
     ]);
-    addToast('Inventory data exported as CSV', 'success');
+    addToast(t('inventoryPage.toast.dataExportedCsv'), 'success');
   };
 
   return (
     <div className="dashboard-content">
       <div style={styles.headerRow}>
         <div>
-          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Inventory Management Central</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Audit warehouse items, restock floral stems, and review live backend inventory activity.</p>
+          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('inventoryPage.title')}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>{t('inventoryPage.subtitle')}</p>
         </div>
         <div style={styles.actionButtons}>
           <Button variant="secondary" onClick={() => loadInventoryData(true)} icon={<RefreshCw size={16} />}>
-            {refreshing ? 'Refreshing...' : 'Refresh'}
+            {refreshing ? t('inventoryPage.refreshing') : t('inventoryPage.refresh')}
           </Button>
           <Button variant="secondary" onClick={handleExportPDF} icon={<FileText size={16} />}>
-            Export PDF
+            {t('inventoryPage.exportPdf')}
           </Button>
           <Button variant="secondary" onClick={handleExportExcel} icon={<Download size={16} />}>
-            Export CSV
+            {t('inventoryPage.exportCsv')}
           </Button>
         </div>
       </div>
@@ -268,28 +270,28 @@ export default function InventoryPage() {
           <Package2 size={18} color="var(--accent-lime)" />
           <div>
             <div style={styles.summaryValue}>{Number(summary.totalProducts || inventoryProducts.length || 0)}</div>
-            <div style={styles.summaryLabel}>Tracked Products</div>
+            <div style={styles.summaryLabel}>{t('inventoryPage.trackedProducts')}</div>
           </div>
         </div>
         <div className="card" style={styles.summaryCard}>
           <ArrowRightLeft size={18} color="var(--info)" />
           <div>
             <div style={styles.summaryValue}>{Number(summary.totalStockQuantity || 0)}</div>
-            <div style={styles.summaryLabel}>Units in Stock</div>
+            <div style={styles.summaryLabel}>{t('inventoryPage.unitsInStock')}</div>
           </div>
         </div>
         <div className="card" style={styles.summaryCard}>
           <AlertTriangle size={18} color="var(--warning)" />
           <div>
             <div style={styles.summaryValue}>{Number(summary.lowStockCount || lowStockRows.length || 0)}</div>
-            <div style={styles.summaryLabel}>Low Stock Alerts</div>
+            <div style={styles.summaryLabel}>{t('inventoryPage.lowStockAlerts')}</div>
           </div>
         </div>
         <div className="card" style={styles.summaryCard}>
           <MapPin size={18} color="var(--success)" />
           <div>
             <div style={styles.summaryValue}>{locations.length}</div>
-            <div style={styles.summaryLabel}>Inventory Locations</div>
+            <div style={styles.summaryLabel}>{t('inventoryPage.inventoryLocations')}</div>
           </div>
         </div>
       </div>
@@ -303,25 +305,25 @@ export default function InventoryPage() {
 
       <div style={styles.layout}>
         <div className="card" style={{ flex: 2, minWidth: '400px' }}>
-          <h3 style={styles.sectionTitle}>Physical Assets Ledger</h3>
-          <p style={styles.sectionHint}>Live stock quantities, reserve levels, and per-location availability from the backend.</p>
+          <h3 style={styles.sectionTitle}>{t('inventoryPage.physicalAssetsLedger')}</h3>
+          <p style={styles.sectionHint}>{t('inventoryPage.physicalAssetsLedgerHint')}</p>
 
           {loading ? (
-            <LoadingSpinner text="Loading inventory data..." />
+            <LoadingSpinner text={t('inventoryPage.loadingInventoryData')} />
           ) : inventoryProducts.length === 0 ? (
-            <div style={styles.statePanel}>No inventory records were returned by the backend.</div>
+            <div style={styles.statePanel}>{t('inventoryPage.noInventoryRecords')}</div>
           ) : (
             <div className="table-container" style={{ marginTop: '16px' }}>
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Item</th>
-                    <th>Category</th>
-                    <th>Price</th>
-                    <th>Quantity Stock</th>
-                    <th>Available</th>
-                    <th>Adjust Stock</th>
-                    <th>Actions</th>
+                    <th>{t('inventoryPage.item')}</th>
+                    <th>{t('inventoryPage.category')}</th>
+                    <th>{t('inventoryPage.price')}</th>
+                    <th>{t('inventoryPage.quantityStock')}</th>
+                    <th>{t('inventoryPage.available')}</th>
+                    <th>{t('inventoryPage.adjustStock')}</th>
+                    <th>{t('inventoryPage.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -349,13 +351,13 @@ export default function InventoryPage() {
                       <td>{formatCurrency(prod.price)}</td>
                       <td>
                         <span style={{ color: statusTone(prod.status), fontWeight: '700' }}>
-                          {prod.stock} units
+                          {prod.stock} {t('inventoryPage.units')}
                         </span>
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          <span style={{ color: 'var(--text-light)', fontWeight: '700' }}>{prod.availableQuantity} free</span>
-                          <span style={styles.metaText}>{prod.reservedQuantity} reserved</span>
+                          <span style={{ color: 'var(--text-light)', fontWeight: '700' }}>{prod.availableQuantity} {t('inventoryPage.free')}</span>
+                          <span style={styles.metaText}>{prod.reservedQuantity} {t('inventoryPage.reserved')}</span>
                         </div>
                       </td>
                       <td>
@@ -383,16 +385,16 @@ export default function InventoryPage() {
         </div>
 
         <div className="card" style={{ flex: 1, minWidth: '300px', alignSelf: 'flex-start' }}>
-          <h3 style={styles.sectionTitle}>{editingId ? 'Edit Listing' : 'Add New Listing'}</h3>
+          <h3 style={styles.sectionTitle}>{editingId ? t('inventoryPage.editListing') : t('inventoryPage.addNewListing')}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 20px' }}>
-            {editingId ? 'Update this catalog record and stock balance in the backend.' : 'Add a new catalog listing to the shared backend product inventory.'}
+            {editingId ? t('inventoryPage.editListingHint') : t('inventoryPage.addNewListingHint')}
           </p>
 
           <form onSubmit={handleSubmitProduct} noValidate>
-            <FormInput label="Product Name" id="prod-name" placeholder="e.g. ZZ Plant" value={name} onChange={(e) => { setName(e.target.value); if (fieldErrors.name) validateField('name', e.target.value); }} onBlur={handleBlur('name')} error={fieldErrors.name} ariaInvalid={!!fieldErrors.name} ariaDescribedby={fieldErrors.name ? 'error-prod-name' : undefined} required />
+            <FormInput label={t('inventoryPage.productName')} id="prod-name" placeholder={t('inventoryPage.productNamePlaceholder')} value={name} onChange={(e) => { setName(e.target.value); if (fieldErrors.name) validateField('name', e.target.value); }} onBlur={handleBlur('name')} error={fieldErrors.name} ariaInvalid={!!fieldErrors.name} ariaDescribedby={fieldErrors.name ? 'error-prod-name' : undefined} required />
             {fieldErrors.name && <span id="error-prod-name" style={styles.fieldError}>{fieldErrors.name}</span>}
             <FormInput
-              label="Listing Category"
+              label={t('inventoryPage.listingCategory')}
               id="prod-cat"
               type="select"
               value={category}
@@ -401,27 +403,27 @@ export default function InventoryPage() {
               ariaInvalid={!!fieldErrors.category}
               ariaDescribedby={fieldErrors.category ? 'error-prod-cat' : undefined}
               options={[
-                { value: 'plants', label: 'Plants (Indoor/Outdoor)' },
-                { value: 'flowers', label: 'Flowers (Bouquets/Baskets)' },
-                { value: 'vases', label: 'Vases (Ceramic/Glass)' }
+                { value: 'plants', label: t('inventoryPage.plantsIndoorOutdoor') },
+                { value: 'flowers', label: t('inventoryPage.flowersBouquetsBaskets') },
+                { value: 'vases', label: t('inventoryPage.vasesCeramicGlass') }
               ]}
             />
             {fieldErrors.category && <span id="error-prod-cat" style={styles.fieldError}>{fieldErrors.category}</span>}
             <FormInput
-              label="Image URL"
+              label={t('inventoryPage.imageUrl')}
               id="prod-image"
-              placeholder="https://images.example.com/product.jpg"
+              placeholder={t('inventoryPage.imageUrlPlaceholder')}
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
             />
 
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1.2 }}>
-                <FormInput label="Price (RWF)" id="prod-price" placeholder="24000" value={price} onChange={(e) => { setPrice(e.target.value); if (fieldErrors.price) validateField('price', e.target.value); }} onBlur={handleBlur('price')} error={fieldErrors.price} ariaInvalid={!!fieldErrors.price} ariaDescribedby={fieldErrors.price ? 'error-prod-price' : undefined} required />
+                <FormInput label={t('inventoryPage.priceRwf')} id="prod-price" placeholder={t('inventoryPage.pricePlaceholder')} value={price} onChange={(e) => { setPrice(e.target.value); if (fieldErrors.price) validateField('price', e.target.value); }} onBlur={handleBlur('price')} error={fieldErrors.price} ariaInvalid={!!fieldErrors.price} ariaDescribedby={fieldErrors.price ? 'error-prod-price' : undefined} required />
                 {fieldErrors.price && <span id="error-prod-price" style={styles.fieldError}>{fieldErrors.price}</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <FormInput label={editingId ? 'Target Stock' : 'Initial Stock'} id="prod-stock" placeholder="20" value={stock} onChange={(e) => { setStock(e.target.value); if (fieldErrors.stock) validateField('stock', e.target.value); }} onBlur={handleBlur('stock')} error={fieldErrors.stock} ariaInvalid={!!fieldErrors.stock} ariaDescribedby={fieldErrors.stock ? 'error-prod-stock' : undefined} required />
+                <FormInput label={editingId ? t('inventoryPage.targetStock') : t('inventoryPage.initialStock')} id="prod-stock" placeholder={t('inventoryPage.stockPlaceholder')} value={stock} onChange={(e) => { setStock(e.target.value); if (fieldErrors.stock) validateField('stock', e.target.value); }} onBlur={handleBlur('stock')} error={fieldErrors.stock} ariaInvalid={!!fieldErrors.stock} ariaDescribedby={fieldErrors.stock ? 'error-prod-stock' : undefined} required />
                 {fieldErrors.stock && <span id="error-prod-stock" style={styles.fieldError}>{fieldErrors.stock}</span>}
               </div>
             </div>
@@ -429,12 +431,12 @@ export default function InventoryPage() {
             <div style={styles.formActions}>
               {editingId && (
                 <Button type="button" variant="secondary" onClick={resetForm} style={{ flex: 1 }}>
-                  Cancel
+                  {t('inventoryPage.cancel')}
                 </Button>
               )}
               <Button type="submit" variant="lime" style={{ flex: 1 }} disabled={submitting}>
                 <Plus size={16} />
-                {submitting ? 'Saving...' : editingId ? 'Save Changes' : 'Create Record'}
+                {submitting ? t('inventoryPage.saving') : editingId ? t('inventoryPage.saveChanges') : t('inventoryPage.createRecord')}
               </Button>
             </div>
           </form>
@@ -443,12 +445,12 @@ export default function InventoryPage() {
 
       <div style={styles.bottomGrid}>
         <div className="card" style={{ flex: 1, minWidth: '320px' }}>
-          <h3 style={styles.sectionTitle}>Low Stock Alerts</h3>
-          <p style={styles.sectionHint}>Backend-generated alerts for items that need replenishment.</p>
+          <h3 style={styles.sectionTitle}>{t('inventoryPage.lowStockAlertsTitle')}</h3>
+          <p style={styles.sectionHint}>{t('inventoryPage.lowStockAlertsHint')}</p>
           {loading ? (
-            <LoadingSpinner text="Loading low stock alerts..." />
+            <LoadingSpinner text={t('inventoryPage.loadingLowStockAlerts')} />
           ) : lowStockRows.length === 0 ? (
-            <div style={styles.statePanel}>No low stock alerts from the backend.</div>
+            <div style={styles.statePanel}>{t('inventoryPage.noLowStockAlerts')}</div>
           ) : (
             <div style={styles.listWrap}>
               {lowStockRows.map((row) => (
@@ -458,8 +460,8 @@ export default function InventoryPage() {
                     <div style={styles.metaText}>{row.location?.name || 'Unassigned'} · {formatStatus(row.stockStatus || 'low_stock')}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ color: statusTone(row.stockStatus), fontWeight: 700 }}>{row.availableQuantity ?? row.quantity ?? 0} free</div>
-                    <div style={styles.metaText}>{row.reservedQuantity ?? 0} reserved</div>
+                    <div style={{ color: statusTone(row.stockStatus), fontWeight: 700 }}>{row.availableQuantity ?? row.quantity ?? 0} {t('inventoryPage.free')}</div>
+                    <div style={styles.metaText}>{row.reservedQuantity ?? 0} {t('inventoryPage.reserved')}</div>
                   </div>
                 </div>
               ))}
@@ -468,22 +470,22 @@ export default function InventoryPage() {
         </div>
 
         <div className="card" style={{ flex: 1.3, minWidth: '360px' }}>
-          <h3 style={styles.sectionTitle}>Inventory Movement History</h3>
-          <p style={styles.sectionHint}>Latest stock adjustments recorded by the backend.</p>
+          <h3 style={styles.sectionTitle}>{t('inventoryPage.inventoryMovementHistory')}</h3>
+          <p style={styles.sectionHint}>{t('inventoryPage.inventoryMovementHistoryHint')}</p>
           {loading ? (
-            <LoadingSpinner text="Loading movement history..." />
+            <LoadingSpinner text={t('inventoryPage.loadingMovementHistory')} />
           ) : movementRows.length === 0 ? (
-            <div style={styles.statePanel}>No inventory movements were returned by the backend.</div>
+            <div style={styles.statePanel}>{t('inventoryPage.noInventoryMovements')}</div>
           ) : (
             <div className="table-container" style={{ marginTop: '16px' }}>
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Product</th>
-                    <th>Movement</th>
-                    <th>Quantity</th>
-                    <th>Location</th>
-                    <th>Date</th>
+                    <th>{t('inventoryPage.product')}</th>
+                    <th>{t('inventoryPage.movement')}</th>
+                    <th>{t('inventoryPage.quantity')}</th>
+                    <th>{t('inventoryPage.location')}</th>
+                    <th>{t('inventoryPage.date')}</th>
                   </tr>
                 </thead>
                 <tbody>

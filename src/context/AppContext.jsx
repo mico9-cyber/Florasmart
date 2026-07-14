@@ -13,8 +13,9 @@ import { gardenPlanService } from '../services/gardenPlanService';
 import { recommendationService } from '../services/recommendationService';
 import { chatbotService } from '../services/chatbotService';
 import { analyticsService } from '../services/analyticsService';
+import { useToast } from './ToastContext';
 
-const DEFAULT_USER = { name: '', role: 'customer', loggedIn: false, email: '', roles: [] };
+const DEFAULT_USER = { name: '', role: 'customer', loggedIn: false, email: '' };
 const ORDER_STATUS_LABELS = {
   PENDING: 'Order Placed',
   PROCESSING: 'Preparing Arrangement',
@@ -92,6 +93,7 @@ function normalizeProduct(raw, stockMap = new Map(), recommendedIds = new Set())
 function normalizeCart(cartData, productsMap = new Map()) {
   return (cartData?.items || []).map((item) => {
     const product = productsMap.get(item.productId);
+    const availableStock = item.availableStock != null ? item.availableStock : (product?.stock ?? 0);
     return {
       id: item.productId,
       cartItemId: item.id,
@@ -100,7 +102,7 @@ function normalizeCart(cartData, productsMap = new Map()) {
       name: product?.name || item.product?.name || 'Product',
       category: product?.category || item.product?.category?.slug || 'plants',
       image: product?.image || item.product?.imageUrl || '',
-      stock: product?.stock ?? 0,
+      stock: Math.max(0, availableStock),
     };
   });
 }
@@ -209,6 +211,7 @@ export const AppProvider = ({ children }) => {
   const [registeredUsers, setRegisteredUsers] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [dataState, setDataState] = useState({ loading: false, error: '' });
+  const addToast = useToast();
 
   useEffect(() => writeJson('flora_user', user), [user]);
   useEffect(() => writeJson('flora_pending_reg', pendingRegistration), [pendingRegistration]);
@@ -389,9 +392,13 @@ export const AppProvider = ({ children }) => {
       await removeFromCartHandler(productId);
       return;
     }
-    const cartRes = await cartService.updateItem(item.cartItemId, { quantity: qty });
-    const productsMap = new Map(products.map((entry) => [entry.id, entry]));
-    setCart(normalizeCart(cartRes?.data, productsMap));
+    try {
+      const cartRes = await cartService.updateItem(item.cartItemId, { quantity: qty });
+      const productsMap = new Map(products.map((entry) => [entry.id, entry]));
+      setCart(normalizeCart(cartRes?.data, productsMap));
+    } catch (err) {
+      addToast?.(err.message || 'Failed to update quantity', 'error');
+    }
   };
 
   const clearCartHandler = async () => {
@@ -403,33 +410,33 @@ export const AppProvider = ({ children }) => {
     setCart([]);
   };
 
-  const handleLogin = async (email, password, selectedRole = 'customer') => {
+  const handleLogin = async (email, password, selectedRole) => {
     try {
-      const data = await authService.login({ email, password, role: selectedRole });
+      const data = await authService.login({ email, password });
       const userData = data.data.user;
-      const availableRoles = (userData.roles || []).map((role) => role.toLowerCase());
-      if (availableRoles.length > 0 && !availableRoles.includes(selectedRole)) {
-        return { ok: false, error: `This account does not have ${selectedRole} access.` };
+      const role = selectedRole?.toLowerCase();
+      const availableRoles = (userData.roles || []).map((r) => r.toLowerCase());
+      if (role && !availableRoles.includes(role)) {
+        return { ok: false, error: 'Selected role does not match this account.' };
       }
       setUser({
         name: userData.fullName,
-        role: selectedRole,
-        roles: availableRoles,
+        role: role || (userData.roles?.[0] || 'CUSTOMER').toLowerCase(),
         loggedIn: true,
         email: userData.email,
         accessToken: data.data.accessToken,
         refreshToken: data.data.refreshToken,
       });
-      return { ok: true, role: selectedRole };
+      return { ok: true, role };
     } catch (err) {
       return { ok: false, error: err.message };
     }
   };
 
-  const handleRegister = async (email, password, name, selectedRole) => {
+  const handleRegister = async (email, password, name) => {
     try {
-      await authService.register({ fullName: name, email, password, role: selectedRole.toUpperCase(), phone: '', address: '' });
-      setPendingRegistration({ email, name, role: selectedRole });
+      await authService.register({ fullName: name, email, password, role: 'CUSTOMER', phone: '', address: '' });
+      setPendingRegistration({ email, name });
       return { ok: true, requiresOtp: true };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -440,19 +447,17 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await authService.verifyRegistrationOtp({ email, otp });
       const userData = data.data.user;
-      const pending = pendingRegistration;
-      const selectedRole = pending?.role || (userData.roles?.[0] || 'CUSTOMER').toLowerCase();
+      const role = (userData.roles?.[0] || 'CUSTOMER').toLowerCase();
       setPendingRegistration(null);
       setUser({
         name: userData.fullName,
-        role: selectedRole,
-        roles: (userData.roles || []).map((role) => role.toLowerCase()),
+        role,
         loggedIn: true,
         email: userData.email,
         accessToken: data.data.accessToken,
         refreshToken: data.data.refreshToken,
       });
-      return { ok: true, role: selectedRole };
+      return { ok: true, role };
     } catch (err) {
       return { ok: false, error: err.message };
     }
@@ -480,10 +485,6 @@ export const AppProvider = ({ children }) => {
     setOrders([]);
 
     setGardenLayout(Array(64).fill(null));
-  };
-
-  const switchRole = (newRole) => {
-    setUser((prev) => ({ ...prev, role: newRole }));
   };
 
   const updateUserProfile = async ({ name, email, password }) => {
@@ -585,7 +586,7 @@ export const AppProvider = ({ children }) => {
 
   const createOrder = async (orderDetails) => {
     try {
-      const result = await orderService.checkout({
+      const payload = {
         shippingFullName: orderDetails.fullName || user.name,
         shippingPhone: orderDetails.phone || user.phone || 'N/A',
         shippingAddress: orderDetails.address,
@@ -593,12 +594,13 @@ export const AppProvider = ({ children }) => {
         shippingDistrict: orderDetails.zip || 'N/A',
         shippingNotes: '',
         deliveryMethod: orderDetails.deliveryMethod === 'Express Eco-Courier' ? 'EXPRESS' : 'STANDARD',
-        paymentMethod: 'CARD',
-      });
+        paymentMethod: orderDetails.paymentMethod || 'CARD',
+      };
+      const result = await orderService.checkout(payload);
       await refreshPrivateData(user);
       return { ok: true, orderId: result?.data?.order?.orderNumber || result?.data?.order?.id };
     } catch (err) {
-      return { ok: false, error: err.message };
+      return { ok: false, error: err.message, code: err.code };
     }
   };
 
@@ -672,7 +674,6 @@ export const AppProvider = ({ children }) => {
         handleVerifyOtp,
         handleResendOtp,
         handleLogout,
-        switchRole,
         updateUserProfile,
         updateProductStock,
         addProduct,

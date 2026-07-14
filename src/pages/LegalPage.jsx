@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Shield, FileText } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Shield, FileText, CheckCircle } from 'lucide-react';
+import { writeJson } from '../utils/storage';
+import { useTranslation } from 'react-i18next';
 
 const sections = [
   { id: 'introduction', label: 'Introduction' },
@@ -26,7 +28,9 @@ const sections = [
 ];
 
 export default function LegalPage() {
+  const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
@@ -58,12 +62,17 @@ export default function LegalPage() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleAgree = () => {
+    writeJson('flora_legal_consent', true);
+    navigate('/register?consent=true');
+  };
+
   return (
     <div style={styles.page}>
       <div style={styles.layout}>
         {/* Sticky TOC - desktop */}
         <nav style={styles.toc} className="legal-toc">
-          <h3 style={styles.tocTitle}>Contents</h3>
+          <h3 style={styles.tocTitle}>{t('legalPage.contents')}</h3>
           {sections.map(({ id, label, isHeader }) => (
             <a
               key={id}
@@ -85,20 +94,20 @@ export default function LegalPage() {
         {/* Main content */}
         <div style={styles.content}>
           <Link to="/" style={styles.backLink}>
-            <ArrowLeft size={16} /> Back to Home
+            <ArrowLeft size={16} /> {t('legalPage.backToHome')}
           </Link>
 
           <div style={styles.hero}>
             <div style={styles.heroIcon}>
               <Shield size={28} color="var(--accent-lime)" />
             </div>
-            <h1 style={styles.heroTitle}>Privacy Policy & Terms of Service</h1>
-            <p style={styles.heroSubtitle}>Your trust matters to us. Please read carefully.</p>
+            <h1 style={styles.heroTitle}>{t('legalPage.heroTitle')}</h1>
+            <p style={styles.heroSubtitle}>{t('legalPage.heroSubtitle')}</p>
           </div>
 
           {/* Mobile TOC */}
           <div className="legal-mobile-toc" style={styles.mobileToc}>
-            <h4 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Contents</h4>
+            <h4 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t('legalPage.contents')}</h4>
             <div style={styles.mobileTocGrid}>
               {sections.filter(s => !s.isHeader).map(({ id, label }) => (
                 <a key={id} href={`#${id}`} onClick={scrollTo(id)} style={styles.mobileTocLink}>{label}</a>
@@ -108,7 +117,7 @@ export default function LegalPage() {
 
           {/* Introduction */}
           <section id="introduction" style={styles.section}>
-            <h2 style={styles.sectionTitle}>Introduction</h2>
+            <h2 style={styles.sectionTitle}>{t('legalPage.introduction')}</h2>
             <p style={styles.body}>
               Welcome to FloraSmart (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We are committed to protecting your personal information and your right to privacy. This Privacy Policy & Terms of Service document explains how we collect, use, disclose, and safeguard your information when you use our platform, including our website, mobile application, and related services (collectively, the &quot;Service&quot;).
             </p>
@@ -121,7 +130,7 @@ export default function LegalPage() {
           <section id="privacy-policy" style={styles.section}>
             <div style={styles.sectionHeaderRow}>
               <Shield size={20} color="var(--accent-lime)" />
-              <h2 style={styles.sectionTitle}>Privacy Policy</h2>
+              <h2 style={styles.sectionTitle}>{t('legal.privacyPolicy')}</h2>
             </div>
           </section>
 
@@ -241,7 +250,7 @@ export default function LegalPage() {
           <section id="terms-of-service" style={styles.section}>
             <div style={styles.sectionHeaderRow}>
               <FileText size={20} color="var(--accent-lime)" />
-              <h2 style={styles.sectionTitle}>Terms of Service</h2>
+              <h2 style={styles.sectionTitle}>{t('legal.termsOfService')}</h2>
             </div>
           </section>
 
@@ -350,13 +359,21 @@ export default function LegalPage() {
           {/* Last Updated */}
           <div style={styles.lastUpdated}>
             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              Last Updated: January 1, 2026
+              {t('legalPage.lastUpdatedDate')}
             </p>
+          </div>
+
+          <div style={styles.agreeSection}>
+            <p style={styles.body}>{t('legalPage.agreeConsentText')}</p>
+            <button onClick={handleAgree} style={styles.agreeBtn}>
+              <CheckCircle size={18} />
+              {t('legalPage.agree')}
+            </button>
           </div>
 
           <div style={styles.bottomBack}>
             <Link to="/" style={styles.backLink}>
-              <ArrowLeft size={16} /> Back to Home
+            <ArrowLeft size={16} /> {t('legalPage.backToHome')}
             </Link>
           </div>
         </div>
@@ -534,5 +551,28 @@ const styles = {
   bottomBack: {
     textAlign: 'center',
     marginTop: '20px',
+  },
+  agreeSection: {
+    textAlign: 'center',
+    marginTop: '40px',
+    padding: '28px',
+    backgroundColor: 'var(--bg-darker)',
+    border: '1px solid var(--border-green)',
+    borderRadius: 'var(--radius-sm)',
+  },
+  agreeBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '12px',
+    padding: '14px 36px',
+    backgroundColor: 'var(--accent-lime)',
+    color: 'var(--bg-darker)',
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    fontSize: '16px',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'var(--transition)',
   },
 };

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authService } from '../services/authService';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle, ShieldAlert } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
@@ -34,12 +36,12 @@ export default function ForgotPasswordPage() {
           <div style={styles.iconContainer}>
             <CheckCircle2 size={48} color="var(--success)" />
           </div>
-          <h2 style={styles.title}>Check Your Email</h2>
+          <h2 style={styles.title}>{t('auth.forgotPasswordTitle')}</h2>
           <p style={styles.message}>
             If an account exists for <strong>{email}</strong>, we have sent a password reset link.
           </p>
           <Link to="/login" style={styles.backLink}>
-            <ArrowLeft size={16} /> Back to Login
+            <ArrowLeft size={16} /> {t('auth.backToLogin')}
           </Link>
         </div>
       </div>
@@ -53,8 +55,8 @@ export default function ForgotPasswordPage() {
           <div style={styles.iconCircle}>
             <Mail size={24} color="var(--accent-lime)" />
           </div>
-          <h2 style={styles.title}>Forgot Password</h2>
-          <p style={styles.message}>Enter your email and we will send you a reset link.</p>
+          <h2 style={styles.title}>{t('auth.forgotPasswordTitle')}</h2>
+          <p style={styles.message}>{t('auth.forgotPasswordSubtitle')}</p>
         </div>
 
         {error && (
@@ -66,7 +68,7 @@ export default function ForgotPasswordPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <FormInput
-            label="Email Address"
+            label={t('auth.emailLabel')}
             id="email"
             type="email"
             placeholder="your@email.com"
@@ -76,13 +78,13 @@ export default function ForgotPasswordPage() {
             required
           />
           <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={loading}>
-            {loading ? 'Sending...' : 'Send Reset Link'}
+            {loading ? 'Sending...' : t('auth.sendResetLink')}
           </Button>
         </form>
 
         <div style={styles.footer}>
           <Link to="/login" style={styles.backLink}>
-            <ArrowLeft size={16} /> Back to Login
+            <ArrowLeft size={16} /> {t('auth.backToLogin')}
           </Link>
         </div>
       </div>

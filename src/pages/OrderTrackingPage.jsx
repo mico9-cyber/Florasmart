@@ -6,47 +6,9 @@ import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import { formatCurrency } from '../utils/formatCurrency';
 import { orderService } from '../services/orderService';
+import { useTranslation } from 'react-i18next';
 
-const ORDER_STATUS_LABELS = {
-  PENDING: 'Order Placed',
-  PROCESSING: 'Processing',
-  CONFIRMED: 'Confirmed',
-  PREPARING: 'Preparing',
-  READY_FOR_DELIVERY: 'Ready for Delivery',
-  OUT_FOR_DELIVERY: 'Out for Delivery',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
-};
 
-const ORDER_STATUS_OPTIONS = [
-  { value: '', label: 'All Statuses' },
-  ...Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => ({ value, label })),
-];
-
-const PAYMENT_STATUS_OPTIONS = [
-  { value: '', label: 'All Payments' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'PAID', label: 'Paid' },
-  { value: 'FAILED', label: 'Failed' },
-  { value: 'REFUNDED', label: 'Refunded' },
-];
-
-const DELIVERY_STATUS_OPTIONS = [
-  { value: '', label: 'All Deliveries' },
-  { value: 'PENDING_ASSIGNMENT', label: 'Pending Assignment' },
-  { value: 'ASSIGNED', label: 'Assigned' },
-  { value: 'PICKED_UP', label: 'Picked Up' },
-  { value: 'IN_TRANSIT', label: 'In Transit' },
-  { value: 'DELIVERED', label: 'Delivered' },
-  { value: 'FAILED', label: 'Failed' },
-];
-
-const TRACKING_STAGES = [
-  { label: 'Order Placed', icon: <Box size={16} /> },
-  { label: 'Preparing', icon: <SproutIcon /> },
-  { label: 'In Transit', icon: <Truck size={16} /> },
-  { label: 'Delivered', icon: <CheckCircle2 size={16} /> },
-];
 
 function getTrackingStage(orderStatus, deliveryStatus) {
   if (orderStatus === 'DELIVERED' || deliveryStatus === 'DELIVERED') return 3;
@@ -85,9 +47,51 @@ function statusColor(status) {
 }
 
 export default function OrderTrackingPage() {
+  const { t } = useTranslation();
   const { user, orders, refreshAppData } = useContext(AppContext);
   const addToast = useToast();
   const isAdmin = user.role === 'admin';
+
+  const ORDER_STATUS_LABELS = {
+    PENDING: t('orderTracking.steps.orderPlaced'),
+    PROCESSING: t('orders.statusLabels.PROCESSING'),
+    CONFIRMED: 'Confirmed',
+    PREPARING: t('orderTracking.steps.preparing'),
+    READY_FOR_DELIVERY: 'Ready for Delivery',
+    OUT_FOR_DELIVERY: t('orders.statusLabels.OUT_FOR_DELIVERY'),
+    DELIVERED: t('orderTracking.steps.delivered'),
+    CANCELLED: t('orders.statusLabels.CANCELLED'),
+  };
+
+  const ORDER_STATUS_OPTIONS = [
+    { value: '', label: t('orderTracking.allStatuses') },
+    ...Object.entries(ORDER_STATUS_LABELS).map(([value, label]) => ({ value, label })),
+  ];
+
+  const PAYMENT_STATUS_OPTIONS = [
+    { value: '', label: t('orderTracking.allPayments') },
+    { value: 'PENDING', label: t('orders.statusLabels.PENDING') },
+    { value: 'PAID', label: t('orderTracking.paid') },
+    { value: 'FAILED', label: t('orderTracking.failed') },
+    { value: 'REFUNDED', label: t('orderTracking.refunded') },
+  ];
+
+  const DELIVERY_STATUS_OPTIONS = [
+    { value: '', label: t('orderTracking.allDeliveries') },
+    { value: 'PENDING_ASSIGNMENT', label: t('orderTracking.pendingAssignment') },
+    { value: 'ASSIGNED', label: t('orderTracking.assigned') },
+    { value: 'PICKED_UP', label: t('orderTracking.pickedUp') },
+    { value: 'IN_TRANSIT', label: t('orderTracking.inTransit') },
+    { value: 'DELIVERED', label: t('orderTracking.delivered') },
+    { value: 'FAILED', label: t('orderTracking.failed') },
+  ];
+
+  const TRACKING_STAGES = [
+    { label: t('orderTracking.steps.orderPlaced'), icon: <Box size={16} /> },
+    { label: t('orderTracking.steps.preparing'), icon: <SproutIcon /> },
+    { label: t('orderTracking.steps.inTransit'), icon: <Truck size={16} /> },
+    { label: t('orderTracking.steps.delivered'), icon: <CheckCircle2 size={16} /> },
+  ];
 
   const [searchId, setSearchId] = useState('');
   const [activeOrder, setActiveOrder] = useState(orders[0] || null);
@@ -125,7 +129,7 @@ export default function OrderTrackingPage() {
       const res = await orderService.list(buildQuery());
       setAdminOrders(res?.data || []);
     } catch {
-      addToast('Failed to load orders.', 'error');
+      addToast(t('orderTracking.toast.failedToLoadOrders'), 'error');
     } finally {
       setAdminLoading(false);
     }
@@ -162,7 +166,7 @@ export default function OrderTrackingPage() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (!searchId.trim()) {
-      setSearchErr('Please enter an Order ID.');
+      setSearchErr(t('orderTracking.validation.enterOrderId'));
       return;
     }
     setSearchErr('');
@@ -170,24 +174,24 @@ export default function OrderTrackingPage() {
     if (found) {
       setActiveOrder(found);
     } else {
-      setSearchErr(`Order "${searchId}" not found.`);
+      setSearchErr(t('orderTracking.validation.orderNotFound', { id: searchId }));
     }
   };
 
   const getStepIndex = (status) => {
-    if (status === 'Order Placed') return 0;
+    if (status === t('orderTracking.steps.orderPlaced')) return 0;
     if (status === 'Preparing Arrangement') return 1;
-    if (status === 'Out for Delivery') return 2;
-    if (status === 'Delivered') return 3;
+    if (status === t('orders.statusLabels.OUT_FOR_DELIVERY')) return 2;
+    if (status === t('orderTracking.steps.delivered')) return 3;
     return 0;
   };
 
   const stepIndex = activeOrder ? getStepIndex(activeOrder.status) : 0;
   const steps = [
-    { label: 'Order Placed', desc: 'Secure payment confirmed', icon: <Box size={16} /> },
-    { label: 'Preparing', desc: 'Custom assembly by florist', icon: <SproutIcon /> },
-    { label: 'In Transit', desc: 'Out for green EV courier delivery', icon: <Truck size={16} /> },
-    { label: 'Delivered', desc: 'Handed to recipient', icon: <CheckCircle2 size={16} /> },
+    { label: t('orderTracking.steps.orderPlaced'), desc: t('orderTracking.steps.securePaymentConfirmed'), icon: <Box size={16} /> },
+    { label: t('orderTracking.steps.preparing'), desc: t('orderTracking.steps.customAssemblyByFlorist'), icon: <SproutIcon /> },
+    { label: t('orderTracking.steps.inTransit'), desc: t('orderTracking.steps.outForGreenEvCourier'), icon: <Truck size={16} /> },
+    { label: t('orderTracking.steps.delivered'), desc: t('orderTracking.steps.handedToRecipient'), icon: <CheckCircle2 size={16} /> },
   ];
 
   if (isAdmin) {
@@ -221,7 +225,7 @@ export default function OrderTrackingPage() {
           deliveryStatus: detail.delivery?.status || null,
         });
       } catch {
-        addToast('Failed to load order details.', 'error');
+        addToast(t('orderTracking.toast.failedToLoadDetails'), 'error');
       } finally {
         setLoading(false);
       }
@@ -238,31 +242,31 @@ export default function OrderTrackingPage() {
         <div style={styles.container} className="container">
           <div style={styles.adminBackRow}>
             <Button variant="secondary" onClick={handleBack} style={{ padding: '6px 14px', fontSize: '13px' }}>
-              ← Back to All Orders
+              {t('orderTracking.backToAllOrders')}
             </Button>
-            <h2 style={{ ...styles.title, margin: 0, textAlign: 'left' }}>Order {activeOrder.id}</h2>
+            <h2 style={{ ...styles.title, margin: 0, textAlign: 'left' }}>{t('orderTracking.orderLabel', { id: activeOrder.id })}</h2>
           </div>
           <div style={styles.layout}>
             <div className="card" style={styles.statusCard}>
               <div style={styles.metaRow}>
                 <div>
-                  <span style={styles.metaLabel}>Order ID</span>
+                  <span style={styles.metaLabel}>{t('orderTracking.orderId')}</span>
                   <h3 style={styles.orderId}>{activeOrder.id}</h3>
                 </div>
                 <div>
-                  <span style={styles.metaLabel}>Customer</span>
+                  <span style={styles.metaLabel}>{t('orderTracking.customer')}</span>
                   <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-white)', display: 'block' }}>{activeOrder.customerName}</span>
                 </div>
                 <div>
-                  <span style={styles.metaLabel}>Email</span>
+                  <span style={styles.metaLabel}>{t('common.email')}</span>
                   <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{activeOrder.customerEmail}</span>
                 </div>
                 <div>
-                  <span style={styles.metaLabel}>Payment</span>
+                  <span style={styles.metaLabel}>{t('orderTracking.payment')}</span>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: activeOrder.paymentStatus === 'PAID' ? 'var(--success)' : 'var(--btn-yellow)' }}>{activeOrder.paymentStatus}</span>
                 </div>
                 <div>
-                  <span style={styles.metaLabel}>Est. Arrival</span>
+                  <span style={styles.metaLabel}>{t('orderTracking.estArrival')}</span>
                   <div style={styles.estDate}>
                     <Calendar size={14} color="var(--accent-lime)" />
                     <span>{activeOrder.estimatedDelivery || '—'}</span>
@@ -294,12 +298,12 @@ export default function OrderTrackingPage() {
               </div>
             </div>
             <div className="card" style={styles.detailsCard}>
-              <h3 style={styles.detailsTitle}>Delivery Details</h3>
+              <h3 style={styles.detailsTitle}>{t('orderTracking.deliveryDetails')}</h3>
               <div style={styles.divider}></div>
               <div style={styles.detailRow}>
                 <User size={18} color="var(--accent-lime)" style={{ marginTop: '2px' }} />
                 <div>
-                  <span style={styles.detailLabel}>Customer</span>
+                  <span style={styles.detailLabel}>{t('orderTracking.customer')}</span>
                   <p style={styles.detailVal}>{activeOrder.customerName}</p>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{activeOrder.customerEmail}</p>
                 </div>
@@ -307,33 +311,33 @@ export default function OrderTrackingPage() {
               <div style={{ ...styles.detailRow, marginTop: '16px' }}>
                 <MapPin size={18} color="var(--accent-lime)" style={{ marginTop: '2px' }} />
                 <div>
-                  <span style={styles.detailLabel}>Delivery Address</span>
+                  <span style={styles.detailLabel}>{t('orderTracking.destinationAddress')}</span>
                   <p style={styles.detailVal}>{activeOrder.address}</p>
                 </div>
               </div>
               <div style={{ ...styles.detailRow, marginTop: '16px' }}>
                 <Truck size={18} color="var(--accent-lime)" />
                 <div>
-                  <span style={styles.detailLabel}>Courier</span>
+                  <span style={styles.detailLabel}>{t('orderTracking.courier')}</span>
                   <p style={styles.detailVal}>{activeOrder.courier}</p>
                 </div>
               </div>
               <div style={{ ...styles.detailRow, marginTop: '16px' }}>
                 <CreditCard size={18} color="var(--accent-lime)" />
                 <div>
-                  <span style={styles.detailLabel}>Payment</span>
+                  <span style={styles.detailLabel}>{t('orderTracking.payment')}</span>
                   <p style={styles.detailVal}>{activeOrder.paymentStatus}</p>
                 </div>
               </div>
               <div style={{ ...styles.detailRow, marginTop: '16px' }}>
                 <Calendar size={18} color="var(--accent-lime)" />
                 <div>
-                  <span style={styles.detailLabel}>Delivery Method</span>
+                  <span style={styles.detailLabel}>{t('checkout.deliveryMethod')}</span>
                   <p style={styles.detailVal}>{activeOrder.deliveryMethod}</p>
                 </div>
               </div>
               <div style={styles.divider}></div>
-              <h4 style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Items</h4>
+              <h4 style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('orderTracking.items')}</h4>
               <div style={styles.itemsList}>
                 {activeOrder.items.map((item, index) => (
                   <div key={index} style={styles.itemRow}>
@@ -344,7 +348,7 @@ export default function OrderTrackingPage() {
               </div>
               <div style={styles.divider}></div>
               <div style={styles.totalRow}>
-                <span>Total</span>
+                <span>{t('common.total')}</span>
                 <span style={styles.totalPrice}>{formatCurrency(activeOrder.total)}</span>
               </div>
             </div>
@@ -357,11 +361,11 @@ export default function OrderTrackingPage() {
       <div style={styles.container} className="container">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h1 style={styles.title}>All Orders</h1>
-            <p style={styles.subtitle}>Track and manage every customer order in real time.</p>
+            <h1 style={styles.title}>{t('orderTracking.allOrders')}</h1>
+            <p style={styles.subtitle}>{t('orderTracking.allOrdersSubtitle')}</p>
           </div>
           <Button variant="secondary" onClick={loadAdminOrders} style={{ padding: '8px 16px', fontSize: '13px' }}>
-            <RefreshCw size={14} style={{ marginRight: '6px' }} /> Refresh
+            <RefreshCw size={14} style={{ marginRight: '6px' }} /> {t('orderTracking.refresh')}
           </Button>
         </div>
 
@@ -370,38 +374,38 @@ export default function OrderTrackingPage() {
             <div style={{ flex: '1 0 200px', minWidth: '180px' }}>
               <FormInput
                 id="admin-search"
-                placeholder="Search by order ID, name, or email..."
+                placeholder={t('orderTracking.searchPlaceholder')}
                 value={adminSearch}
                 onChange={(e) => setAdminSearch(e.target.value)}
               />
             </div>
             <Button variant="primary" onClick={loadAdminOrders} style={{ padding: '12px 20px' }}>
-              <Search size={16} style={{ marginRight: '6px' }} /> Search
+              <Search size={16} style={{ marginRight: '6px' }} /> {t('orderTracking.search')}
             </Button>
             <Button variant="secondary" onClick={() => setShowFilters(!showFilters)} style={{ padding: '12px 16px' }}>
-              <Filter size={16} style={{ marginRight: '6px' }} /> Filters {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              <Filter size={16} style={{ marginRight: '6px' }} /> {t('orderTracking.filters')} {showFilters ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </Button>
           </div>
 
           {showFilters && (
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
               <div style={{ flex: '1 0 140px', minWidth: '130px' }}>
-                <FormInput id="filter-status" type="select" label="Order Status" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} options={ORDER_STATUS_OPTIONS} />
+                <FormInput id="filter-status" type="select" label={t('orderTracking.status')} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} options={ORDER_STATUS_OPTIONS} />
               </div>
               <div style={{ flex: '1 0 140px', minWidth: '130px' }}>
-                <FormInput id="filter-payment" type="select" label="Payment Status" value={filterPayment} onChange={(e) => setFilterPayment(e.target.value)} options={PAYMENT_STATUS_OPTIONS} />
+                <FormInput id="filter-payment" type="select" label={t('orderTracking.payment')} value={filterPayment} onChange={(e) => setFilterPayment(e.target.value)} options={PAYMENT_STATUS_OPTIONS} />
               </div>
               <div style={{ flex: '1 0 140px', minWidth: '130px' }}>
-                <FormInput id="filter-delivery" type="select" label="Delivery Status" value={filterDelivery} onChange={(e) => setFilterDelivery(e.target.value)} options={DELIVERY_STATUS_OPTIONS} />
+                <FormInput id="filter-delivery" type="select" label={t('orderTracking.status')} value={filterDelivery} onChange={(e) => setFilterDelivery(e.target.value)} options={DELIVERY_STATUS_OPTIONS} />
               </div>
               <div style={{ flex: '1 0 120px', minWidth: '100px' }}>
-                <FormInput id="filter-date-from" type="text" label="Date From" placeholder="YYYY-MM-DD" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} />
+                <FormInput id="filter-date-from" type="text" label={t('common.date')} placeholder="YYYY-MM-DD" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} />
               </div>
               <div style={{ flex: '1 0 120px', minWidth: '100px' }}>
-                <FormInput id="filter-date-to" type="text" label="Date To" placeholder="YYYY-MM-DD" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} />
+                <FormInput id="filter-date-to" type="text" label={t('common.date')} placeholder="YYYY-MM-DD" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} />
               </div>
               <Button variant="secondary" onClick={() => { setAdminSearch(''); setFilterStatus(''); setFilterDelivery(''); setFilterPayment(''); setFilterDateFrom(''); setFilterDateTo(''); }} style={{ padding: '8px 12px', fontSize: '12px', marginBottom: '2px' }}>
-                <X size={14} /> Clear
+                <X size={14} /> {t('orderTracking.clear')}
               </Button>
             </div>
           )}
@@ -411,28 +415,28 @@ export default function OrderTrackingPage() {
           {adminLoading && adminOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px' }}>
               <RefreshCw size={28} className="spin" />
-              <p style={{ color: 'var(--text-muted)', marginTop: '12px' }}>Loading orders...</p>
+              <p style={{ color: 'var(--text-muted)', marginTop: '12px' }}>{t('orderTracking.loadingOrders')}</p>
             </div>
           ) : adminOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '64px 24px' }}>
               <Package size={48} color="var(--border-green)" />
-              <h3 style={{ color: 'var(--text-white)', marginTop: '16px' }}>No Orders Found</h3>
-              <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>No orders match your search or filter criteria.</p>
+              <h3 style={{ color: 'var(--text-white)', marginTop: '16px' }}>{t('orderTracking.noOrdersFound')}</h3>
+              <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>{t('orderTracking.noOrdersMatchFilters')}</p>
             </div>
           ) : (
             <div className="table-container">
               <table className="custom-table" style={{ fontSize: '13px' }}>
                 <thead>
                   <tr>
-                    <th>Customer</th>
-                    <th>Order ID</th>
-                    <th>Items</th>
-                    <th>Status</th>
-                    <th>Payment</th>
-                    <th>Address</th>
-                    <th>Courier</th>
-                    <th>ETA</th>
-                    <th>Tracking</th>
+                    <th>{t('orderTracking.customer')}</th>
+                    <th>{t('orderTracking.orderId')}</th>
+                    <th>{t('orderTracking.items')}</th>
+                    <th>{t('orderTracking.status')}</th>
+                    <th>{t('orderTracking.payment')}</th>
+                    <th>{t('orderTracking.address')}</th>
+                    <th>{t('orderTracking.courier')}</th>
+                    <th>{t('orderTracking.eta')}</th>
+                    <th>{t('orderTracking.tracking')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -474,7 +478,7 @@ export default function OrderTrackingPage() {
                 </tbody>
               </table>
               <div style={{ padding: '12px 16px', fontSize: '12px', color: 'var(--text-muted)', borderTop: '1px solid var(--border-green)' }}>
-                {adminOrders.length} order{adminOrders.length !== 1 ? 's' : ''} · Auto-refreshes every 10s
+                {t('orderTracking.orderCount', { count: adminOrders.length, plural: adminOrders.length !== 1 ? 's' : '' })} · {t('orderTracking.autoRefreshNote')}
               </div>
             </div>
           )}
@@ -484,7 +488,7 @@ export default function OrderTrackingPage() {
           <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
             <div className="card" style={{ padding: '32px', textAlign: 'center' }}>
               <RefreshCw size={32} className="spin" />
-              <p style={{ color: 'var(--text-muted)', marginTop: '12px' }}>Loading order details...</p>
+              <p style={{ color: 'var(--text-muted)', marginTop: '12px' }}>{t('orderTracking.loadingOrderDetails')}</p>
             </div>
           </div>
         )}
@@ -494,8 +498,8 @@ export default function OrderTrackingPage() {
 
   return (
     <div style={styles.container} className="container">
-      <h1 style={styles.title}>Track Your Delivery</h1>
-      <p style={styles.subtitle}>Track your smart florist and garden shipments in real-time.</p>
+      <h1 style={styles.title}>{t('orderTracking.trackYourDelivery')}</h1>
+      <p style={styles.subtitle}>{t('orderTracking.trackSubtitle')}</p>
 
       <div className="card" style={styles.searchCard}>
         <form onSubmit={handleSearch} style={styles.searchForm}>
@@ -510,7 +514,7 @@ export default function OrderTrackingPage() {
           </div>
           <Button type="submit" variant="primary" style={styles.searchBtn}>
             <Search size={18} />
-            <span>Track Order</span>
+            <span>{t('orderTracking.trackOrder')}</span>
           </Button>
         </form>
       </div>
@@ -524,12 +528,12 @@ export default function OrderTrackingPage() {
       {orders.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '64px 24px' }}>
           <Package size={56} color="var(--border-green)" />
-          <h3 style={{ color: 'var(--text-white)', marginTop: '20px' }}>No Orders Yet</h3>
+          <h3 style={{ color: 'var(--text-white)', marginTop: '20px' }}>{t('orderTracking.noOrdersYet')}</h3>
           <p style={{ color: 'var(--text-muted)', margin: '8px 0 24px', maxWidth: '350px', marginLeft: 'auto', marginRight: 'auto' }}>
-            You haven't placed any orders. Browse our catalog and start your green journey!
+            {t('orderTracking.noOrdersDesc')}
           </p>
           <Button variant="lime" onClick={() => window.location.href = '/catalog'}>
-            Browse Catalog
+            {t('orderTracking.browseCatalog')}
           </Button>
         </div>
       ) : activeOrder ? (
@@ -537,15 +541,15 @@ export default function OrderTrackingPage() {
           <div className="card" style={styles.statusCard}>
             <div style={styles.metaRow}>
               <div>
-                <span style={styles.metaLabel}>Order ID</span>
+                <span style={styles.metaLabel}>{t('orderTracking.orderId')}</span>
                 <h3 style={styles.orderId}>{activeOrder.id}</h3>
               </div>
               <div>
-                <span style={styles.metaLabel}>Carrier Code</span>
+                <span style={styles.metaLabel}>{t('orderTracking.carrierCode')}</span>
                 <span style={styles.trackingNo}>{activeOrder.trackingNumber}</span>
               </div>
               <div>
-                <span style={styles.metaLabel}>Est. Arrival</span>
+                <span style={styles.metaLabel}>{t('orderTracking.estArrival')}</span>
                 <div style={styles.estDate}>
                   <Calendar size={14} color="var(--accent-lime)" />
                   <span>{activeOrder.estimatedDelivery}</span>
@@ -580,13 +584,13 @@ export default function OrderTrackingPage() {
           </div>
 
           <div className="card" style={styles.detailsCard}>
-            <h3 style={styles.detailsTitle}>Delivery Details</h3>
+            <h3 style={styles.detailsTitle}>{t('orderTracking.deliveryDetails')}</h3>
             <div style={styles.divider}></div>
 
             <div style={styles.detailRow}>
               <MapPin size={18} color="var(--accent-lime)" style={{ marginTop: '2px' }} />
               <div>
-                <span style={styles.detailLabel}>Destination Address</span>
+                <span style={styles.detailLabel}>{t('orderTracking.destinationAddress')}</span>
                 <p style={styles.detailVal}>{activeOrder.address}</p>
               </div>
             </div>
@@ -594,7 +598,7 @@ export default function OrderTrackingPage() {
             <div style={{ ...styles.detailRow, marginTop: '16px' }}>
               <Truck size={18} color="var(--accent-lime)" />
               <div>
-                <span style={styles.detailLabel}>Courier Method</span>
+                <span style={styles.detailLabel}>{t('orderTracking.courierMethod')}</span>
                 <p style={styles.detailVal}>{activeOrder.deliveryMethod}</p>
               </div>
             </div>
@@ -602,7 +606,7 @@ export default function OrderTrackingPage() {
             <div style={styles.divider}></div>
 
             <h4 style={{ fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
-              Shipment Items
+              {t('orderTracking.shipmentItems')}
             </h4>
             <div style={styles.itemsList}>
               {activeOrder.items.map((item, index) => (
@@ -616,14 +620,14 @@ export default function OrderTrackingPage() {
             <div style={styles.divider}></div>
 
             <div style={styles.totalRow}>
-              <span>Order Grand Total</span>
+              <span>{t('orderTracking.orderGrandTotal')}</span>
               <span style={styles.totalPrice}>{formatCurrency(activeOrder.total)}</span>
             </div>
           </div>
         </div>
       ) : (
         <div className="card" style={{ textAlign: 'center', padding: '48px' }}>
-          <p style={{ color: 'var(--text-muted)' }}>No order tracking details active. Use the search above or select an order from your history.</p>
+          <p style={{ color: 'var(--text-muted)' }}>{t('orderTracking.noOrderTrackingActive')}</p>
         </div>
       )}
     </div>

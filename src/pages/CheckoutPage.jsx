@@ -1,16 +1,20 @@
-﻿import React, { useState, useContext } from 'react';
+﻿import React, { useState, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
 import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { ShieldCheck, Truck, CreditCard, RefreshCw } from 'lucide-react';
+import AirtelMoneyPayment from '../components/AirtelMoneyPayment';
+import { ShieldCheck, Truck, CreditCard, Smartphone, RefreshCw } from 'lucide-react';
 import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 import { formatCurrency } from '../utils/formatCurrency';
 import ImageWithFallback from '../components/ImageWithFallback';
+import { useTranslation } from 'react-i18next';
+import { paymentService } from '../services/paymentService';
 
 export default function CheckoutPage() {
-  const { cart, products, createOrder } = useContext(AppContext);
+  const { t } = useTranslation();
+  const { cart, products, createOrder, refreshAppData } = useContext(AppContext);
   const navigate = useNavigate();
   const addToast = useToast();
   const [fullName, setFullName] = useState('');
@@ -22,18 +26,22 @@ export default function CheckoutPage() {
   const [cardCvv, setCardCvv] = useState('');
   const [phone, setPhone] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState('Standard Green Delivery');
+  const [paymentMethod, setPaymentMethod] = useState('CARD');
+  const [airtelPhone, setAirtelPhone] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
   const [orderError, setOrderError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [airtelTransactionId, setAirtelTransactionId] = useState(null);
+  const [airtelPaymentActive, setAirtelPaymentActive] = useState(false);
 
   const subtotal = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const shipping = deliveryMethod === 'Express Eco-Courier' ? 10000 : (subtotal > 40000 ? 0 : 5000);
   const tax = subtotal * 0.08;
 
   const DISCOUNT_RULES = [
-    { productType: 'plant', label: 'Plants', minQuantity: 50, discountPercent: 5 },
-    { productType: 'flower', label: 'Flowers', minQuantity: 50, discountPercent: 5 },
-    { productType: 'vase', label: 'Vases', minQuantity: 20, discountPercent: 5 },
+    { productType: 'plant', label: t('productCatalog.plants'), minQuantity: 50, discountPercent: 5 },
+    { productType: 'flower', label: t('productCatalog.flowers'), minQuantity: 50, discountPercent: 5 },
+    { productType: 'vase', label: t('productCatalog.vases'), minQuantity: 20, discountPercent: 5 },
   ];
 
   const typeQuantities = {};
@@ -55,7 +63,7 @@ export default function CheckoutPage() {
       const discount = Math.round(categorySubtotal * rule.discountPercent / 100);
       if (discount > 0) {
         totalDiscount += discount;
-        discountMessages.push(`Buy ${rule.minQuantity}+ ${rule.label}: ${rule.discountPercent}% off — you saved ${formatCurrency(discount)}`);
+        discountMessages.push(t('checkout.discountMessage', { minQuantity: rule.minQuantity, label: rule.label, discountPercent: rule.discountPercent, saved: formatCurrency(discount) }));
       }
     }
   }
@@ -64,130 +72,292 @@ export default function CheckoutPage() {
 
   const unavailableItem = cart.find((item) => {
     const product = products.find((current) => String(current.id) === String(item.id));
-    return !product || product.stock < item.quantity;
+    const maxAllowed = item.stock ?? product?.stock ?? 0;
+    return !product || maxAllowed < item.quantity;
   });
 
-  const validateField = (name, value) => {
+  const validateField = useCallback((name, value) => {
     let error = '';
     switch (name) {
       case 'fullName':
-        if (!value.trim()) error = 'Full name is required.';
+        if (!value.trim()) error = t('checkout.fullNameRequired');
         break;
       case 'address':
-        if (!value.trim()) error = 'Street address is required.';
+        if (!value.trim()) error = t('checkout.addressRequired');
         break;
       case 'city':
-        if (!value.trim()) error = 'City is required.';
+        if (!value.trim()) error = t('checkout.cityRequired');
         break;
       case 'zip':
-        if (!value.trim()) error = 'ZIP code is required.';
+        if (!value.trim()) error = t('checkout.zipRequired');
         break;
       case 'phone':
-        if (!value.trim()) error = 'Phone number is required.';
-        else if (!/^\+?[\d\s\-()]{7,15}$/.test(value)) error = 'Enter a valid phone number.';
+        if (!value.trim()) error = t('checkout.phoneRequired');
+        else if (!/^\+?[\d\s\-()]{7,15}$/.test(value)) error = t('checkout.phoneInvalid');
         break;
       case 'cardNumber':
-        if (!value.trim()) error = 'Card number is required.';
-        else if (value.replace(/\s/g, '').length !== 16) error = 'Card number must be 16 digits.';
+        if (paymentMethod === 'AIRTEL_MONEY') break;
+        if (!value.trim()) error = t('checkout.cardRequired');
+        else if (value.replace(/\s/g, '').length !== 16) error = t('checkout.cardInvalid');
         break;
       case 'cardExpiry':
-        if (!value.trim()) error = 'Expiry is required.';
+        if (paymentMethod === 'AIRTEL_MONEY') break;
+        if (!value.trim()) error = t('checkout.expiryRequired');
         break;
       case 'cardCvv':
-        if (!value.trim()) error = 'CVV is required.';
+        if (paymentMethod === 'AIRTEL_MONEY') break;
+        if (!value.trim()) error = t('checkout.cvvRequired');
+        break;
+      case 'airtelPhone':
+        if (paymentMethod !== 'AIRTEL_MONEY') break;
+        if (!value.trim()) error = t('checkout.phoneRequired');
+        else if (!/^(\+?250|0)7[0-9]{8}$/.test(value.replace(/[\s\-()]/g, ''))) error = 'Enter a valid Airtel Money number (e.g. 07XX XXX XXX)';
         break;
     }
     setFieldErrors(prev => ({ ...prev, [name]: error }));
     return !error;
-  };
+  }, [paymentMethod, t]);
 
   const handleBlur = (name) => (e) => {
     validateField(name, e.target.value);
   };
 
-  const validate = () => {
+  const validate = useCallback(() => {
     const tempErrors = {};
-    if (cart.length === 0) tempErrors.cart = 'Your cart is empty.';
-    if (unavailableItem) tempErrors.cart = `${unavailableItem.name} is no longer available in the requested quantity.`;
-    if (!fullName.trim()) tempErrors.fullName = 'Full name is required.';
-    if (!address.trim()) tempErrors.address = 'Street address is required.';
-    if (!city.trim()) tempErrors.city = 'City is required.';
-    if (!zip.trim()) tempErrors.zip = 'ZIP code is required.';
-    if (!phone.trim()) tempErrors.phone = 'Phone number is required.';
-    else if (!/^\+?[\d\s\-()]{7,15}$/.test(phone)) tempErrors.phone = 'Enter a valid phone number.';
-    if (!cardNumber.trim()) tempErrors.cardNumber = 'Card number is required.';
-    else if (cardNumber.replace(/\s/g, '').length !== 16) tempErrors.cardNumber = 'Card number must be 16 digits.';
-    if (!cardExpiry.trim()) tempErrors.cardExpiry = 'Expiry is required.';
-    if (!cardCvv.trim()) tempErrors.cardCvv = 'CVV is required.';
+    if (cart.length === 0) tempErrors.cart = t('checkout.cartEmpty');
+    if (unavailableItem) {
+      const maxAllowed = unavailableItem.stock ?? 0;
+      tempErrors.cart = t('checkout.onlyAvailable', { name: unavailableItem.name, count: maxAllowed, qty: unavailableItem.quantity });
+    }
+    if (!fullName.trim()) tempErrors.fullName = t('checkout.fullNameRequired');
+    if (!address.trim()) tempErrors.address = t('checkout.addressRequired');
+    if (!city.trim()) tempErrors.city = t('checkout.cityRequired');
+    if (!zip.trim()) tempErrors.zip = t('checkout.zipRequired');
+    if (!phone.trim()) tempErrors.phone = t('checkout.phoneRequired');
+    else if (!/^\+?[\d\s\-()]{7,15}$/.test(phone)) tempErrors.phone = t('checkout.phoneInvalid');
+
+    if (paymentMethod === 'CARD') {
+      if (!cardNumber.trim()) tempErrors.cardNumber = t('checkout.cardRequired');
+      else if (cardNumber.replace(/\s/g, '').length !== 16) tempErrors.cardNumber = t('checkout.cardInvalid');
+      if (!cardExpiry.trim()) tempErrors.cardExpiry = t('checkout.expiryRequired');
+      if (!cardCvv.trim()) tempErrors.cardCvv = t('checkout.cvvRequired');
+    } else if (paymentMethod === 'AIRTEL_MONEY') {
+      if (!airtelPhone.trim()) tempErrors.airtelPhone = 'Airtel Money phone number is required';
+      else if (!/^(\+?250|0)7[0-9]{8}$/.test(airtelPhone.replace(/[\s\-()]/g, ''))) tempErrors.airtelPhone = 'Enter a valid Airtel Money number (e.g. 07XX XXX XXX)';
+    }
+
     setFieldErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
-  };
+  }, [cart, unavailableItem, fullName, address, city, zip, phone, paymentMethod, cardNumber, cardExpiry, cardCvv, airtelPhone, t]);
+
+  const handleAirtelComplete = useCallback(async (paymentData) => {
+    setAirtelPaymentActive(false);
+    setAirtelTransactionId(null);
+    setSubmitting(false);
+
+    if (paymentData?.status === 'COMPLETED') {
+      try { await refreshAppData(); } catch { /* best-effort */ }
+      addToast(t('checkout.orderSuccess'), 'success');
+      navigate('/order-tracking');
+      return;
+    }
+
+    if (paymentData?.status === 'FAILED') {
+      setOrderError(t('checkout.paymentFailed'));
+      addToast(t('checkout.paymentFailed'), 'error');
+      return;
+    }
+
+    if (paymentData?.status === 'CANCELLED') {
+      setOrderError(t('checkout.paymentCancelled'));
+      addToast(t('checkout.paymentCancelled'), 'error');
+      return;
+    }
+
+    if (paymentData?.status === 'EXPIRED') {
+      setOrderError(t('checkout.paymentExpired'));
+      addToast(t('checkout.paymentExpired'), 'error');
+      return;
+    }
+
+    setOrderError(t('checkout.orderFailed'));
+    addToast(t('checkout.orderFailed'), 'error');
+  }, [addToast, navigate, refreshAppData, t]);
+
+  const handleAirtelCancel = useCallback(() => {
+    setAirtelPaymentActive(false);
+    setAirtelTransactionId(null);
+    setSubmitting(false);
+  }, []);
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+
     setSubmitting(true);
-    const result = await createOrder({ total: grandTotal, fullName, address, city, zip, deliveryMethod, phone });
-    setSubmitting(false);
-    if (!result.ok) {
-      setOrderError(result.error);
-      addToast(result.error || 'Failed to place order.', 'error');
-      return;
-    }
     setOrderError('');
-    addToast('Order placed successfully!', 'success');
-    navigate('/order-tracking');
+
+    if (paymentMethod === 'AIRTEL_MONEY') {
+      try {
+        const cleanPhone = airtelPhone.replace(/[\s\-()]/g, '');
+        const fullPhone = cleanPhone.startsWith('250') ? cleanPhone : `250${cleanPhone.replace(/^0/, '')}`;
+        const mappedDelivery = deliveryMethod === 'Express Eco-Courier' ? 'EXPRESS' : 'STANDARD';
+
+        const result = await paymentService.initiateAirtelPayment({
+          phone: fullPhone,
+          deliveryMethod: mappedDelivery,
+          shippingFullName: fullName,
+          shippingPhone: phone,
+          shippingAddress: address,
+          shippingCity: city,
+          shippingDistrict: zip,
+          total: grandTotal,
+        });
+
+        const txnId = result?.data?.transactionId;
+        if (!txnId) {
+          throw new Error(t('checkout.paymentInitFailed'));
+        }
+
+        setAirtelTransactionId(txnId);
+        setAirtelPaymentActive(true);
+      } catch (err) {
+        const errorCode = err.code || '';
+        const errorMap = {
+          'EMPTY_CART': t('checkout.cartEmpty'),
+          'INSUFFICIENT_STOCK': t('checkout.inventoryChanged'),
+          'AUTH_TOKEN_EXPIRED': t('checkout.sessionExpired'),
+          'UNAUTHORIZED': t('checkout.sessionExpired'),
+        };
+        const msg = errorMap[errorCode] || err.message || t('checkout.orderFailed');
+        setOrderError(msg);
+        addToast(msg, 'error');
+        setSubmitting(false);
+      }
+    } else {
+      const result = await createOrder({ total: grandTotal, fullName, address, city, zip, deliveryMethod, phone, paymentMethod: 'CARD' });
+      setSubmitting(false);
+      if (!result.ok) {
+        const errorCode = result.code || '';
+        const errorMap = {
+          'EMPTY_CART': t('checkout.cartEmpty'),
+          'INSUFFICIENT_STOCK': t('checkout.inventoryChanged'),
+          'AUTH_TOKEN_EXPIRED': t('checkout.sessionExpired'),
+          'UNAUTHORIZED': t('checkout.sessionExpired'),
+          'CHECKOUT_FAILED': t('checkout.serverError'),
+        };
+        const msg = errorMap[errorCode] || result.error || t('checkout.orderFailed');
+        setOrderError(msg);
+        addToast(msg, 'error');
+        return;
+      }
+      setOrderError('');
+      addToast(t('checkout.orderSuccess'), 'success');
+      navigate('/order-tracking');
+    }
   };
+
+  const isAirtel = paymentMethod === 'AIRTEL_MONEY';
 
   return (
     <div style={styles.container} className="container">
-      <h1 style={styles.title}>Secure Checkout</h1>
-      <p style={styles.subtitle}>Enter your delivery and billing credentials to complete purchase.</p>
+      <h1 style={styles.title}>{t('checkout.title')}</h1>
+      <p style={styles.subtitle}>{t('checkout.subtitle')}</p>
       {(orderError || fieldErrors.cart) && <div className="card" style={styles.errorSummary}>{orderError || fieldErrors.cart}</div>}
 
-      {submitting && (
+      {submitting && !airtelPaymentActive && (
         <div style={{ textAlign: 'center', margin: '24px 0' }}>
           <RefreshCw size={24} className="spin" />
-          <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>Processing your order...</p>
+          <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>{t('checkout.processing')}</p>
         </div>
       )}
-      <form onSubmit={handlePlaceOrder} noValidate style={submitting ? { ...styles.layout, opacity: 0.5, pointerEvents: 'none' } : styles.layout}>
+
+      <form onSubmit={handlePlaceOrder} noValidate style={(submitting && !airtelPaymentActive) ? { ...styles.layout, opacity: 0.5, pointerEvents: 'none' } : styles.layout}>
         <div style={styles.formCol}>
           <div className="card" style={{ marginBottom: '24px' }}>
-            <h3 style={styles.sectionTitle}><Truck size={18} color="var(--accent-lime)" style={{ marginRight: '8px' }} />Shipping Destination</h3>
+            <h3 style={styles.sectionTitle}><Truck size={18} color="var(--accent-lime)" style={{ marginRight: '8px' }} />{t('checkout.shippingDestination')}</h3>
             <div style={styles.divider}></div>
-            <FormInput label="Recipient Name" id="fullName" value={fullName} onChange={(e) => { setFullName(e.target.value); if (fieldErrors.fullName) validateField('fullName', e.target.value); }} onBlur={handleBlur('fullName')} error={fieldErrors.fullName} ariaInvalid={!!fieldErrors.fullName} ariaDescribedby={fieldErrors.fullName ? 'error-fullName' : undefined} required />
+            <FormInput label={t('checkout.recipientNameLabel')} id="fullName" value={fullName} onChange={(e) => { setFullName(e.target.value); if (fieldErrors.fullName) validateField('fullName', e.target.value); }} onBlur={handleBlur('fullName')} error={fieldErrors.fullName} ariaInvalid={!!fieldErrors.fullName} ariaDescribedby={fieldErrors.fullName ? 'error-fullName' : undefined} required />
             {fieldErrors.fullName && <span id="error-fullName" style={styles.fieldError}>{fieldErrors.fullName}</span>}
-            <FormInput label="Street Address" id="address" value={address} onChange={(e) => { setAddress(e.target.value); if (fieldErrors.address) validateField('address', e.target.value); }} onBlur={handleBlur('address')} error={fieldErrors.address} ariaInvalid={!!fieldErrors.address} ariaDescribedby={fieldErrors.address ? 'error-address' : undefined} required />
+            <FormInput label={t('checkout.streetAddressLabel')} id="address" value={address} onChange={(e) => { setAddress(e.target.value); if (fieldErrors.address) validateField('address', e.target.value); }} onBlur={handleBlur('address')} error={fieldErrors.address} ariaInvalid={!!fieldErrors.address} ariaDescribedby={fieldErrors.address ? 'error-address' : undefined} required />
             {fieldErrors.address && <span id="error-address" style={styles.fieldError}>{fieldErrors.address}</span>}
-            <FormInput label="Phone Number" id="phone" type="tel" placeholder="+250 7XX XXX XXX" value={phone} onChange={(e) => { setPhone(e.target.value); if (fieldErrors.phone) validateField('phone', e.target.value); }} onBlur={handleBlur('phone')} error={fieldErrors.phone} ariaInvalid={!!fieldErrors.phone} ariaDescribedby={fieldErrors.phone ? 'error-phone' : undefined} required />
+            <FormInput label={t('checkout.phoneNumberLabel')} id="phone" type="tel" placeholder="+250 7XX XXX XXX" value={phone} onChange={(e) => { setPhone(e.target.value); if (fieldErrors.phone) validateField('phone', e.target.value); }} onBlur={handleBlur('phone')} error={fieldErrors.phone} ariaInvalid={!!fieldErrors.phone} ariaDescribedby={fieldErrors.phone ? 'error-phone' : undefined} required />
             {fieldErrors.phone && <span id="error-phone" style={styles.fieldError}>{fieldErrors.phone}</span>}
             <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ flex: 1.5 }}><FormInput label="City" id="city" value={city} onChange={(e) => { setCity(e.target.value); if (fieldErrors.city) validateField('city', e.target.value); }} onBlur={handleBlur('city')} error={fieldErrors.city} ariaInvalid={!!fieldErrors.city} ariaDescribedby={fieldErrors.city ? 'error-city' : undefined} required /></div>
-              <div style={{ flex: 1 }}><FormInput label="ZIP Code" id="zip" value={zip} onChange={(e) => { setZip(e.target.value); if (fieldErrors.zip) validateField('zip', e.target.value); }} onBlur={handleBlur('zip')} error={fieldErrors.zip} ariaInvalid={!!fieldErrors.zip} ariaDescribedby={fieldErrors.zip ? 'error-zip' : undefined} required /></div>
+              <div style={{ flex: 1.5 }}><FormInput label={t('checkout.cityLabel')} id="city" value={city} onChange={(e) => { setCity(e.target.value); if (fieldErrors.city) validateField('city', e.target.value); }} onBlur={handleBlur('city')} error={fieldErrors.city} ariaInvalid={!!fieldErrors.city} ariaDescribedby={fieldErrors.city ? 'error-city' : undefined} required /></div>
+              <div style={{ flex: 1 }}><FormInput label={t('checkout.zipCodeLabel')} id="zip" value={zip} onChange={(e) => { setZip(e.target.value); if (fieldErrors.zip) validateField('zip', e.target.value); }} onBlur={handleBlur('zip')} error={fieldErrors.zip} ariaInvalid={!!fieldErrors.zip} ariaDescribedby={fieldErrors.zip ? 'error-zip' : undefined} required /></div>
             </div>
             {fieldErrors.city && <span id="error-city" style={styles.fieldError}>{fieldErrors.city}</span>}
             {fieldErrors.zip && <span id="error-zip" style={styles.fieldError}>{fieldErrors.zip}</span>}
-            <FormInput label="Delivery Courier Method" id="delivery" type="select" value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} options={[{ value: 'Standard Green Delivery', label: 'Standard Green Delivery (3-5 business days)' }, { value: 'Express Eco-Courier', label: 'Express Eco-Courier (1-2 business days)' }]} />
+            <FormInput label={t('checkout.deliveryCourierMethod')} id="delivery" type="select" value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)} options={[{ value: 'Standard Green Delivery', label: t('checkout.standardDeliveryOption') }, { value: 'Express Eco-Courier', label: t('checkout.expressDeliveryOption') }]} />
           </div>
 
           <div className="card">
-            <h3 style={styles.sectionTitle}><CreditCard size={18} color="var(--accent-lime)" style={{ marginRight: '8px' }} />Payment Billing</h3>
+            <h3 style={styles.sectionTitle}><CreditCard size={18} color="var(--accent-lime)" style={{ marginRight: '8px' }} />{t('checkout.paymentBilling')}</h3>
             <div style={styles.divider}></div>
-            <FormInput label="Credit Card Number" id="cardNumber" placeholder="4000 1234 5678 9010" value={cardNumber} onChange={(e) => { setCardNumber(e.target.value); if (fieldErrors.cardNumber) validateField('cardNumber', e.target.value); }} onBlur={handleBlur('cardNumber')} error={fieldErrors.cardNumber} ariaInvalid={!!fieldErrors.cardNumber} ariaDescribedby={fieldErrors.cardNumber ? 'error-cardNumber' : undefined} required />
-            {fieldErrors.cardNumber && <span id="error-cardNumber" style={styles.fieldError}>{fieldErrors.cardNumber}</span>}
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div style={{ flex: 1.2 }}><FormInput label="Expiry Date" id="cardExpiry" placeholder="MM/YY" value={cardExpiry} onChange={(e) => { setCardExpiry(e.target.value); if (fieldErrors.cardExpiry) validateField('cardExpiry', e.target.value); }} onBlur={handleBlur('cardExpiry')} error={fieldErrors.cardExpiry} ariaInvalid={!!fieldErrors.cardExpiry} ariaDescribedby={fieldErrors.cardExpiry ? 'error-cardExpiry' : undefined} required /></div>
-              <div style={{ flex: 1 }}><FormInput label="CVV Code" id="cardCvv" placeholder="123" value={cardCvv} onChange={(e) => { setCardCvv(e.target.value); if (fieldErrors.cardCvv) validateField('cardCvv', e.target.value); }} onBlur={handleBlur('cardCvv')} error={fieldErrors.cardCvv} ariaInvalid={!!fieldErrors.cardCvv} ariaDescribedby={fieldErrors.cardCvv ? 'error-cardCvv' : undefined} required /></div>
+
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              <button type="button" onClick={() => { setPaymentMethod('CARD'); setFieldErrors({}); }} style={{
+                flex: 1, padding: '12px', borderRadius: 'var(--radius-md)', border: `2px solid ${paymentMethod === 'CARD' ? 'var(--accent-lime)' : 'var(--border-green)'}`,
+                background: paymentMethod === 'CARD' ? 'rgba(132, 204, 22, 0.1)' : 'transparent', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                color: paymentMethod === 'CARD' ? 'var(--accent-lime)' : 'var(--text-muted)', fontWeight: 600, fontSize: '14px',
+                transition: 'var(--transition)',
+              }}>
+                <CreditCard size={18} /> Card Payment
+              </button>
+              <button type="button" onClick={() => { setPaymentMethod('AIRTEL_MONEY'); setFieldErrors({}); }} style={{
+                flex: 1, padding: '12px', borderRadius: 'var(--radius-md)', border: `2px solid ${paymentMethod === 'AIRTEL_MONEY' ? 'var(--accent-lime)' : 'var(--border-green)'}`,
+                background: paymentMethod === 'AIRTEL_MONEY' ? 'rgba(132, 204, 22, 0.1)' : 'transparent', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                color: paymentMethod === 'AIRTEL_MONEY' ? 'var(--accent-lime)' : 'var(--text-muted)', fontWeight: 600, fontSize: '14px',
+                transition: 'var(--transition)',
+              }}>
+                <Smartphone size={18} /> Airtel Money
+              </button>
             </div>
-            {fieldErrors.cardExpiry && <span id="error-cardExpiry" style={styles.fieldError}>{fieldErrors.cardExpiry}</span>}
-            {fieldErrors.cardCvv && <span id="error-cardCvv" style={styles.fieldError}>{fieldErrors.cardCvv}</span>}
+
+            {paymentMethod === 'CARD' && (
+              <>
+                <FormInput label={t('checkout.creditCardNumber')} id="cardNumber" placeholder="4000 1234 5678 9010" value={cardNumber} onChange={(e) => { setCardNumber(e.target.value); if (fieldErrors.cardNumber) validateField('cardNumber', e.target.value); }} onBlur={handleBlur('cardNumber')} error={fieldErrors.cardNumber} ariaInvalid={!!fieldErrors.cardNumber} ariaDescribedby={fieldErrors.cardNumber ? 'error-cardNumber' : undefined} required />
+                {fieldErrors.cardNumber && <span id="error-cardNumber" style={styles.fieldError}>{fieldErrors.cardNumber}</span>}
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1.2 }}><FormInput label={t('checkout.expiryDate')} id="cardExpiry" placeholder="MM/YY" value={cardExpiry} onChange={(e) => { setCardExpiry(e.target.value); if (fieldErrors.cardExpiry) validateField('cardExpiry', e.target.value); }} onBlur={handleBlur('cardExpiry')} error={fieldErrors.cardExpiry} ariaInvalid={!!fieldErrors.cardExpiry} ariaDescribedby={fieldErrors.cardExpiry ? 'error-cardExpiry' : undefined} required /></div>
+                  <div style={{ flex: 1 }}><FormInput label={t('checkout.cvvCode')} id="cardCvv" placeholder="123" value={cardCvv} onChange={(e) => { setCardCvv(e.target.value); if (fieldErrors.cardCvv) validateField('cardCvv', e.target.value); }} onBlur={handleBlur('cardCvv')} error={fieldErrors.cardCvv} ariaInvalid={!!fieldErrors.cardCvv} ariaDescribedby={fieldErrors.cardCvv ? 'error-cardCvv' : undefined} required /></div>
+                </div>
+                {fieldErrors.cardExpiry && <span id="error-cardExpiry" style={styles.fieldError}>{fieldErrors.cardExpiry}</span>}
+                {fieldErrors.cardCvv && <span id="error-cardCvv" style={styles.fieldError}>{fieldErrors.cardCvv}</span>}
+              </>
+            )}
+
+            {paymentMethod === 'AIRTEL_MONEY' && (
+              <>
+                <div style={{ padding: '16px', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(132, 204, 22, 0.06)', border: '1px solid rgba(132, 204, 22, 0.2)', marginBottom: '16px', fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                  <Smartphone size={16} style={{ marginRight: '6px', verticalAlign: 'middle', color: 'var(--accent-lime)' }} />
+                  You will receive a payment request on your Airtel Money number. Open the message and enter your PIN to authorize the payment.
+                </div>
+                <FormInput
+                  label="Airtel Money Number"
+                  id="airtelPhone"
+                  type="tel"
+                  placeholder="07XX XXX XXX"
+                  value={airtelPhone}
+                  onChange={(e) => { setAirtelPhone(e.target.value); if (fieldErrors.airtelPhone) validateField('airtelPhone', e.target.value); }}
+                  onBlur={handleBlur('airtelPhone')}
+                  error={fieldErrors.airtelPhone}
+                  ariaInvalid={!!fieldErrors.airtelPhone}
+                  ariaDescribedby={fieldErrors.airtelPhone ? 'error-airtelPhone' : undefined}
+                  required
+                />
+                {fieldErrors.airtelPhone && <span id="error-airtelPhone" style={styles.fieldError}>{fieldErrors.airtelPhone}</span>}
+              </>
+            )}
           </div>
         </div>
 
         <div style={styles.summaryCol}>
           <div className="card" style={{ position: 'sticky', top: '100px' }}>
-            <h3 style={styles.sectionTitle}>Order Summary</h3>
+            <h3 style={styles.sectionTitle}>{t('checkout.orderSummary')}</h3>
             <div style={styles.divider}></div>
             <div style={styles.itemsSummary}>
               {cart.map((item) => (
@@ -195,20 +365,20 @@ export default function CheckoutPage() {
                   <ImageWithFallback src={item.image} alt={item.name} category={item.category} style={{ width: '40px', height: '40px', borderRadius: '6px' }} />
                   <div style={{ flex: 1 }}>
                     <h5 style={styles.summaryItemName}>{item.name}</h5>
-                    <span style={styles.summaryItemQty}>Qty: {item.quantity}</span>
+                    <span style={styles.summaryItemQty}>{t('checkout.qtyLabel', { quantity: item.quantity })}</span>
                   </div>
                   <span style={styles.summaryItemPrice}>{formatCurrency(item.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
             <div style={styles.divider}></div>
-            <div style={styles.summaryRow}><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
-            <div style={styles.summaryRow}><span>Eco-Shipping</span><span>{shipping === 0 ? 'FREE' : formatCurrency(shipping)}</span></div>
-            <div style={styles.summaryRow}><span>Tax (8%)</span><span>{formatCurrency(tax)}</span></div>
+            <div style={styles.summaryRow}><span>{t('checkout.subtotal')}</span><span>{formatCurrency(subtotal)}</span></div>
+            <div style={styles.summaryRow}><span>{t('checkout.ecoShipping')}</span><span>{shipping === 0 ? t('cart.free') : formatCurrency(shipping)}</span></div>
+            <div style={styles.summaryRow}><span>{t('checkout.tax')}</span><span>{formatCurrency(tax)}</span></div>
             {totalDiscount > 0 && (
               <>
                 <div style={{ ...styles.summaryRow, color: 'var(--accent-lime)', fontWeight: '600' }}>
-                  <span>Quantity Discount</span>
+                  <span>{t('checkout.quantityDiscount')}</span>
                   <span>-{formatCurrency(totalDiscount)}</span>
                 </div>
                 <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-sm)', backgroundColor: 'rgba(132, 204, 22, 0.08)', border: '1px solid rgba(132, 204, 22, 0.3)', fontSize: '12px', color: 'var(--accent-lime)', marginBottom: '12px' }}>
@@ -217,14 +387,27 @@ export default function CheckoutPage() {
               </>
             )}
             <div style={styles.divider}></div>
-            <div style={{ ...styles.summaryRow, fontSize: '18px', fontWeight: '800', color: 'var(--text-white)' }}><span>Grand Total</span><span style={{ color: totalDiscount > 0 ? 'var(--accent-lime)' : 'var(--text-white)' }}>{formatCurrency(grandTotal)}</span></div>
+            <div style={{ ...styles.summaryRow, fontSize: '18px', fontWeight: '800', color: 'var(--text-white)' }}><span>{t('cart.grandTotal')}</span><span style={{ color: totalDiscount > 0 ? 'var(--accent-lime)' : 'var(--text-white)' }}>{formatCurrency(grandTotal)}</span></div>
             <Button type="submit" variant="primary" style={styles.placeOrderBtn} disabled={submitting || cart.length === 0 || Boolean(unavailableItem)}>
-              {submitting ? 'Placing Order...' : `Place Secure Order (${formatCurrency(grandTotal)})`}
+              {submitting
+                ? (isAirtel ? 'Sending Payment Request...' : t('checkout.placingOrder'))
+                : (isAirtel ? `Pay with Airtel Money (${formatCurrency(grandTotal)})` : t('checkout.placeSecureOrder', { total: formatCurrency(grandTotal) }))}
             </Button>
-            <div style={styles.securitySeal}><ShieldCheck size={16} color="var(--accent-lime)" /><span>Payments are SSL secured & PCI compliant.</span></div>
+            <div style={styles.securitySeal}><ShieldCheck size={16} color="var(--accent-lime)" /><span>{t('checkout.sslNotice')}</span></div>
           </div>
         </div>
       </form>
+
+      {airtelPaymentActive && airtelTransactionId && (
+        <AirtelMoneyPayment
+          transactionId={airtelTransactionId}
+          amount={grandTotal}
+          phone={airtelPhone}
+          onComplete={handleAirtelComplete}
+          onCancel={handleAirtelCancel}
+          t={t}
+        />
+      )}
     </div>
   );
 }

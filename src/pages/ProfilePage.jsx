@@ -8,38 +8,38 @@ import Button from '../components/Button';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import { validatePassword } from '../utils/passwordValidation';
 import { User, LogOut, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function ProfilePage() {
-  const { user, handleLogout, switchRole, updateUserProfile } = useContext(AppContext);
+  const { t } = useTranslation();
+  const { user, handleLogout, updateUserProfile } = useContext(AppContext);
   const navigate = useNavigate();
   const addToast = useToast();
 
-  // Settings Fields States
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Form Validation
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
   const [passwordValid, setPasswordValid] = useState(true);
 
   const validate = () => {
     const tempErrors = {};
-    if (!name.trim()) tempErrors.name = 'Full name is required.';
+    if (!name.trim())       tempErrors.name = t('profilePage.validation.nameRequired');
     if (!email) {
-      tempErrors.email = 'Email address is required.';
+      tempErrors.email = t('profilePage.validation.emailRequired');
     } else {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) tempErrors.email = 'Enter a valid email address.';
+      if (!emailRegex.test(email)) tempErrors.email = t('profilePage.validation.emailInvalid');
     }
 
     if (password && !validatePassword(password).valid) {
-      tempErrors.password = 'Password does not meet all requirements.';
+      tempErrors.password = t('profilePage.validation.passwordInvalid');
     }
     if (password !== confirmPassword) {
-      tempErrors.confirmPassword = 'Passwords do not match.';
+      tempErrors.confirmPassword = t('profilePage.validation.passwordsNoMatch');
     }
 
     setErrors(tempErrors);
@@ -53,13 +53,13 @@ export default function ProfilePage() {
     const result = updateUserProfile({ name, email, password });
     if (!result.ok) {
       setErrors({ email: result.error });
-      addToast(result.error || 'Failed to update profile.', 'error');
+      addToast(result.error || t('profilePage.toast.updateFailed'), 'error');
       return;
     }
     setSuccess(true);
     setPassword('');
     setConfirmPassword('');
-    addToast('Profile updated successfully!', 'success');
+    addToast(t('profilePage.toast.profileUpdated'), 'success');
     setTimeout(() => setSuccess(false), 3000);
   };
 
@@ -73,69 +73,43 @@ export default function ProfilePage() {
   return (
     <div className="dashboard-content">
         <div style={styles.header}>
-          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Workspace Profile Settings</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Manage user identity records, configure notification defaults, and switch workspace roles.</p>
+          <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('profilePage.title')}</h2>
+          <p style={{ color: 'var(--text-muted)' }}>{t('profilePage.subtitle')}</p>
         </div>
 
         <div style={styles.layout}>
-          {/* Identity card */}
           <div className="card" style={{ flex: 1, minWidth: '300px', alignSelf: 'flex-start' }}>
             <div style={styles.avatarContainer}>
               <div style={styles.avatar}>
                 <User size={36} color="var(--accent-lime)" />
               </div>
               <h3 style={{ color: 'var(--text-white)', marginTop: '16px' }}>{user.name}</h3>
-              <span style={styles.roleLabel}>{user.role.toUpperCase()} Workspace</span>
-            </div>
-
-            <div style={styles.divider}></div>
-
-            {/* Quick role-hopping list */}
-            <h4 style={styles.sectionSubTitle}>Swap Workspace Views</h4>
-            <div style={styles.rolesRow}>
-              {['customer', 'florist', 'gardener', 'admin'].map((role) => (
-                <button
-                  key={role}
-                  onClick={() => {
-                    switchRole(role);
-                    navigate(`/${role}-dashboard`);
-                  }}
-                  style={{
-                    ...styles.roleTab,
-                    borderColor: user.role === role ? 'var(--accent-lime)' : 'var(--border-green)',
-                    backgroundColor: user.role === role ? 'rgba(132, 204, 22, 0.05)' : 'var(--bg-darker)',
-                    color: user.role === role ? 'var(--accent-lime)' : 'var(--text-muted)'
-                  }}
-                >
-                  {role.toUpperCase()}
-                </button>
-              ))}
+              <span style={styles.roleLabel}>{t('profilePage.workspace', { role: user.role.toUpperCase() })}</span>
             </div>
 
             <div style={styles.divider}></div>
 
             <Button onClick={handleLogoutAction} variant="secondary" style={styles.logoutBtn} icon={<LogOut size={16} />}>
-              Sign Out of Session
+              {t('profilePage.signOut')}
             </Button>
           </div>
 
-          {/* Form edit card */}
           <div className="card" style={{ flex: 1.8, minWidth: '350px' }}>
-            <h3 style={styles.sectionTitle}>Account Credentials</h3>
+            <h3 style={styles.sectionTitle}>{t('profilePage.accountCredentials')}</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 20px' }}>
-              Update settings for your active workspace log.
+              {t('profilePage.updateSettingsHint')}
             </p>
 
             {success && (
               <div style={styles.successBanner}>
                 <CheckCircle size={16} color="var(--success)" />
-                <span>Profile credentials updated successfully!</span>
+                <span>{t('profilePage.credentialsUpdatedBanner')}</span>
               </div>
             )}
 
             <form onSubmit={handleUpdateProfile}>
               <FormInput
-                label="Full Name"
+                label={t('profilePage.fullNameLabel')}
                 id="name-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -144,7 +118,7 @@ export default function ProfilePage() {
               />
 
               <FormInput
-                label="Email Address"
+                label={t('profilePage.emailAddressLabel')}
                 id="email-input"
                 type="email"
                 value={email}
@@ -156,10 +130,10 @@ export default function ProfilePage() {
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
                   <FormInput
-                    label="New Password (optional)"
+                    label={t('profilePage.newPasswordOptional')}
                     id="pwd-input"
                     type="password"
-                    placeholder="Min. 12 characters"
+                    placeholder={t('profilePage.minCharsPlaceholder')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     error={errors.password}
@@ -168,7 +142,7 @@ export default function ProfilePage() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <FormInput
-                    label="Confirm New Password"
+                    label={t('profilePage.confirmNewPasswordLabel')}
                     id="cpwd-input"
                     type="password"
                     placeholder="••••••"
@@ -180,7 +154,7 @@ export default function ProfilePage() {
               </div>
 
               <Button type="submit" variant="lime" style={{ marginTop: '12px' }} disabled={password.length > 0 && !passwordValid}>
-                Save Profile Changes
+                {t('profilePage.saveProfileChanges')}
               </Button>
             </form>
           </div>
@@ -236,29 +210,6 @@ const styles = {
     fontWeight: '700',
     color: 'var(--text-white)',
   },
-  sectionSubTitle: {
-    fontSize: '13px',
-    fontWeight: '700',
-    color: 'var(--text-white)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    marginBottom: '12px',
-  },
-  rolesRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '10px',
-  },
-  roleTab: {
-    border: '1px solid',
-    borderRadius: 'var(--radius-sm)',
-    padding: '10px',
-    fontSize: '11px',
-    fontWeight: '700',
-    cursor: 'pointer',
-    textAlign: 'center',
-    transition: 'var(--transition)',
-  },
   logoutBtn: {
     width: '100%',
     padding: '12px',
@@ -276,5 +227,3 @@ const styles = {
     marginBottom: '24px',
   }
 };
-
-

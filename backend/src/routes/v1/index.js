@@ -2,6 +2,7 @@ import { Router } from 'express';
 import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
 import userRoutes from './users.routes.js';
+import adminRoutes from './admin.routes.js';
 import roleRoutes from './roles.routes.js';
 import permissionRoutes from './permissions.routes.js';
 import productRoutes from './products.routes.js';
@@ -20,12 +21,14 @@ import gardenPlanRoutes from './garden-plans.routes.js';
 import notificationsRoutes from './notifications.routes.js';
 import consultationRoutes from './consultation.routes.js';
 import plantCareRemindersRoutes from './plant-care-reminders.routes.js';
+import paymentRoutes from './payment.routes.js';
 
 const router = Router();
 
 router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
+router.use('/admin', adminRoutes);
 router.use('/roles', roleRoutes);
 router.use('/permissions', permissionRoutes);
 router.use('/products', productRoutes);
@@ -44,6 +47,7 @@ router.use('/garden-plans', gardenPlanRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/consultations', consultationRoutes);
 router.use('/plant-care-reminders', plantCareRemindersRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;
 

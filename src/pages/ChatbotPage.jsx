@@ -1,13 +1,17 @@
 ﻿import React, { useState, useEffect, useRef, useContext } from 'react';
+import { useLocation } from 'react-router-dom';
 import { MessageSquare, Send, Sparkles, Sprout, RefreshCw, Plus, Trash2, Archive, History } from 'lucide-react';
 import { AppContext } from '../context/AppData';
 import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { chatbotService } from '../services/chatbotService';
+import { useTranslation } from 'react-i18next';
 
 export default function ChatbotPage() {
+  const { t } = useTranslation();
   const { quickAskChatbot } = useContext(AppContext);
   const addToast = useToast();
+  const location = useLocation();
   const [messages, setMessages] = useState([]);
   const [inputVal, setInputVal] = useState('');
   const [typing, setTyping] = useState(false);
@@ -20,6 +24,14 @@ export default function ChatbotPage() {
   useEffect(() => {
     loadConversations();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get('q');
+    if (q) {
+      setInputVal(decodeURIComponent(q));
+    }
+  }, [location.search]);
 
   const loadConversations = async () => {
     setConvLoading(true);
@@ -69,7 +81,7 @@ export default function ChatbotPage() {
         setMessages([]);
       }
     } catch {
-      addToast('Failed to start new conversation.', 'error');
+      addToast(t('chatbotPage.toast.failedToStartConversation'), 'error');
     }
   };
 
@@ -87,9 +99,9 @@ export default function ChatbotPage() {
           setMessages([]);
         }
       }
-      addToast('Conversation archived.', 'success');
+      addToast(t('chatbotPage.toast.conversationArchived'), 'success');
     } catch {
-      addToast('Failed to archive conversation.', 'error');
+      addToast(t('chatbotPage.toast.failedToArchive'), 'error');
     }
   };
 
@@ -107,9 +119,9 @@ export default function ChatbotPage() {
           setMessages([]);
         }
       }
-      addToast('Conversation deleted.', 'success');
+      addToast(t('chatbotPage.toast.conversationDeleted'), 'success');
     } catch {
-      addToast('Failed to delete conversation.', 'error');
+      addToast(t('chatbotPage.toast.failedToDelete'), 'error');
     }
   };
 
@@ -190,7 +202,7 @@ export default function ChatbotPage() {
         }
       }
     } catch {
-      addToast('Failed to get a response from FloraAI. Using offline knowledge base.', 'warning');
+      addToast(t('chatbotPage.toast.failedToGetResponse'), 'warning');
     }
 
     setTimeout(() => {
@@ -219,9 +231,9 @@ export default function ChatbotPage() {
         <div style={styles.iconContainer}>
           <MessageSquare size={28} color="var(--accent-lime)" />
         </div>
-        <h1 style={styles.title}>FloraAI Smart Chatbot</h1>
+        <h1 style={styles.title}>{t('chatbotPage.title')}</h1>
         <p style={styles.subtitle}>
-          Diagnose plant health, review care schedules, and query arrangements with autonomous botanical intelligence.
+          {t('chatbotPage.subtitle')}
         </p>
       </div>
 
@@ -231,7 +243,7 @@ export default function ChatbotPage() {
           <div style={styles.sidebarHeader}>
             <h3 style={{ fontSize: '15px', color: 'var(--text-white)', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <History size={16} color="var(--accent-lime)" />
-              Conversations
+              {t('chatbot.conversations')}
             </h3>
             <button onClick={handleNewConversation} style={styles.newChatBtn} title="New conversation">
               <Plus size={16} />
@@ -240,29 +252,29 @@ export default function ChatbotPage() {
           <div style={styles.helpDivider}></div>
           <div style={styles.convList}>
             <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4', marginBottom: '12px' }}>
-              Click any prompt below to query FloraAI instantly:
+              {t('chatbotPage.promptHint')}
             </p>
             <div style={styles.promptsList}>
               <button onClick={() => setInputVal('How do I care for my Monstera?')} style={styles.promptBtn}>
-                Care for Monstera
+                {t('chatbotPage.promptMonstera')}
               </button>
               <button onClick={() => setInputVal('Which plants grow in low light?')} style={styles.promptBtn}>
-                Low light options
+                {t('chatbotPage.promptLowLight')}
               </button>
               <button onClick={() => setInputVal('How to make roses last longer?')} style={styles.promptBtn}>
-                Fresh Rose Bouquets
+                {t('chatbotPage.promptRoses')}
               </button>
               <button onClick={() => setInputVal('Are these plants toxic to dogs?')} style={styles.promptBtn}>
-                Pet toxicity guides
+                {t('chatbotPage.promptPetToxicity')}
               </button>
             </div>
             <div style={styles.helpDivider}></div>
             <div style={styles.convItems}>
               {convLoading ? (
-                <LoadingSpinner text="Loading conversations..." />
+                <LoadingSpinner text={t('chatbotPage.loadingConversations')} />
               ) : conversations.length === 0 ? (
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>
-                  No conversations yet. Start a new chat!
+                  {t('chatbotPage.noConversationsYet')}
                 </p>
               ) : (
                 conversations.map((conv) => (
@@ -306,8 +318,8 @@ export default function ChatbotPage() {
           <div className="chat-header">
             <Sprout size={20} color="var(--accent-lime)" />
             <div>
-              <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--text-white)' }}>FloraAI Assistant</h4>
-              <span style={{ fontSize: '11px', color: 'var(--success)' }}>Botanical Core Online</span>
+              <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--text-white)' }}>{t('chatbotPage.assistantName')}</h4>
+              <span style={{ fontSize: '11px', color: 'var(--success)' }}>{t('chatbotPage.botanicalCoreOnline')}</span>
             </div>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -320,11 +332,11 @@ export default function ChatbotPage() {
 
           <div className="chat-messages" ref={scrollRef}>
             {convLoading ? (
-              <LoadingSpinner text="Loading conversation..." />
+              <LoadingSpinner text={t('chatbotPage.loadingConversation')} />
             ) : messages.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '64px 24px', color: 'var(--text-muted)' }}>
                 <MessageSquare size={40} color="var(--border-green)" />
-                <p style={{ marginTop: '16px' }}>Start your conversation with FloraAI</p>
+                <p style={{ marginTop: '16px' }}>{t('chatbotPage.startConversation')}</p>
               </div>
             ) : (
               messages.map((msg) => (
@@ -352,7 +364,7 @@ export default function ChatbotPage() {
             {typing && (
               <div className="chat-message bot" style={styles.typingIndicator}>
                 <RefreshCw size={14} style={{ animation: 'spin 1.5s linear infinite' }} />
-                <span>FloraAI is searching caretakers...</span>
+                <span>{t('chatbotPage.typingIndicator')}</span>
               </div>
             )}
           </div>
@@ -360,7 +372,7 @@ export default function ChatbotPage() {
           <form onSubmit={handleSend} className="chat-input-area">
             <input
               type="text"
-              placeholder="Ask FloraAI about plant care (e.g. 'monstera')..."
+              placeholder={t('chatbotPage.chatInputPlaceholder')}
               value={inputVal}
               onChange={(e) => setInputVal(e.target.value)}
               style={styles.chatInput}

@@ -1,5 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function FormInput({
   label,
@@ -15,6 +16,7 @@ export default function FormInput({
   ariaInvalid,
   ariaDescribedby
 }) {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === 'password';
   const inputType = isPassword && showPassword ? 'text' : type;
@@ -36,6 +38,7 @@ export default function FormInput({
           style={{ borderColor: error ? 'var(--error)' : 'var(--border-green)' }}
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
+          required={required}
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -57,6 +60,7 @@ export default function FormInput({
           }}
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedby}
+          required={required}
         />
       ) : (
         <div style={{ position: 'relative' }}>
@@ -73,6 +77,7 @@ export default function FormInput({
             }}
             aria-invalid={ariaInvalid}
             aria-describedby={ariaDescribedby}
+            required={required}
           />
           {isPassword && (
             <button

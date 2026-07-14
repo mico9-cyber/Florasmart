@@ -5,8 +5,10 @@ import DashboardCard from '../components/DashboardCard';
 import Button from '../components/Button';
 import { ShieldCheck, ShieldAlert, Key, FileText, Download } from 'lucide-react';
 import { downloadCsv, downloadReport } from '../utils/exportUtils';
+import { useTranslation } from 'react-i18next';
 
 export default function SecurityPage() {
+  const { t } = useTranslation();
   const { auditLogs } = useContext(AppContext);
   const [filterAction, setFilterAction] = useState('all');
 
@@ -36,15 +38,15 @@ export default function SecurityPage() {
         {/* Header Row */}
         <div style={styles.headerRow}>
           <div>
-            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Security Control & Auditing Ledger</h2>
-            <p style={{ color: 'var(--text-muted)' }}>Perform RBAC permission reviews, audit security logs, and monitor authentication protocols.</p>
+            <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('securityPage.title')}</h2>
+            <p style={{ color: 'var(--text-muted)' }}>{t('securityPage.subtitle')}</p>
           </div>
           <div style={styles.actionButtons}>
             <Button variant="secondary" onClick={handleExportPDF} icon={<FileText size={16} />}>
-              Export Audit PDF
+              {t('securityPage.exportAuditPdf')}
             </Button>
             <Button variant="secondary" onClick={handleExportExcel} icon={<Download size={16} />}>
-              Export Audit CSV
+              {t('securityPage.exportAuditCsv')}
             </Button>
           </div>
         </div>
@@ -52,26 +54,26 @@ export default function SecurityPage() {
         {/* Security statistics */}
         <div className="grid-cols-3" style={{ margin: '32px 0' }}>
           <DashboardCard
-            title="RBAC Compliance Level"
-            value="Level A"
+            title={t('securityPage.rbacComplianceLevel')}
+            value={t('securityPage.levelA')}
             icon={<ShieldCheck size={20} color="var(--success)" />}
-            description="All API requests encrypted"
-            trend="100% Secure"
+            description={t('securityPage.allApiRequestsEncrypted')}
+            trend={t('securityPage.pctSecure')}
             trendType="positive"
           />
           <DashboardCard
-            title="Suspicious Attempts"
-            value="0 Alerts"
+            title={t('securityPage.suspiciousAttempts')}
+            value={t('securityPage.zeroAlerts')}
             icon={<ShieldAlert size={20} color="var(--success)" />}
-            description="Brute-force blocks triggered"
-            trend="Nominal"
+            description={t('securityPage.bruteForceBlocksTriggered')}
+            trend={t('securityPage.nominal')}
             trendType="positive"
           />
           <DashboardCard
-            title="Active Sessions"
-            value="3 Sessions"
+            title={t('securityPage.activeSessions')}
+            value={t('securityPage.sessionsCount', { count: 3 })}
             icon={<Key size={20} color="var(--accent-lime)" />}
-            description="Authentications active in network"
+            description={t('securityPage.authenticationsActiveInNetwork')}
           />
         </div>
 
@@ -79,16 +81,16 @@ export default function SecurityPage() {
           {/* Security Log Table */}
           <div className="card" style={{ flex: 1.8, minWidth: '400px' }}>
             <div style={styles.tableHeader}>
-              <h3 style={styles.sectionTitle}>Real-Time Security Event Logs</h3>
+              <h3 style={styles.sectionTitle}>{t('securityPage.realTimeSecurityEventLogs')}</h3>
               <select
                 value={filterAction}
                 onChange={(e) => setFilterAction(e.target.value)}
                 style={styles.filterSelect}
               >
-                <option value="all">Filter: All Events</option>
-                <option value="auth">Filter: Login/Auth</option>
-                <option value="cart">Filter: E-Commerce</option>
-                <option value="admin">Filter: Workspace Changes</option>
+                <option value="all">{t('securityPage.filterAllEvents')}</option>
+                <option value="auth">{t('securityPage.filterLoginAuth')}</option>
+                <option value="cart">{t('securityPage.filterEcommerce')}</option>
+                <option value="admin">{t('securityPage.filterWorkspaceChanges')}</option>
               </select>
             </div>
             
@@ -96,11 +98,11 @@ export default function SecurityPage() {
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Timestamp</th>
-                    <th>Identity</th>
-                    <th>Action Event</th>
-                    <th>IP Address</th>
-                    <th>Status</th>
+                    <th>{t('securityPage.timestamp')}</th>
+                    <th>{t('securityPage.identity')}</th>
+                    <th>{t('securityPage.actionEvent')}</th>
+                    <th>{t('securityPage.ipAddress')}</th>
+                    <th>{t('securityPage.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -124,29 +126,29 @@ export default function SecurityPage() {
 
           {/* RBAC Policies Help Card */}
           <div className="card" style={{ flex: 1, minWidth: '280px', alignSelf: 'flex-start' }}>
-            <h3 style={styles.sectionTitle}>RBAC Policies Schema</h3>
+            <h3 style={styles.sectionTitle}>{t('securityPage.rbacPoliciesSchema')}</h3>
             <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 20px' }}>
-              Summary of workspace authorization limits.
+              {t('securityPage.rbacPoliciesSchemaHint')}
             </p>
             <div style={styles.policiesList}>
               <div style={styles.policyItem}>
-                <h5 style={styles.policyTitle}>Customer Workspace</h5>
-                <p style={styles.policyDesc}>Browse products, add items to cart, configure garden planner coordinates, review profile logs.</p>
+                <h5 style={styles.policyTitle}>{t('securityPage.customerWorkspace')}</h5>
+                <p style={styles.policyDesc}>{t('securityPage.customerWorkspaceDesc')}</p>
               </div>
 
               <div style={styles.policyItem}>
-                <h5 style={styles.policyTitle}>Florist Studio</h5>
-                <p style={styles.policyDesc}>Modify order statuses to "Preparing Arrangement", review floral inventory counts, vase matches.</p>
+                <h5 style={styles.policyTitle}>{t('securityPage.floristStudio')}</h5>
+                <p style={styles.policyDesc}>{t('securityPage.floristStudioDesc')}</p>
               </div>
 
               <div style={styles.policyItem}>
-                <h5 style={styles.policyTitle}>Gardener Sandbox</h5>
-                <p style={styles.policyDesc}>Add botanical specifications to AI lists, manage planner layouts, read humidity indices.</p>
+                <h5 style={styles.policyTitle}>{t('securityPage.gardenerSandbox')}</h5>
+                <p style={styles.policyDesc}>{t('securityPage.gardenerSandboxDesc')}</p>
               </div>
 
               <div style={styles.policyItem}>
-                <h5 style={styles.policyTitle}>System Administrator</h5>
-                <p style={styles.policyDesc}>Add or remove e-commerce items, review security audits, bypass logs, read sales analytics.</p>
+                <h5 style={styles.policyTitle}>{t('securityPage.systemAdministrator')}</h5>
+                <p style={styles.policyDesc}>{t('securityPage.systemAdministratorDesc')}</p>
               </div>
             </div>
           </div>

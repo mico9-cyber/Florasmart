@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { AppContext } from '../context/AppData';
 import { Bell, Sprout, Clock, Leaf, Flower2, Coffee, Thermometer, Droplets, Sun, Activity, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function PlantCareReminders({ isOpen, onClose }) {
+  const { t } = useTranslation();
   const { user, refreshAppData } = useContext(AppContext);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);

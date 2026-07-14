@@ -1,4 +1,5 @@
 ﻿import React, { useContext, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppData';
 import { useToast } from '../context/ToastContext';
@@ -9,28 +10,34 @@ import { formatCurrency } from '../utils/formatCurrency';
 import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function ShoppingCartPage() {
+  const { t } = useTranslation();
   const { cart, updateCartQuantity, removeFromCart, clearCart } = useContext(AppContext);
   const navigate = useNavigate();
   const addToast = useToast();
   const [loading, setLoading] = useState(false);
 
-  const handleUpdateQty = (id, qty, maxStock) => {
+  const handleUpdateQty = async (id, qty, maxStock) => {
     if (qty < 1) return;
     if (maxStock !== undefined && qty > maxStock) {
-      addToast(`Only ${maxStock} units available.`, 'warning');
+      addToast(t('cart.onlyAvailable', { count: maxStock }), 'warning');
       return;
     }
     setLoading(true);
-    updateCartQuantity(id, qty);
+    try {
+      await updateCartQuantity(id, qty);
+    } catch (err) {
+      addToast(err?.message || t('cart.failedToUpdate'), 'error');
+      setLoading(false);
+      return;
+    }
     setLoading(false);
-    addToast('Cart quantity updated.', 'info');
   };
 
   const handleRemoveItem = (id) => {
     setLoading(true);
     removeFromCart(id);
     setLoading(false);
-    addToast('Item removed from cart.', 'warning');
+    addToast(t('cart.itemRemoved'), 'warning');
   };
 
   const handleClearCart = () => {
@@ -38,7 +45,7 @@ export default function ShoppingCartPage() {
       setLoading(true);
       clearCart();
       setLoading(false);
-      addToast('Cart cleared.', 'warning');
+      addToast(t('cart.cartCleared'), 'warning');
     }
   };
 
@@ -50,8 +57,8 @@ export default function ShoppingCartPage() {
 
   return (
     <div style={styles.container} className="container">
-      <h1 style={styles.title}>Your Shopping Cart</h1>
-      <p style={styles.subtitle}>Review your items, adjust quantities, and proceed to checkout.</p>
+      <h1 style={styles.title}>{t('cart.title')}</h1>
+      <p style={styles.subtitle}>{t('cart.subtitle')}</p>
 
       {cart.length > 0 ? (
         <div style={styles.layout}>
@@ -65,10 +72,10 @@ export default function ShoppingCartPage() {
                 <div style={styles.itemMeta}>
                   <span style={styles.itemCategory}>{item.category.toUpperCase()}</span>
                   <h4 style={styles.itemName}>{item.name}</h4>
-                  <span style={styles.itemPrice}>{formatCurrency(item.price)} each</span>
+                  <span style={styles.itemPrice}>{formatCurrency(item.price)} {t('shop.perUnit')}</span>
                   {item.stock !== undefined && item.stock <= 5 && (
                     <span style={{ color: item.stock <= 0 ? 'var(--error)' : 'var(--warning)', fontSize: '12px', fontWeight: 600, display: 'block', marginTop: '4px' }}>
-                      {item.stock <= 0 ? 'Out of Stock' : `Only ${item.stock} remaining`}
+                      {item.stock <= 0 ? t('shop.outOfStock') : t('shop.lowStock', { count: item.stock })}
                     </span>
                   )}
                 </div>
@@ -81,23 +88,23 @@ export default function ShoppingCartPage() {
                 </div>
                 {item.quantity >= maxStock - 2 && item.quantity < maxStock && maxStock < Infinity && (
                   <span style={{ color: 'var(--warning)', fontSize: '11px', textAlign: 'right', width: '100%', marginTop: '-8px' }}>
-                    Approaching stock limit ({maxStock} available)
+                    {t('cart.approachingLimit', { max: maxStock })}
                   </span>
                 )}
                 {item.quantity >= maxStock && maxStock < Infinity && (
                   <span style={{ color: 'var(--error)', fontSize: '11px', textAlign: 'right', width: '100%', marginTop: '-8px' }}>
-                    Maximum available quantity reached
+                    {t('cart.maxReached')}
                   </span>
                 )}
 
                 {/* Total Price */}
                 <div style={styles.totalBlock}>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Total</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('cart.total')}</span>
                   <span style={styles.totalPrice}>{formatCurrency(item.price * item.quantity)}</span>
                 </div>
 
                 {/* Remove Btn */}
-                <button onClick={() => handleRemoveItem(item.id)} style={styles.removeBtn} title="Remove item">
+                <button onClick={() => handleRemoveItem(item.id)} style={styles.removeBtn} title={t('common.remove')}>
                   <Trash2 size={18} />
                 </button>
               </div>
@@ -106,11 +113,11 @@ export default function ShoppingCartPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
               <Link to="/catalog" style={styles.continueLink}>
                 <ArrowLeft size={16} />
-                <span>Continue Shopping</span>
+                <span>{t('cart.continueShopping')}</span>
               </Link>
               {cart.length > 1 && (
                 <button onClick={handleClearCart} style={styles.clearCartBtn}>
-                  <Trash2 size={14} /> Clear Cart
+                  <Trash2 size={14} /> {t('cart.clearCart')}
                 </button>
               )}
             </div>
@@ -118,26 +125,26 @@ export default function ShoppingCartPage() {
 
           {/* Pricing Summary Card */}
           <div className="card" style={styles.summaryCard}>
-            <h3 style={styles.summaryTitle}>Cart Summary</h3>
+            <h3 style={styles.summaryTitle}>{t('cart.cartSummary')}</h3>
             <div style={styles.divider}></div>
 
             <div style={styles.summaryRow}>
-              <span>Subtotal</span>
+              <span>{t('cart.subtotal')}</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
             <div style={styles.summaryRow}>
-              <span>Green Delivery</span>
-              <span>{shipping === 0 ? 'FREE' : formatCurrency(shipping)}</span>
+              <span>{t('cart.greenDelivery')}</span>
+              <span>{shipping === 0 ? t('cart.free') : formatCurrency(shipping)}</span>
             </div>
             <div style={styles.summaryRow}>
-              <span>Estimated Tax (8%)</span>
+              <span>{t('cart.estimatedTax')}</span>
               <span>{formatCurrency(tax)}</span>
             </div>
 
             <div style={styles.divider}></div>
 
             <div style={{ ...styles.summaryRow, fontSize: '18px', fontWeight: '800', color: 'var(--text-white)' }}>
-              <span>Grand Total</span>
+              <span>{t('cart.grandTotal')}</span>
               <span style={{ color: 'var(--accent-lime)' }}>{formatCurrency(grandTotal)}</span>
             </div>
 
@@ -149,7 +156,7 @@ export default function ShoppingCartPage() {
 
             {shipping > 0 && (
               <p style={styles.freeShippingAlert}>
-                Add <strong>{formatCurrency(40000 - subtotal)}</strong> more to unlock FREE green delivery!
+                {t('cart.addMore', { amount: formatCurrency(40000 - subtotal) })}
               </p>
             )}
 
@@ -159,24 +166,24 @@ export default function ShoppingCartPage() {
               style={styles.checkoutBtn}
               icon={<ArrowRight size={18} />}
             >
-              Proceed to Checkout
+              {t('cart.proceedCheckout')}
             </Button>
 
             <div style={styles.securitySeal}>
               <ShieldCheck size={16} color="var(--accent-lime)" />
-              <span>Checkout is secured with RBAC encryption.</span>
+              <span>{t('cart.securedCheckout')}</span>
             </div>
           </div>
         </div>
       ) : (
         <div className="card" style={styles.emptyCard}>
           <ShoppingBag size={56} color="var(--border-green)" />
-          <h3 style={{ color: 'var(--text-white)', marginTop: '20px' }}>Your Cart is Empty</h3>
+          <h3 style={{ color: 'var(--text-white)', marginTop: '20px' }}>{t('cart.empty')}</h3>
           <p style={{ color: 'var(--text-muted)', margin: '8px 0 24px', maxWidth: '300px' }}>
-            It looks like you haven't added any plants or vases to your greenhouse cart yet.
+            {t('cart.emptyText')}
           </p>
           <Link to="/catalog">
-            <Button variant="lime">Browse Shop Items</Button>
+            <Button variant="lime">{t('cart.browseShop')}</Button>
           </Link>
         </div>
       )}

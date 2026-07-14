@@ -1,8 +1,10 @@
 import React from 'react';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { validatePassword } from '../utils/passwordValidation';
+import { useTranslation } from 'react-i18next';
 
 export default function PasswordStrengthIndicator({ password, onValidationChange }) {
+  const { t } = useTranslation();
   const { valid, rules, score } = validatePassword(password);
 
   React.useEffect(() => {

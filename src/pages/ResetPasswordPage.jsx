@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authService } from '../services/authService';
 import { Lock, ArrowLeft, CheckCircle2, AlertCircle, ShieldAlert } from 'lucide-react';
 import FormInput from '../components/FormInput';
@@ -8,6 +9,7 @@ import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import { validatePassword } from '../utils/passwordValidation';
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
 
@@ -43,10 +45,10 @@ export default function ResetPasswordPage() {
           <div style={styles.iconContainer}>
             <CheckCircle2 size={48} color="var(--success)" />
           </div>
-          <h2 style={styles.title}>Password Reset</h2>
+          <h2 style={styles.title}>{t('auth.resetPasswordTitle')}</h2>
           <p style={styles.message}>Your password has been reset successfully.</p>
           <Link to="/login" style={styles.backLink}>
-            <ArrowLeft size={16} /> Back to Login
+            <ArrowLeft size={16} /> {t('auth.backToLogin')}
           </Link>
         </div>
       </div>
@@ -60,8 +62,8 @@ export default function ResetPasswordPage() {
           <div style={styles.iconCircle}>
             <Lock size={24} color="var(--accent-lime)" />
           </div>
-          <h2 style={styles.title}>Reset Password</h2>
-          <p style={styles.message}>Enter your new password below.</p>
+          <h2 style={styles.title}>{t('auth.resetPasswordTitle')}</h2>
+          <p style={styles.message}>{t('auth.resetPasswordSubtitle')}</p>
         </div>
 
         {error && (
@@ -73,7 +75,7 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <FormInput
-            label="New Password"
+            label={t('auth.newPassword')}
             id="password"
             type="password"
             placeholder="Min. 12 characters"
@@ -84,7 +86,7 @@ export default function ResetPasswordPage() {
           />
           <PasswordStrengthIndicator password={password} onValidationChange={setPasswordValid} />
           <FormInput
-            label="Confirm Password"
+            label={t('auth.confirmNewPassword')}
             id="confirm-password"
             type="password"
             placeholder="Re-enter password"
@@ -93,13 +95,13 @@ export default function ResetPasswordPage() {
             required
           />
           <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={loading || (password.length > 0 && !passwordValid)}>
-            {loading ? 'Resetting...' : 'Reset Password'}
+            {loading ? 'Resetting...' : t('auth.resetPassword')}
           </Button>
         </form>
 
         <div style={styles.footer}>
           <Link to="/login" style={styles.backLink}>
-            <ArrowLeft size={16} /> Back to Login
+            <ArrowLeft size={16} /> {t('auth.backToLogin')}
           </Link>
         </div>
       </div>

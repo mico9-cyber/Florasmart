@@ -1,5 +1,6 @@
 ﻿import React, { useContext, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppContext } from '../context/AppData';
 import { useToast } from '../context/ToastContext';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -13,6 +14,7 @@ import { formatCurrency } from '../utils/formatCurrency';
 import ImageWithFallback from '../components/ImageWithFallback';
 
 export default function CustomerDashboard() {
+  const { t } = useTranslation();
   const { user, orders, products } = useContext(AppContext);
   const navigate = useNavigate();
   const addToast = useToast();
@@ -23,13 +25,11 @@ export default function CustomerDashboard() {
   const activeOrders = orders.filter(o => o.status !== 'Delivered');
 
   const features = [
-    { to: '/catalog', icon: ShoppingBag, title: 'Browse Catalog', desc: 'Explore our full collection of plants, flowers, and vases.' },
-    { to: '/recommendations', icon: Sparkles, title: 'AI Advisor', desc: 'Get smart plant recommendations tailored to your space.' },
-
-    { to: '/chatbot', icon: MessageSquare, title: 'Care Bot', desc: 'Ask Flora about plant care, watering, and troubleshooting.' },
-
-    { to: '/order-tracking', icon: ClipboardList, title: 'Orders', desc: 'View order history, track deliveries, and reorder.' },
-    { to: '/profile', icon: User, title: 'Profile', desc: 'Manage your account, settings, and preferences.' },
+    { to: '/catalog', icon: ShoppingBag, title: t('dashboard.customer.features.browseCatalog.title'), desc: t('dashboard.customer.features.browseCatalog.desc') },
+    { to: '/recommendations', icon: Sparkles, title: t('dashboard.customer.features.aiAdvisor.title'), desc: t('dashboard.customer.features.aiAdvisor.desc') },
+    { to: '/chatbot', icon: MessageSquare, title: t('dashboard.customer.features.careBot.title'), desc: t('dashboard.customer.features.careBot.desc') },
+    { to: '/order-tracking', icon: ClipboardList, title: t('dashboard.customer.features.orders.title'), desc: t('dashboard.customer.features.orders.desc') },
+    { to: '/profile', icon: User, title: t('dashboard.customer.features.profile.title'), desc: t('dashboard.customer.features.profile.desc') },
   ];
 
   if (loading) {
@@ -46,10 +46,10 @@ export default function CustomerDashboard() {
       <div style={styles.welcomeBanner}>
         <div>
           <h2 style={{ fontSize: '28px', color: 'var(--text-white)', margin: 0 }}>
-            Welcome back, {user.name}!
+            {t('dashboard.customer.welcome', { name: user.name || 'User' })}
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginTop: '6px' }}>
-            Here are your smart garden recommendations and recent activity.
+            {t('dashboard.customer.subtitle')}
           </p>
         </div>
 
@@ -58,27 +58,27 @@ export default function CustomerDashboard() {
       {/* Stats Row */}
       <div className="grid-cols-4" style={{ marginBottom: '32px' }}>
         <DashboardCard
-          title="Active Orders"
+          title={t('dashboard.customer.totalOrders')}
           value={activeOrders.length}
           icon={<Package size={20} color="var(--accent-lime)" />}
-          description="Orders currently in progress"
+          description={t('dashboard.customer.pendingDeliveries')}
         />
 
 
         <DashboardCard
-          title="Plant Collection"
+          title={t('dashboard.customer.gardenPlants')}
           value={products.length}
           icon={<Leaf size={20} color="var(--accent-lime)" />}
-          description="Available plants and products"
+          description={t('dashboard.customer.aiRecommendations')}
         />
       </div>
 
         {/* B. Recommended Plants Section */}
         <div style={styles.sectionWrapper}>
           <div style={styles.sectionHeader}>
-            <h3 style={styles.sectionTitle}>Recommended Plants for You</h3>
+            <h3 style={styles.sectionTitle}>{t('recommendations.results')}</h3>
             <Link to="/catalog?category=plants" style={styles.sectionLink}>
-              View all <ArrowRight size={14} />
+              {t('dashboard.customer.viewAll')} <ArrowRight size={14} />
             </Link>
           </div>
         <div className="customer-plant-grid" style={styles.plantGrid}>
@@ -91,7 +91,7 @@ export default function CustomerDashboard() {
                 <div style={styles.plantFooter}>
                   <span style={styles.plantPrice}>{formatCurrency(item.price)}</span>
                   <Button variant="secondary" style={{ padding: '4px 10px', fontSize: '12px' }}>
-                    Details
+                    {t('shop.viewDetails')}
                   </Button>
                 </div>
               </div>
@@ -103,9 +103,9 @@ export default function CustomerDashboard() {
       {/* C. Recent Orders Section */}
       <div style={styles.sectionWrapper}>
         <div style={styles.sectionHeader}>
-          <h3 style={styles.sectionTitle}>Recent Orders</h3>
+          <h3 style={styles.sectionTitle}>{t('dashboard.customer.recentOrders')}</h3>
           <Link to="/order-tracking" style={styles.sectionLink}>
-            View all <ArrowRight size={14} />
+            {t('dashboard.customer.viewAll')} <ArrowRight size={14} />
           </Link>
         </div>
         {recentOrders.length > 0 ? (
@@ -113,11 +113,11 @@ export default function CustomerDashboard() {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Order ID</th>
-                  <th>Date</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th>{t('orders.orderNumber')}</th>
+                  <th>{t('orders.date')}</th>
+                  <th>{t('orders.total')}</th>
+                  <th>{t('orders.status')}</th>
+                  <th>{t('common.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,7 +133,7 @@ export default function CustomerDashboard() {
                     </td>
                     <td>
                       <Button variant="secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => navigate('/order-tracking')}>
-                        Details
+                        {t('orders.viewDetails')}
                       </Button>
                     </td>
                   </tr>
@@ -144,9 +144,9 @@ export default function CustomerDashboard() {
         ) : (
           <div style={styles.emptyState}>
             <ShoppingBag size={40} color="var(--text-muted)" />
-            <p style={{ color: 'var(--text-muted)', margin: '12px 0 16px' }}>No orders yet. Start exploring our catalog!</p>
+            <p style={{ color: 'var(--text-muted)', margin: '12px 0 16px' }}>{t('orders.noOrders')}</p>
             <Button variant="lime" onClick={() => navigate('/catalog')}>
-              Shop Plants
+              {t('dashboard.customer.shopNow')}
             </Button>
           </div>
         )}
@@ -155,8 +155,8 @@ export default function CustomerDashboard() {
       {/* D. Available System Features */}
       <div style={styles.sectionWrapper}>
         <div style={styles.sectionHeader}>
-          <h3 style={styles.sectionTitle}>Explore FloraSmart</h3>
-          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Everything at your fingertips</span>
+          <h3 style={styles.sectionTitle}>{t('landing.featuresTitle')}</h3>
+          <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{t('landing.featuresSubtitle')}</span>
         </div>
         <div className="grid-cols-4" style={{ marginTop: '16px' }}>
           {features.map(f => {
@@ -169,7 +169,7 @@ export default function CustomerDashboard() {
                 <h4 style={styles.featureTitle}>{f.title}</h4>
                 <p style={styles.featureDesc}>{f.desc}</p>
                 <Button variant="secondary" style={{ width: '100%', fontSize: '13px', padding: '8px 16px' }} onClick={() => navigate(f.to)}>
-                  Open
+                  {t('common.viewAll')}
                 </Button>
               </div>
             );

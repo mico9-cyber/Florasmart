@@ -6,6 +6,7 @@ import FormInput from '../components/FormInput';
 import { gardenPlanService } from '../services/gardenPlanService';
 import { recommendationService } from '../services/recommendationService';
 import { formatCurrency } from '../utils/formatCurrency';
+import { useTranslation } from 'react-i18next';
 
 const EMPTY_PLANTS = [];
 
@@ -35,6 +36,7 @@ function productColor(product) {
 
 export default function GardenPlannerPage() {
   const { products, refreshAppData } = useContext(AppContext);
+  const { t } = useTranslation();
 
   const plantOptions = useMemo(() => {
     const livePlants = products
@@ -99,7 +101,7 @@ export default function GardenPlannerPage() {
       setPlanDescription(planDetails.description || '');
       setPlanRecommendations([]);
     } catch (err) {
-      setError(err.message || 'Failed to load garden planner data.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -189,10 +191,10 @@ export default function GardenPlannerPage() {
       setSaving(true);
       if (existing?.placementId) {
         await gardenPlanService.removePlacement(currentPlan.id, existing.placementId);
-        showSuccess(`Cleared cell #${idx + 1}.`);
+        showSuccess(t('gardenPlannerPage.toast.cellCleared', { index: idx + 1 }));
       } else {
         if (!selectedPlant) {
-          setError('Choose a plant before placing it on the grid.');
+          setError(t('gardenPlannerPage.validation.choosePlantFirst'));
           return;
         }
         await gardenPlanService.addPlacement(currentPlan.id, {
@@ -203,11 +205,11 @@ export default function GardenPlannerPage() {
           notes: `Placed from planner using ${selectedPlant.name}`,
           plantedAt: new Date().toISOString(),
         });
-        showSuccess(`${selectedPlant.name} placed in cell #${idx + 1}.`);
+        showSuccess(t('gardenPlannerPage.toast.plantPlaced', { name: selectedPlant.name, index: idx + 1 }));
       }
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to update garden placement.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToPlace'));
     } finally {
       setSaving(false);
     }
@@ -218,10 +220,10 @@ export default function GardenPlannerPage() {
     try {
       setSaving(true);
       await Promise.all((currentPlan.placements || []).map((placement) => gardenPlanService.removePlacement(currentPlan.id, placement.id)));
-      showSuccess('Garden grid cleared successfully.');
+      showSuccess(t('gardenPlannerPage.toast.gridCleared'));
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to clear the grid.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToClearGrid'));
     } finally {
       setSaving(false);
     }
@@ -230,7 +232,7 @@ export default function GardenPlannerPage() {
   const handleCreatePlan = async (e) => {
     e.preventDefault();
     if (!newPlanName.trim()) {
-      setError('Plan name is required.');
+      setError(t('gardenPlannerPage.validation.planNameRequired'));
       return;
     }
     try {
@@ -242,10 +244,10 @@ export default function GardenPlannerPage() {
         height: 8,
       }));
       setNewPlanName('');
-      showSuccess('Garden plan created successfully.');
+      showSuccess(t('gardenPlannerPage.toast.planCreated'));
       await syncPlanner(created.id);
     } catch (err) {
-      setError(err.message || 'Failed to create garden plan.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToCreatePlan'));
     } finally {
       setSaving(false);
     }
@@ -261,10 +263,10 @@ export default function GardenPlannerPage() {
         width: planDimensions.width,
         height: planDimensions.height,
       });
-      showSuccess('Garden plan details saved.');
+      showSuccess(t('gardenPlannerPage.toast.planDetailsSaved'));
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to save garden plan.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToSavePlan'));
     } finally {
       setSaving(false);
     }
@@ -275,10 +277,10 @@ export default function GardenPlannerPage() {
     try {
       setSaving(true);
       await gardenPlanService.setDefault(currentPlan.id);
-      showSuccess('Default garden plan updated.');
+      showSuccess(t('gardenPlannerPage.toast.defaultPlanUpdated'));
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to set default plan.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToSetDefault'));
     } finally {
       setSaving(false);
     }
@@ -289,13 +291,13 @@ export default function GardenPlannerPage() {
     try {
       setSaving(true);
       await gardenPlanService.remove(currentPlan.id);
-      showSuccess('Garden plan deleted.');
+      showSuccess(t('gardenPlannerPage.toast.planDeleted'));
       await loadPlannerData();
       if (typeof refreshAppData === 'function') {
         await refreshAppData().catch(() => undefined);
       }
     } catch (err) {
-      setError(err.message || 'Failed to delete garden plan.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToDeletePlan'));
     } finally {
       setSaving(false);
     }
@@ -307,18 +309,18 @@ export default function GardenPlannerPage() {
       setSaving(true);
       if (!cellSoilType.trim() && !cellSunExposure.trim() && !cellNotes.trim()) {
         await gardenPlanService.removeCell(currentPlan.id, selectedCell.row, selectedCell.col);
-        showSuccess(`Cell #${selectedCellIndex + 1} metadata cleared.`);
+        showSuccess(t('gardenPlannerPage.toast.cellMetadataCleared', { index: selectedCellIndex + 1 }));
       } else {
         await gardenPlanService.updateCell(currentPlan.id, selectedCell.row, selectedCell.col, {
           soilType: cellSoilType.trim() || null,
           sunExposure: cellSunExposure.trim() || null,
           notes: cellNotes.trim() || null,
         });
-        showSuccess(`Cell #${selectedCellIndex + 1} metadata saved.`);
+        showSuccess(t('gardenPlannerPage.toast.cellMetadataSaved', { index: selectedCellIndex + 1 }));
       }
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to save cell details.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToSaveCell'));
     } finally {
       setSaving(false);
     }
@@ -328,7 +330,7 @@ export default function GardenPlannerPage() {
     e.preventDefault();
     if (!currentPlan) return;
     if (!noteTitle.trim() || !noteContent.trim()) {
-      setError('Note title and note content are required.');
+      setError(t('gardenPlannerPage.validation.noteFieldsRequired'));
       return;
     }
     try {
@@ -341,10 +343,10 @@ export default function GardenPlannerPage() {
       setNoteTitle('');
       setNoteContent('');
       setNoteType('task');
-      showSuccess('Garden note saved to backend.');
+      showSuccess(t('gardenPlannerPage.toast.noteSaved'));
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to save note.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToSaveNote'));
     } finally {
       setSaving(false);
     }
@@ -362,10 +364,10 @@ export default function GardenPlannerPage() {
         content: nextContent.trim(),
         noteType: note.noteType || 'general',
       });
-      showSuccess('Garden note updated.');
+      showSuccess(t('gardenPlannerPage.toast.noteUpdated'));
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to update note.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToUpdateNote'));
     } finally {
       setSaving(false);
     }
@@ -376,10 +378,10 @@ export default function GardenPlannerPage() {
     try {
       setSaving(true);
       await gardenPlanService.removeNote(currentPlan.id, noteId);
-      showSuccess('Garden note deleted.');
+      showSuccess(t('gardenPlannerPage.toast.noteDeleted'));
       await syncPlanner(currentPlan.id);
     } catch (err) {
-      setError(err.message || 'Failed to delete note.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToDeleteNote'));
     } finally {
       setSaving(false);
     }
@@ -392,9 +394,9 @@ export default function GardenPlannerPage() {
       setError('');
       const payload = resolveObject(await recommendationService.gardenPlan({ gardenPlanId: currentPlan.id }));
       setPlanRecommendations(payload.recommendations || []);
-      showSuccess('Garden plan recommendations loaded.');
+      showSuccess(t('gardenPlannerPage.toast.recommendationsLoaded'));
     } catch (err) {
-      setError(err.message || 'Failed to load garden plan recommendations.');
+      setError(err.message || t('gardenPlannerPage.toast.failedToLoadRecommendations'));
     } finally {
       setRecommendLoading(false);
     }
@@ -406,9 +408,9 @@ export default function GardenPlannerPage() {
         <div style={styles.iconContainer}>
           <Grid size={28} color="var(--accent-lime)" />
         </div>
-        <h1 style={styles.title}>Smart Garden Planner</h1>
+        <h1 style={styles.title}>{t('gardenPlannerPage.title')}</h1>
         <p style={styles.subtitle}>
-          Save plans to the backend, manage cell settings, and map live plant placements across your greenhouse layout.
+          {t('gardenPlannerPage.subtitle')}
         </p>
       </div>
 
@@ -416,43 +418,43 @@ export default function GardenPlannerPage() {
       {success && <div style={styles.successBanner}>{success}</div>}
 
       <div style={styles.summaryGrid}>
-        <div className="card" style={styles.summaryCard}><strong>{summary.totalPlans || plans.length || 0}</strong><span>Total Plans</span></div>
-        <div className="card" style={styles.summaryCard}><strong>{summary.totalPlacements || currentPlan?.placementCount || 0}</strong><span>Plant Placements</span></div>
-        <div className="card" style={styles.summaryCard}><strong>{summary.totalNotes || notes.length || 0}</strong><span>Saved Notes</span></div>
-        <div className="card" style={styles.summaryCard}><strong>{summary.totalCells || currentPlan?.cellCount || 0}</strong><span>Configured Cells</span></div>
+        <div className="card" style={styles.summaryCard}><strong>{summary.totalPlans || plans.length || 0}</strong><span>{t('gardenPlannerPage.totalPlans')}</span></div>
+        <div className="card" style={styles.summaryCard}><strong>{summary.totalPlacements || currentPlan?.placementCount || 0}</strong><span>{t('gardenPlannerPage.plantPlacements')}</span></div>
+        <div className="card" style={styles.summaryCard}><strong>{summary.totalNotes || notes.length || 0}</strong><span>{t('gardenPlannerPage.savedNotes')}</span></div>
+        <div className="card" style={styles.summaryCard}><strong>{summary.totalCells || currentPlan?.cellCount || 0}</strong><span>{t('gardenPlannerPage.configuredCells')}</span></div>
       </div>
 
       <div style={styles.layout}>
         <div style={styles.controlCol}>
           <div className="card" style={{ marginBottom: '24px' }}>
-            <h3 style={styles.sectionTitle}>Garden Plans</h3>
-            <p style={styles.hint}>Switch between plans or create a new backend-saved layout.</p>
+            <h3 style={styles.sectionTitle}>{t('gardenPlannerPage.gardenPlans')}</h3>
+            <p style={styles.hint}>{t('gardenPlannerPage.gardenPlansHint')}</p>
             <FormInput
-              label="Current Plan"
+              label={t('gardenPlannerPage.currentPlan')}
               id="garden-plan-select"
               type="select"
               value={currentPlan?.id || ''}
               onChange={(e) => loadPlannerData(e.target.value)}
               options={plans.map((plan) => ({ value: plan.id, label: `${plan.name}${plan.isDefault ? ' (Default)' : ''}` }))}
             />
-            <FormInput label="Plan Name" id="plan-name" value={planName} onChange={(e) => setPlanName(e.target.value)} />
-            <FormInput label="Description" id="plan-description" value={planDescription} onChange={(e) => setPlanDescription(e.target.value)} />
+            <FormInput label={t('gardenPlannerPage.planName')} id="plan-name" value={planName} onChange={(e) => setPlanName(e.target.value)} />
+            <FormInput label={t('gardenPlannerPage.description')} id="plan-description" value={planDescription} onChange={(e) => setPlanDescription(e.target.value)} />
             <div style={styles.inlineButtons}>
-              <Button variant="secondary" onClick={handleSavePlan} disabled={saving} icon={<Save size={14} />}>Save Plan</Button>
-              <Button variant="secondary" onClick={handleSetDefaultPlan} disabled={saving} icon={<Star size={14} />}>Set Default</Button>
-              <Button variant="secondary" onClick={handleDeletePlan} disabled={saving} icon={<Trash2 size={14} />}>Delete</Button>
+              <Button variant="secondary" onClick={handleSavePlan} disabled={saving} icon={<Save size={14} />}>{t('gardenPlannerPage.savePlan')}</Button>
+              <Button variant="secondary" onClick={handleSetDefaultPlan} disabled={saving} icon={<Star size={14} />}>{t('gardenPlannerPage.setDefault')}</Button>
+              <Button variant="secondary" onClick={handleDeletePlan} disabled={saving} icon={<Trash2 size={14} />}>{t('gardenPlannerPage.delete')}</Button>
             </div>
             <form onSubmit={handleCreatePlan} style={{ marginTop: '16px' }}>
-              <FormInput label="New Plan" id="new-plan-name" placeholder="e.g. Balcony Layout" value={newPlanName} onChange={(e) => setNewPlanName(e.target.value)} />
+              <FormInput label={t('gardenPlannerPage.newPlan')} id="new-plan-name" placeholder={t('gardenPlannerPage.newPlanPlaceholder')} value={newPlanName} onChange={(e) => setNewPlanName(e.target.value)} />
               <Button type="submit" variant="lime" style={{ width: '100%' }} disabled={saving}>
-                <Plus size={16} /> Create Plan
+                <Plus size={16} /> {t('gardenPlannerPage.createPlan')}
               </Button>
             </form>
           </div>
 
           <div className="card" style={{ marginBottom: '24px' }}>
-            <h3 style={styles.sectionTitle}>Select Plant Variety</h3>
-            <p style={styles.hint}>Choose a live backend plant and click the grid to place it.</p>
+            <h3 style={styles.sectionTitle}>{t('gardenPlannerPage.selectPlantVariety')}</h3>
+            <p style={styles.hint}>{t('gardenPlannerPage.selectPlantVarietyHint')}</p>
             <div style={styles.plantsList}>
               {plantOptions.map((plant) => (
                 <div
@@ -476,59 +478,59 @@ export default function GardenPlannerPage() {
           </div>
 
           <div className="card" style={{ marginBottom: '24px' }}>
-            <h3 style={styles.sectionTitle}>Cell Configuration</h3>
-            <p style={styles.hint}>Save cell metadata like soil, sun exposure, and notes to the backend.</p>
+            <h3 style={styles.sectionTitle}>{t('gardenPlannerPage.cellConfiguration')}</h3>
+            <p style={styles.hint}>{t('gardenPlannerPage.cellConfigurationHint')}</p>
             <FormInput
-              label="Selected Cell"
+              label={t('gardenPlannerPage.selectedCell')}
               id="selected-cell"
               type="select"
               value={selectedCellIndex}
               onChange={(e) => setSelectedCellIndex(Number(e.target.value))}
               options={Array.from({ length: planDimensions.width * planDimensions.height }, (_, idx) => ({ value: idx, label: `Cell #${idx + 1}` }))}
             />
-            <FormInput label="Soil Type" id="soil-type" placeholder="e.g. loamy" value={cellSoilType} onChange={(e) => setCellSoilType(e.target.value)} />
+            <FormInput label={t('gardenPlannerPage.soilType')} id="soil-type" placeholder={t('gardenPlannerPage.soilTypePlaceholder')} value={cellSoilType} onChange={(e) => setCellSoilType(e.target.value)} />
             <FormInput
-              label="Sun Exposure"
+              label={t('gardenPlannerPage.sunExposure')}
               id="sun-exposure"
               type="select"
               value={cellSunExposure}
               onChange={(e) => setCellSunExposure(e.target.value)}
               options={[
-                { value: '', label: 'Select sunlight...' },
-                { value: 'full sun', label: 'Full Sun' },
-                { value: 'partial shade', label: 'Partial Shade' },
-                { value: 'bright indirect light', label: 'Bright Indirect Light' },
-                { value: 'low light', label: 'Low Light' },
+                { value: '', label: t('gardenPlannerPage.selectSunlight') },
+                { value: 'full sun', label: t('gardenPlannerPage.fullSun') },
+                { value: 'partial shade', label: t('gardenPlannerPage.partialShade') },
+                { value: 'bright indirect light', label: t('gardenPlannerPage.brightIndirectLight') },
+                { value: 'low light', label: t('gardenPlannerPage.lowLight') },
               ]}
             />
-            <FormInput label="Cell Notes" id="cell-notes" placeholder="Add observations for this cell" value={cellNotes} onChange={(e) => setCellNotes(e.target.value)} />
+            <FormInput label={t('gardenPlannerPage.cellNotes')} id="cell-notes" placeholder={t('gardenPlannerPage.cellNotesPlaceholder')} value={cellNotes} onChange={(e) => setCellNotes(e.target.value)} />
             <Button variant="secondary" onClick={handleSaveCellConfig} style={{ width: '100%' }} disabled={saving}>
-              <Save size={16} /> Save Cell Details
+              <Save size={16} /> {t('gardenPlannerPage.saveCellDetails')}
             </Button>
           </div>
 
           <div className="card">
-            <h3 style={styles.sectionTitle}>Garden Notes</h3>
-            <p style={styles.hint}>Reminders and observations saved against the active plan.</p>
+            <h3 style={styles.sectionTitle}>{t('gardenPlannerPage.gardenNotes')}</h3>
+            <p style={styles.hint}>{t('gardenPlannerPage.gardenNotesHint')}</p>
             <form onSubmit={handleAddNote}>
-              <FormInput label="Note Title" id="note-title" value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} required />
-              <FormInput label="Note Content" id="note-content" value={noteContent} onChange={(e) => setNoteContent(e.target.value)} required />
+              <FormInput label={t('gardenPlannerPage.noteTitle')} id="note-title" value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} required />
+              <FormInput label={t('gardenPlannerPage.noteContent')} id="note-content" value={noteContent} onChange={(e) => setNoteContent(e.target.value)} required />
               <FormInput
-                label="Note Type"
+                label={t('gardenPlannerPage.noteType')}
                 id="note-type"
                 type="select"
                 value={noteType}
                 onChange={(e) => setNoteType(e.target.value)}
                 options={[
-                  { value: 'task', label: 'Task' },
-                  { value: 'reminder', label: 'Reminder' },
-                  { value: 'observation', label: 'Observation' },
-                  { value: 'idea', label: 'Idea' },
-                  { value: 'general', label: 'General' },
+                  { value: 'task', label: t('gardenPlannerPage.task') },
+                  { value: 'reminder', label: t('gardenPlannerPage.reminder') },
+                  { value: 'observation', label: t('gardenPlannerPage.observation') },
+                  { value: 'idea', label: t('gardenPlannerPage.idea') },
+                  { value: 'general', label: t('gardenPlannerPage.general') },
                 ]}
               />
               <Button type="submit" variant="lime" style={{ width: '100%' }} disabled={saving}>
-                <Plus size={16} /> Save Note
+                <Plus size={16} /> {t('gardenPlannerPage.saveNote')}
               </Button>
             </form>
             <div style={styles.notesList}>
@@ -540,11 +542,11 @@ export default function GardenPlannerPage() {
                     <p style={{ margin: '8px 0 0', color: 'var(--text-muted)', fontSize: '13px' }}>{note.content}</p>
                   </div>
                   <div style={styles.noteActions}>
-                    <button type="button" style={styles.linkBtn} onClick={() => handleEditNote(note)}>Edit</button>
-                    <button type="button" style={styles.linkBtnDanger} onClick={() => handleDeleteNote(note.id)}>Delete</button>
+                    <button type="button" style={styles.linkBtn} onClick={() => handleEditNote(note)}>{t('common.edit')}</button>
+                    <button type="button" style={styles.linkBtnDanger} onClick={() => handleDeleteNote(note.id)}>{t('common.delete')}</button>
                   </div>
                 </div>
-              )) : <div style={styles.emptyPanel}>No notes saved for this plan yet.</div>}
+              )) : <div style={styles.emptyPanel}>{t('gardenPlannerPage.noNotesSaved')}</div>}
             </div>
           </div>
         </div>
@@ -553,26 +555,26 @@ export default function GardenPlannerPage() {
           <div className="card" style={{ height: '100%' }}>
             <div style={styles.gridHeader}>
               <div>
-                <h3 style={{ color: 'var(--text-white)' }}>Greenhouse Floor Layout</h3>
+                <h3 style={{ color: 'var(--text-white)' }}>{t('gardenPlannerPage.greenhouseFloorLayout')}</h3>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  Click a cell to place <strong>{selectedPlant?.name || 'a plant'}</strong>, or click an occupied cell to clear it.
+                  {t('gardenPlannerPage.clickToPlaceOrClear', { name: selectedPlant?.name || 'a plant' })}
                 </span>
               </div>
               <div style={styles.inlineButtons}>
                 <Button onClick={() => loadPlannerData(currentPlan?.id)} variant="secondary" icon={<RefreshCw size={16} />} disabled={loading || saving}>
-                  Refresh
+                  {t('gardenPlannerPage.refresh')}
                 </Button>
                 <Button onClick={handleResetGrid} variant="secondary" icon={<Trash2 size={16} />} disabled={saving || loading}>
-                  Clear Grid
+                  {t('gardenPlannerPage.clear')}
                 </Button>
                 <Button onClick={handleRecommendPlan} variant="lime" icon={<Sparkles size={16} />} disabled={recommendLoading || !currentPlan}>
-                  {recommendLoading ? 'Analyzing...' : 'AI Plan Suggestions'}
+                  {recommendLoading ? t('gardenPlannerPage.analyzing') : t('gardenPlannerPage.aiPlanSuggestions')}
                 </Button>
               </div>
             </div>
 
             {loading ? (
-              <div style={styles.emptyPanel}>Loading garden planner...</div>
+              <div style={styles.emptyPanel}>{t('gardenPlannerPage.loadingGardenPlanner')}</div>
             ) : (
               <>
                 <div className="planner-grid" style={{ ...styles.dynamicGrid, gridTemplateColumns: `repeat(${planDimensions.width}, minmax(0, 1fr))` }}>
@@ -594,16 +596,16 @@ export default function GardenPlannerPage() {
                 </div>
 
                 <div style={{ marginTop: '32px' }}>
-                  <h4 style={{ color: 'var(--text-white)', marginBottom: '12px' }}>Greenhouse Specimen Records</h4>
+                  <h4 style={{ color: 'var(--text-white)', marginBottom: '12px' }}>{t('gardenPlannerPage.greenhouseSpecimenRecords')}</h4>
                   <div className="table-container">
                     <table className="custom-table">
                       <thead>
                         <tr>
-                          <th>Coordinate</th>
-                          <th>Specimen Name</th>
-                          <th>Date Planted</th>
-                          <th>Cell Notes</th>
-                          <th>Action</th>
+                          <th>{t('gardenPlannerPage.coordinate')}</th>
+                          <th>{t('gardenPlannerPage.specimenName')}</th>
+                          <th>{t('gardenPlannerPage.datePlanted')}</th>
+                          <th>{t('gardenPlannerPage.cellNotesHeader')}</th>
+                          <th>{t('gardenPlannerPage.action')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -618,10 +620,10 @@ export default function GardenPlannerPage() {
                                 <td style={{ fontWeight: 'bold' }}>Cell #{idx + 1}</td>
                                 <td>{cell.name}</td>
                                 <td>{cell.datePlanted}</td>
-                                <td>{meta?.notes || 'No saved cell note'}</td>
+                                <td>{meta?.notes || t('gardenPlannerPage.noSavedCellNote')}</td>
                                 <td>
                                   <button type="button" onClick={() => handleCellClick(idx)} style={styles.clearCellBtn}>
-                                    Clear
+                                    {t('gardenPlannerPage.clear')}
                                   </button>
                                 </td>
                               </tr>
@@ -630,7 +632,7 @@ export default function GardenPlannerPage() {
                         ) : (
                           <tr>
                             <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                              No plants are currently mapped onto the greenhouse coordinates.
+                              {t('gardenPlannerPage.noPlantsMapped')}
                             </td>
                           </tr>
                         )}
@@ -640,14 +642,14 @@ export default function GardenPlannerPage() {
                 </div>
 
                 <div style={{ marginTop: '32px' }}>
-                  <h4 style={{ color: 'var(--text-white)', marginBottom: '12px' }}>AI Garden Suggestions</h4>
+                  <h4 style={{ color: 'var(--text-white)', marginBottom: '12px' }}>{t('gardenPlannerPage.aiGardenSuggestions')}</h4>
                   {planRecommendations.length > 0 ? (
                     <div style={styles.recommendationList}>
                       {planRecommendations.map((rec) => (
                         <div key={rec.product.id} style={styles.recommendationCard}>
                           <div>
                             <div style={{ color: 'var(--text-white)', fontWeight: 700 }}>{rec.rank}. {rec.product.name}</div>
-                            <div style={{ color: 'var(--accent-lime)', fontSize: '12px' }}>Score {rec.score}</div>
+                            <div style={{ color: 'var(--accent-lime)', fontSize: '12px' }}>{t('gardenPlannerPage.scoreLabel', { score: rec.score })}</div>
                             <div style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '6px' }}>{(rec.reasons || []).join(' • ')}</div>
                           </div>
                           <div style={{ color: 'var(--btn-yellow)', fontWeight: 700 }}>{formatCurrency(rec.product.price || 0)}</div>
@@ -655,7 +657,7 @@ export default function GardenPlannerPage() {
                       ))}
                     </div>
                   ) : (
-                    <div style={styles.emptyPanel}>Run AI plan suggestions to get backend recommendations for this layout.</div>
+                    <div style={styles.emptyPanel}>{t('gardenPlannerPage.runAiSuggestionsHint')}</div>
                   )}
                 </div>
               </>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import Button from './Button';
+import { useTranslation } from 'react-i18next';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {

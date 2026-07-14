@@ -8,8 +8,10 @@ import Button from '../components/Button';
 import FormInput from '../components/FormInput';
 import ImageWithFallback from '../components/ImageWithFallback';
 import { formatCurrency } from '../utils/formatCurrency';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductDetailsPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const { products, addToCart } = useContext(AppContext);
   const addToast = useToast();
@@ -24,14 +26,14 @@ export default function ProductDetailsPage() {
   const [reviewErr, setReviewErr] = useState('');
   const [reviewsList, setReviewsList] = useState([]);
 
-  if (isLoading) return <LoadingSpinner text="Loading product details..." />;
+  if (isLoading) return <LoadingSpinner text={t('productDetails.loading')} />;
 
   if (!product) {
     return (
       <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
-        <h2 style={{ color: 'var(--text-white)' }}>Product Not Found</h2>
-        <p style={{ color: 'var(--text-muted)', margin: '16px 0' }}>The item you are looking for does not exist in the live catalog.</p>
-        <Link to="/catalog"><Button variant="primary">Back to Catalog</Button></Link>
+        <h2 style={{ color: 'var(--text-white)' }}>{t('productDetails.notFound')}</h2>
+        <p style={{ color: 'var(--text-muted)', margin: '16px 0' }}>{t('productDetails.notFoundDesc')}</p>
+        <Link to="/catalog"><Button variant="primary">{t('productDetails.backToCatalog')}</Button></Link>
       </div>
     );
   }
@@ -39,16 +41,16 @@ export default function ProductDetailsPage() {
   const handleAddToCart = async () => {
     const result = await addToCart(product, qty);
     if (!result?.ok) {
-      addToast(result?.error || 'Unable to add item to cart.', 'error');
+      addToast(result?.error || t('productDetails.toast.unableToAdd'), 'error');
       return;
     }
-    addToast(`Added ${qty} x ${product.name} to your cart.`, 'success');
+    addToast(t('productDetails.toast.addedToCart', { qty, name: product.name }), 'success');
   };
 
   const handleAddReview = (e) => {
     e.preventDefault();
     if (!reviewName.trim() || !reviewText.trim()) {
-      setReviewErr('Please provide your name and review details.');
+      setReviewErr(t('productDetails.validation.reviewRequired'));
       return;
     }
     setReviewErr('');
@@ -62,7 +64,7 @@ export default function ProductDetailsPage() {
 
   return (
     <div style={styles.container} className="container">
-      <Link to="/catalog" style={styles.backLink}><ArrowLeft size={16} /><span>Back to Catalog</span></Link>
+      <Link to="/catalog" style={styles.backLink}><ArrowLeft size={16} /><span>{t('productDetails.backToCatalog')}</span></Link>
       <div style={styles.grid}>
         <div style={styles.imageCol}><div style={styles.imageWrapper}><ImageWithFallback src={product.image || product.imageUrl} alt={product.name} category={product.category} fallbackSrc={product.imageUrl} /></div></div>
         <div style={styles.infoCol}>
@@ -71,34 +73,34 @@ export default function ProductDetailsPage() {
           <div style={styles.ratingRow}>
             <div style={styles.stars}>{[...Array(5)].map((_, i) => <Star key={i} size={16} fill={i < Math.round(product.rating) ? 'var(--btn-yellow)' : 'transparent'} color="var(--btn-yellow)" />)}</div>
             <span style={styles.ratingVal}>{product.rating}</span>
-            <span style={styles.reviewsCount}>({product.reviews} customer reviews)</span>
+            <span style={styles.reviewsCount}>{t('productDetails.customerReviewsCount', { count: product.reviews })}</span>
           </div>
-          <div style={styles.priceRow}><span style={styles.price}>{formatCurrency(product.price)}</span><span className={`badge ${product.stock > 0 ? 'badge-success' : 'badge-error'}`}>{product.stock > 0 ? 'In Stock' : 'Out of Stock'}</span></div>
-          {product.stock > 0 && product.stock <= 5 && <span style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>Only {product.stock} remaining — order soon!</span>}
+          <div style={styles.priceRow}><span style={styles.price}>{formatCurrency(product.price)}</span><span className={`badge ${product.stock > 0 ? 'badge-success' : 'badge-error'}`}>{product.stock > 0 ? t('productDetails.inStock') : t('productDetails.outOfStock')}</span></div>
+          {product.stock > 0 && product.stock <= 5 && <span style={{ color: 'var(--warning)', fontSize: '13px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>{t('productDetails.onlyRemaining', { count: product.stock })}</span>}
           <p style={styles.desc}>{product.desc}</p>
           <div style={styles.divider}></div>
           {product.category === 'plants' && (
             <div style={styles.botanicalSpecs}>
-              <h4 style={styles.specsTitle}>Care Details</h4>
+              <h4 style={styles.specsTitle}>{t('productDetails.careDetails')}</h4>
               <div style={styles.specsGrid}>
-                <div style={styles.specItem}><Sun size={18} color="var(--accent-lime)" /><div><span style={styles.specLabel}>Sunlight Need</span><span style={styles.specVal}>{product.sunlight}</span></div></div>
-                <div style={styles.specItem}><Droplets size={18} color="#38BDF8" /><div><span style={styles.specLabel}>Watering Cycle</span><span style={styles.specVal}>{product.water}</span></div></div>
-                <div style={styles.specItem}><ShieldAlert size={18} color="var(--error)" /><div><span style={styles.specLabel}>Pet Toxicity</span><span style={styles.specVal}>{product.toxic}</span></div></div>
+                <div style={styles.specItem}><Sun size={18} color="var(--accent-lime)" /><div><span style={styles.specLabel}>{t('productDetails.sunlightNeed')}</span><span style={styles.specVal}>{product.sunlight}</span></div></div>
+                <div style={styles.specItem}><Droplets size={18} color="#38BDF8" /><div><span style={styles.specLabel}>{t('productDetails.wateringCycle')}</span><span style={styles.specVal}>{product.water}</span></div></div>
+                <div style={styles.specItem}><ShieldAlert size={18} color="var(--error)" /><div><span style={styles.specLabel}>{t('productDetails.petToxicity')}</span><span style={styles.specVal}>{product.toxic}</span></div></div>
               </div>
               <div style={styles.divider}></div>
             </div>
           )}
           <div style={styles.cartActions}>
             <div style={styles.qtyControl}><button onClick={() => setQty(Math.max(1, qty - 1))} style={styles.qtyBtn}>-</button><span style={styles.qtyVal}>{qty}</span><button onClick={() => setQty(Math.min(product.stock, qty + 1))} style={styles.qtyBtn} disabled={qty >= product.stock}>+</button></div>
-            <Button onClick={handleAddToCart} variant="primary" disabled={product.stock <= 0} icon={<ShoppingCart size={18} />} style={{ flex: 1, padding: '14px' }}>Add to Shopping Cart</Button>
+            <Button onClick={handleAddToCart} variant="primary" disabled={product.stock <= 0} icon={<ShoppingCart size={18} />} style={{ flex: 1, padding: '14px' }}>{t('productDetails.addToShoppingCart')}</Button>
           </div>
         </div>
       </div>
       <div style={styles.sectionsLayout}>
         <div className="card" style={{ flex: 1.5, minWidth: '320px' }}>
-          <h3 style={styles.sectionTitle}>Customer Feedback</h3>
+          <h3 style={styles.sectionTitle}>{t('productDetails.customerReviews')}</h3>
           <div style={styles.reviewsList}>
-            {reviewsList.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>No reviews have been added in this session.</p> : reviewsList.map((rev, idx) => (
+            {reviewsList.length === 0 ? <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>{t('productDetails.noReviewsSession')}</p> : reviewsList.map((rev, idx) => (
               <div key={idx} style={styles.reviewItem}>
                 <div style={styles.reviewHeader}><h5 style={{ color: 'var(--text-white)', margin: 0 }}>{rev.name}</h5><span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{rev.date}</span></div>
                 <div style={styles.stars}>{[...Array(5)].map((_, i) => <Star key={i} size={12} fill={i < rev.rating ? 'var(--btn-yellow)' : 'transparent'} color="var(--btn-yellow)" />)}</div>
@@ -107,18 +109,18 @@ export default function ProductDetailsPage() {
             ))}
           </div>
           <div style={styles.addReviewForm}>
-            <h4 style={{ color: 'var(--text-white)', marginBottom: '16px' }}>Leave a Review</h4>
+            <h4 style={{ color: 'var(--text-white)', marginBottom: '16px' }}>{t('productDetails.leaveReview')}</h4>
             {reviewErr && <span style={{ color: 'var(--error)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>{reviewErr}</span>}
             <form onSubmit={handleAddReview}>
-              <FormInput label="Your Name" id="rev-name" value={reviewName} onChange={(e) => setReviewName(e.target.value)} />
-              <FormInput label="Rating Score" id="rev-rating" type="select" value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} options={[{ value: '5', label: '5 Stars - Perfect' }, { value: '4', label: '4 Stars - Good' }, { value: '3', label: '3 Stars - Neutral' }, { value: '2', label: '2 Stars - Poor' }, { value: '1', label: '1 Star - Terrible' }]} />
-              <FormInput label="Review Feedback" id="rev-text" type="textarea" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
-              <Button type="submit" variant="lime"><MessageSquare size={16} />Submit Review</Button>
+              <FormInput label={t('productDetails.yourName')} id="rev-name" value={reviewName} onChange={(e) => setReviewName(e.target.value)} />
+              <FormInput label={t('productDetails.ratingScore')} id="rev-rating" type="select" value={reviewRating} onChange={(e) => setReviewRating(e.target.value)} options={[{ value: '5', label: t('productDetails.fiveStarsPerfect') }, { value: '4', label: t('productDetails.fourStarsGood') }, { value: '3', label: t('productDetails.threeStarsNeutral') }, { value: '2', label: t('productDetails.twoStarsPoor') }, { value: '1', label: t('productDetails.oneStarTerrible') }]} />
+              <FormInput label={t('productDetails.reviewFeedback')} id="rev-text" type="textarea" value={reviewText} onChange={(e) => setReviewText(e.target.value)} />
+              <Button type="submit" variant="lime"><MessageSquare size={16} />{t('productDetails.submitReview')}</Button>
             </form>
           </div>
         </div>
         <div style={{ flex: 1, minWidth: '300px' }}>
-          <h3 style={styles.sectionTitle}>Similar Products</h3>
+          <h3 style={styles.sectionTitle}>{t('productDetails.similarProducts')}</h3>
           <div style={styles.relatedGrid}>
             {related.map((item) => (
               <div key={item.id} style={styles.relatedCard} className="card" onClick={() => { navigate(`/catalog/${item.id}`); setQty(1); }}>

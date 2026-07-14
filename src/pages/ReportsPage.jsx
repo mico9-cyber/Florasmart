@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import { useToast } from '../context/ToastContext';
 import { FileText, Download, Trash2, RefreshCw, FileSpreadsheet, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
 import { downloadReport } from '../utils/exportUtils';
+import { useTranslation } from 'react-i18next';
 
 const REPORT_TYPES = [
   { value: 'SALES', label: 'Sales Report' },
@@ -41,6 +42,7 @@ function statusIcon(status) {
 export default function ReportsPage() {
   const { user } = useContext(AppContext);
   const addToast = useToast();
+  const { t } = useTranslation();
   const [reportType, setReportType] = useState('SALES');
   const [format, setFormat] = useState('CSV');
   const [dateFrom, setDateFrom] = useState('');
@@ -59,8 +61,8 @@ export default function ReportsPage() {
       const res = await reportService.jobs();
       setJobs(res?.data?.jobs || []);
     } catch {
-      setError('Failed to load report jobs.');
-      addToast('Failed to load report jobs.', 'error');
+      setError(t('reportsPage.toast.failedToLoadJobs'));
+      addToast(t('reportsPage.toast.failedToLoadJobs'), 'error');
     } finally {
       setLoading(false);
     }
@@ -92,16 +94,16 @@ export default function ReportsPage() {
           ...(dateTo ? { dateTo: new Date(dateTo).toISOString() } : {}),
         },
       });
-      setSuccess('Report generation started!');
-      addToast('Report generation started!', 'success');
+      setSuccess(t('reportsPage.toast.reportGenerationStarted'));
+      addToast(t('reportsPage.toast.reportGenerationStarted'), 'success');
       setReportType('SALES');
       setFormat('CSV');
       setDateFrom('');
       setDateTo('');
       await loadJobs();
     } catch (err) {
-      setError(err.message || 'Failed to generate report.');
-      addToast(err.message || 'Failed to generate report.', 'error');
+      setError(err.message || t('reportsPage.toast.failedToGenerate'));
+      addToast(err.message || t('reportsPage.toast.failedToGenerate'), 'error');
     } finally {
       setGenerating(false);
     }
@@ -119,9 +121,9 @@ export default function ReportsPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      addToast('Report downloaded successfully.', 'success');
+      addToast(t('reportsPage.toast.reportDownloaded'), 'success');
     } catch {
-      addToast('Failed to download report. Using fallback.', 'warning');
+      addToast(t('reportsPage.toast.failedToDownload'), 'warning');
       downloadReport(`report-${jobId}.txt`, `Report ${jobId}`, [
         { heading: 'Downloads', lines: ['Download via backend URL.'] },
       ]);
@@ -133,11 +135,11 @@ export default function ReportsPage() {
       await reportService.remove(jobId);
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
       setConfirmDelete(null);
-      setSuccess('Report deleted.');
-      addToast('Report deleted.', 'success');
+      setSuccess(t('reportsPage.toast.reportDeleted'));
+      addToast(t('reportsPage.toast.reportDeleted'), 'success');
     } catch {
-      setError('Failed to delete report.');
-      addToast('Failed to delete report.', 'error');
+      setError(t('reportsPage.toast.failedToDelete'));
+      addToast(t('reportsPage.toast.failedToDelete'), 'error');
     }
   };
 
@@ -148,8 +150,8 @@ export default function ReportsPage() {
   return (
     <div className="dashboard-content">
       <div style={styles.header}>
-        <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>Reports & Exports</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Generate and download business reports.</p>
+        <h2 style={{ fontSize: '28px', color: 'var(--text-white)' }}>{t('reportsPage.title')}</h2>
+        <p style={{ color: 'var(--text-muted)' }}>{t('reports.subtitle')}</p>
       </div>
 
       {success && (
@@ -168,13 +170,13 @@ export default function ReportsPage() {
 
       <div style={styles.grid}>
         <div className="card" style={{ flex: 1, minWidth: '350px', padding: '32px' }}>
-          <h3 style={styles.sectionTitle}>Generate Report</h3>
+          <h3 style={styles.sectionTitle}>{t('reports.generateReport')}</h3>
           <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: '4px 0 20px' }}>
-            Select report type and format to start generation.
+            {t('reportsPage.selectReportFormatHint')}
           </p>
           <form onSubmit={handleGenerate}>
             <FormInput
-              label="Report Type"
+              label={t('reportsPage.reportTypeLabel')}
               id="report-type"
               type="select"
               value={reportType}
@@ -182,7 +184,7 @@ export default function ReportsPage() {
               options={REPORT_TYPES}
             />
             <FormInput
-              label="Format"
+              label={t('reportsPage.formatLabel')}
               id="report-format"
               type="select"
               value={format}
@@ -191,28 +193,28 @@ export default function ReportsPage() {
             />
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <FormInput
-                  label="Date From"
-                  id="date-from"
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <FormInput
-                  label="Date To"
-                  id="date-to"
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
+                  <FormInput
+                    label={t('reportsPage.dateFromLabel')}
+                    id="date-from"
+                    type="text"
+                    placeholder="YYYY-MM-DD"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <FormInput
+                    label={t('reportsPage.dateToLabel')}
+                    id="date-to"
+                    type="text"
+                    placeholder="YYYY-MM-DD"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
               </div>
             </div>
             <Button type="submit" variant="lime" style={{ width: '100%', marginTop: '12px' }} disabled={generating}>
-              {generating ? <><RefreshCw size={16} style={{ animation: 'spin 1.5s linear infinite' }} /> Generating...</> : 'Generate Report'}
+              {generating ? <><RefreshCw size={16} style={{ animation: 'spin 1.5s linear infinite' }} /> {t('reportsPage.generating')}</> : t('reportsPage.generateReport')}
             </Button>
           </form>
         </div>
@@ -220,7 +222,7 @@ export default function ReportsPage() {
         <div style={{ flex: 2, minWidth: '400px' }}>
           {activeJobs.length > 0 && (
             <div className="card" style={{ marginBottom: '16px' }}>
-              <h3 style={styles.sectionTitle}>Processing</h3>
+              <h3 style={styles.sectionTitle}>{t('reportsPage.processing')}</h3>
               {activeJobs.map((job) => (
                 <div key={job.id} style={styles.jobRow}>
                   <div style={styles.jobInfo}>
@@ -238,25 +240,25 @@ export default function ReportsPage() {
 
           <div className="card">
             <div style={styles.sectionHeader}>
-              <h3 style={styles.sectionTitle}>Generated Reports</h3>
+              <h3 style={styles.sectionTitle}>{t('reportsPage.generatedReports')}</h3>
               <Button variant="secondary" onClick={loadJobs} style={{ padding: '4px 8px', fontSize: '12px' }}>
-                <RefreshCw size={14} /> Refresh
+                <RefreshCw size={14} /> {t('reportsPage.refresh')}
               </Button>
             </div>
             {loading ? (
-              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>Loading...</p>
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>{t('common.loading')}</p>
             ) : completedJobs.length === 0 && failedJobs.length === 0 ? (
-              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>No reports generated yet.</p>
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '24px' }}>{t('reports.noReports')}</p>
             ) : (
               <div className="table-container" style={{ marginTop: '16px' }}>
                 <table className="custom-table">
                   <thead>
                     <tr>
-                      <th>Type</th>
-                      <th>Format</th>
-                      <th>Generated</th>
-                      <th>Status</th>
-                      <th>Actions</th>
+                    <th>{t('reportsPage.type')}</th>
+                    <th>{t('reportsPage.format')}</th>
+                    <th>{t('reportsPage.generated')}</th>
+                    <th>{t('reportsPage.status')}</th>
+                    <th>{t('reportsPage.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -300,13 +302,13 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <Modal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Delete Report">
+      <Modal isOpen={!!confirmDelete} onClose={() => setConfirmDelete(null)} title={t('reportsPage.deleteReport')}>
         <p style={{ color: 'var(--text-light)', marginBottom: '20px' }}>
-          Are you sure you want to delete this report?
+          {t('reportsPage.confirmDeleteReport')}
         </p>
         <div style={{ display: 'flex', gap: '12px' }}>
-          <Button variant="secondary" onClick={() => setConfirmDelete(null)} style={{ flex: 1 }}>Cancel</Button>
-          <Button variant="lime" onClick={() => handleDelete(confirmDelete)} style={{ flex: 1 }}>Delete</Button>
+          <Button variant="secondary" onClick={() => setConfirmDelete(null)} style={{ flex: 1 }}>{t('reportsPage.cancel')}</Button>
+          <Button variant="lime" onClick={() => handleDelete(confirmDelete)} style={{ flex: 1 }}>{t('reportsPage.delete')}</Button>
         </div>
       </Modal>
     </div>

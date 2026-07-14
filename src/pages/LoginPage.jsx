@@ -1,5 +1,6 @@
 ﻿import React, { useState, useContext } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AppContext } from '../context/AppData';
 import { useToast } from '../context/ToastContext';
 import { LogIn, ShieldAlert } from 'lucide-react';
@@ -7,19 +8,28 @@ import FormInput from '../components/FormInput';
 import Button from '../components/Button';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const { handleLogin } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
   const addToast = useToast();
 
-  // Form Fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('customer');
+  const [role, setRole] = useState('');
 
-  // Validation Errors
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
+
+  const clearError = (field) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    if (submitError) setSubmitError('');
+  };
 
   const validate = () => {
     const tempErrors = {};
@@ -29,11 +39,15 @@ export default function LoginPage() {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) tempErrors.email = 'Enter a valid email address.';
     }
-    
+
     if (!password) {
       tempErrors.password = 'Password is required.';
     } else if (password.length < 6) {
       tempErrors.password = 'Password must be at least 6 characters long.';
+    }
+
+    if (!role) {
+      tempErrors.role = 'Please select a workspace role.';
     }
 
     setErrors(tempErrors);
@@ -64,8 +78,8 @@ export default function LoginPage() {
           <div style={styles.iconContainer}>
             <LogIn size={24} color="var(--accent-lime)" />
           </div>
-          <h2 style={styles.title}>Sign In to FloraSmart</h2>
-          <p style={styles.subtitle}>Enter your details below to access your garden dashboard</p>
+          <h2 style={styles.title}>{t('auth.welcomeBack')}</h2>
+          <p style={styles.subtitle}>{t('auth.loginSubtitle')}</p>
         </div>
 
         {submitError && (
@@ -77,57 +91,55 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} noValidate>
           <FormInput
-            label="Email Address"
+            label={t('auth.emailLabel')}
             id="email"
             type="email"
             placeholder="e.g. gardener@florasmart.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); clearError('email'); }}
             error={errors.email}
             required
           />
 
           <FormInput
-            label="Password"
+            label={t('auth.passwordLabel')}
             id="password"
             type="password"
             placeholder="••••••••"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => { setPassword(e.target.value); clearError('password'); }}
             error={errors.password}
             required
           />
 
           <FormInput
-            label="Select Workspace Role"
+            label={t('auth.workspaceRole')}
             id="role"
             type="select"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => { setRole(e.target.value); clearError('role'); }}
+            error={errors.role}
             options={[
-              { value: 'customer', label: 'Customer' },
-              { value: 'florist', label: 'Florist' },
-              { value: 'gardener', label: 'Gardener' },
-              { value: 'admin', label: 'Admin' }
+              { value: '', label: t('auth.selectRole') },
+              { value: 'customer', label: t('roles.customer') },
+              { value: 'florist', label: t('roles.florist') },
+              { value: 'gardener', label: t('roles.gardener') },
+              { value: 'admin', label: t('roles.admin') },
             ]}
           />
 
           <div style={styles.forgotRow}>
-            <label style={styles.rememberMe}>
-              <input type="checkbox" style={{ marginRight: '8px' }} />
-              Remember device
-            </label>
-            <Link to="/forgot-password" style={styles.forgotLink}>Forgot password?</Link>
+            <Link to="/forgot-password" style={styles.forgotLink}>{t('auth.forgotPassword')}</Link>
           </div>
 
           <Button type="submit" variant="primary" style={styles.submitBtn}>
-            Sign In
+            {t('auth.signIn')}
           </Button>
         </form>
 
         <div style={styles.footer}>
-          <span style={styles.footerText}>New to FloraSmart?</span>
-          <Link to="/register" style={styles.registerLink}>Create an Account</Link>
+          <span style={styles.footerText}>{t('auth.noAccount')}</span>
+          <Link to="/register" style={styles.registerLink}>{t('auth.createOne')}</Link>
         </div>
       </div>
     </div>
@@ -136,7 +148,7 @@ export default function LoginPage() {
 
 const styles = {
   container: {
-    minHeight: 'calc(100vh - 144px)', // Deducting nav and footer height
+    minHeight: 'calc(100vh - 144px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -186,17 +198,9 @@ const styles = {
     color: 'var(--text-light)',
   },
   forgotRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: '24px',
     fontSize: '13px',
-  },
-  rememberMe: {
-    display: 'flex',
-    alignItems: 'center',
-    color: 'var(--text-muted)',
-    cursor: 'pointer',
+    textAlign: 'right',
   },
   forgotLink: {
     color: 'var(--accent-lime)',
@@ -222,6 +226,3 @@ const styles = {
     fontWeight: '700',
   }
 };
-
-
-

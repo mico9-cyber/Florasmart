@@ -4,8 +4,10 @@ import { AppContext } from '../context/AppData';
 import { Star, ShoppingCart, Info, Sparkles } from 'lucide-react';
 import { formatCurrency } from '../utils/formatCurrency';
 import ImageWithFallback from './ImageWithFallback';
+import { useTranslation } from 'react-i18next';
 
 export default function ProductCard({ product }) {
+  const { t } = useTranslation();
   const { addToCart } = useContext(AppContext);
   const navigate = useNavigate();
 
